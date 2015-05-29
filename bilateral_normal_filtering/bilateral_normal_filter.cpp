@@ -14,7 +14,7 @@ zsw::BilateralNormalFilter::BilateralNormalFilter()
   st_ = 3;
   ut_ = 16;
   b_c_ = 0.1;
-  b_s_ = 0.1;
+  b_s_ = 0.3;
 }
 void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
 {

@@ -1,0 +1,107 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Template for a LaTex article in English.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{article}
+
+% AMS packages:
+\usepackage{amsmath, amsthm, amsfonts}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+
+% Theorems
+%-----------------------------------------------------------------
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\theoremstyle{remark}
+\newtheorem{rem}[thm]{Remark}
+
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+
+% Shortcuts.
+% One can define new commands to shorten frequently used
+% constructions. As an example, this defines the R and Z used
+% for the real and integer numbers.
+%-----------------------------------------------------------------
+\def\RR{\mathbb{R}}
+\def\ZZ{\mathbb{Z}}
+
+% Similarly, one can define commands that take arguments. In this
+% example we define a command for the absolute value.
+% -----------------------------------------------------------------
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+
+% Operators
+% New operators must defined as such to have them typeset
+% correctly. As an example we define the Jacobian:
+% -----------------------------------------------------------------
+\DeclareMathOperator{\Jac}{Jac}
+
+%-----------------------------------------------------------------
+\title{Bilateral Normal Filter}
+\author{ShengweiZHANG\\
+  %% \small Dept. Templates and Editors\\
+  %% \small E12345\\
+  %% \small Spain
+}
+
+\begin{document}
+\maketitle
+
+%% \abstract{Compiling Embedded\_thin\_shell progress}
+\section{Abstract}
+Bilateral filter for processing a normal field defined over an input mesh, smooth the face normal and update the vertexes according the face normal.
+\section{The Filter}
+
+\section{Implementation}
+\begin{algorithm}
+\caption{Integrator algorithm}\label{euclid}
+\begin{algorithmic}
+ \Procedure{Init Procedure}{}
+\State $\textit{h} \gets $\textit{T/time\_slice}
+\State $i \gets \textit{0}$
+\State $cur\_t \gets \textit{init\_time}$
+\EndProcedure
+ \For{{$\textit{i} < $\textit{time\_slice}}}
+ \State $\textit{construct vector field v}$
+ \State$x = funcAdv(v(x,cur\_t)) + x$
+ \State$cur\_t += h$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\section{Problems And TODO}
+%% \begin{equation}\label{eq:area}
+%%   S = \pi r^2
+%% \end{equation}
+%% One can refer to equations like this: see equation (\ref{eq:area}). One can also
+%% refer to sections in the same way: see section \ref{sec:nothing}. Or
+%% to the bibliography like this: \cite{Cd94}.
+
+%% \subsection{Subsection}\label{sec:nothing}
+
+%% More text.
+
+%% \subsubsection{Subsubsection}\label{sec:nothing2}
+
+%% More text.
+
+%% % Bibliography
+%% %-----------------------------------------------------------------
+%% \begin{thebibliography}{99}
+
+%% \bibitem{Cd94} Author, \emph{Title}, Journal/Editor, (year)
+
+%% \end{thebibliography}
+
+\end{document}
