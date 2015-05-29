@@ -1,0 +1,86 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 13.04.2 ] */
+
+/* [wxMaxima: input   start ] */
+load(vect);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+load(eigen);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+bf(r,ri, ro) := (4*(r-ri)^3*(ro-r)+(r-ri)^4)/(ro-ri)^4;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+rf(x, c) := sqrt((x-c).(x-c));
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+lf(x, u, c, ri, ro) := (1-bf(rf(x, c), ri, ro))*u.(x-c);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+x : matrix([-10.3, 42.1, -4.1]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+c : matrix([-14.13, 43.2, -6.3]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+u0.(x-c);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+bf(4.5518,ri, ro);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+ri : 4.3;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+ro : 6.9;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+u0 : matrix([-3.34, -8.3, 6.7]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+u1 : matrix([ 1.3, 5.8, -7.833134]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+diff(bf(rf(matrix([-10.3, xv, -4.1]),c),ri,ro), xv);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+func(xv) := (0.26259584748433*(6.9−sqrt((xv−43.2)^2+19.5089))*(sqrt((xv−43.2)^2+19.5089)−4.3)^2*(xv−43.2))/sqrt((xv−43.2)^2+19.5089);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+func(42.1);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+diff(lf(matrix([-10.3, 42.1, xv]),u1,c,ri,ro),xv);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+func(xv) := −7.833134*(1−0.02188298729036*((sqrt((xv+6.3)^2+15.8789)−4.3)^4+4*(6.9−sqrt((xv+6.3)^2+15.8789))*(sqrt((xv+6.3)^2+15.8789)−4.3)^3))−
+(0.26259584748433*(xv+6.3)*(−7.833134*(xv+6.3)−1.401000000000007)*(6.9−sqrt((xv+6.3)^2+15.8789))*(sqrt((xv+6.3)^2+15.8789)−4.3)^2)/sqrt((xv+6.3)^2+15.8789);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+func(-4.1);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+kill(all);
+/* [wxMaxima: input   end   ] */
+
+/* Maxima can't load/batch files which end with a comment! */
+"Created with wxMaxima"$

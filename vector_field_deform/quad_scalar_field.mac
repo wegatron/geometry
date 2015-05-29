@@ -1,0 +1,35 @@
+load(hj_fortran2)$
+load(cj_function)$
+
+optimprefix : tt$
+
+f : openw("quad_scalar_field.f90")$
+
+block(
+        [x, a, c],
+        x:genmatrix(x, 3,1),
+        a:genmatrix(a, 3, 1),
+        c:genmatrix(c, 3, 1),
+        quad_scalar_field(x, a, c) := block(
+                [tmp, ret],
+                tmp : CROSS(a, x-c),
+                ret: DOT(tmp, tmp),
+                matrix([ret])
+        ),
+        with_stdout(f, val_jac_hes_to_f90(quad_scalar_field, [x, a, c]))
+)$
+
+block(
+        [x,a,c],
+        x:genmatrix(x,3,1),
+        a:genmatrix(a,3,1),
+        c:genmatrix(c,3,1),
+        quad_scalar_field2(x,a,c) := block(
+           [tmp],
+           tmp : DOT(a, x-c),
+           matrix([tmp*tmp])
+        ),
+        with_stdout(f, val_jac_hes_to_f90(quad_scalar_field2, [x,a,c]))
+)$
+
+close(f)$
