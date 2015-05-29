@@ -19,10 +19,15 @@ zsw::BilateralNormalFilter::BilateralNormalFilter()
 void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
 {
   for(size_t i=0; i<st_; ++i) {
-    std::cerr << "step " << i << std::endl;
+    std::cout << "smooth normal step " << i << std::endl;
     filterNormal(trimesh);
   }
   writeTriMesh("/home/wegatron/tmp/tooth_debug0.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_, trimesh.face_normal_);
+  for(size_t i=0; i<ut_; ++i) {
+    std::cout << "update vertex step " << i << std::endl;
+    updateVertex(trimesh);
+  }
+  jtf::mesh::save_obj("/home/wegatron/tmp/tooth_res.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_);
 }
 
 void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
@@ -92,7 +97,20 @@ bool zsw::BilateralNormalFilter::queryFidOneRing(const size_t fid, const jtf::me
 
 void zsw::BilateralNormalFilter::updateVertex(jtf::mesh::tri_mesh &trimesh)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  using namespace zjucad::matrix;
+
+  matrixd &node = trimesh.trimesh_.node_;
+  matrixst &mesh = trimesh.trimesh_.mesh_;
+  matrixd &normal = trimesh.face_normal_;
+  for(size_t i=0; i<mesh.size(2); ++i) {
+    matrixd v0 = node(colon(), mesh(0,i));
+    matrixd v1 = node(colon(), mesh(1,i));
+    matrixd v2 = node(colon(), mesh(2,i));
+    matrixd ni = normal(colon(), i);
+    node(colon(), mesh(0,i)) = v0 + ni*dot(ni, v2+v1-2*v0)/18.0;
+    node(colon(), mesh(1,i)) = v1 + ni*dot(ni, v2+v0-2*v1)/18.0;
+    node(colon(), mesh(2,i)) = v2 + ni*dot(ni, v0+v1-2*v2)/18.0;
+  }
 }
 
 void zsw::BilateralNormalFilter::postProcessing(jtf::mesh::tri_mesh &trimesh)
