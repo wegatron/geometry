@@ -113,11 +113,6 @@ void zsw::BilateralNormalFilter::updateVertex(jtf::mesh::tri_mesh &trimesh)
   }
 }
 
-void zsw::BilateralNormalFilter::postProcessing(jtf::mesh::tri_mesh &trimesh)
-{
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-}
-
 void zsw::writeTriMesh(const std::string &filename, const zjucad::matrix::matrix<size_t> &mesh,
                        const zjucad::matrix::matrix<double> &node,
                        const zjucad::matrix::matrix<double> &normal)

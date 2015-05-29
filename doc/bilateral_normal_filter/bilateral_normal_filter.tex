@@ -62,24 +62,24 @@
 \section{Abstract}
 Bilateral filter for processing a normal field defined over an input mesh, smooth the face normal and update the vertexes according the face normal.
 \section{The Filter}
-
-\section{Implementation}
-\begin{algorithm}
-\caption{Integrator algorithm}\label{euclid}
-\begin{algorithmic}
- \Procedure{Init Procedure}{}
-\State $\textit{h} \gets $\textit{T/time\_slice}
-\State $i \gets \textit{0}$
-\State $cur\_t \gets \textit{init\_time}$
-\EndProcedure
- \For{{$\textit{i} < $\textit{time\_slice}}}
- \State $\textit{construct vector field v}$
- \State$x = funcAdv(v(x,cur\_t)) + x$
- \State$cur\_t += h$
-\EndFor
-\end{algorithmic}
-\end{algorithm}
-
+\subsection{Normal Filter}
+Just directly apply the traditional bilateral filter to the normal field:
+\begin{equation}
+  n_i' = K_i \sum_{j\in N(i)} \zeta_{ij} W_c(\parallel c_j-c_i\parallel) W_s(\parallel n_j - n_i \parallel) n_j
+\end{equation}
+where $c_i, n_i$  is the center and normal of face i, $K_i$ is the nomalize factor. $W_c, W_s$ are Guass function, $\zeta_{ij}$ is the weight to account for the influence from surface sampling rate, choose the area $S_j$ of the face j:
+\begin{equation}
+  \begin{aligned}
+    K_i &= \sum_{j\in N(i)} \zeta_{ij} W_c(\parallel c_j-c_i\parallel) W_s(\parallel n_j - n_i \parallel) \\
+    W_c(\parallel c_j-c_i \parallel) &= exp(-\frac{(\parallel c_j-c_i \parallel)^2}{2\sigma_c^2})\\
+    W_c(\parallel n_j-n_i \parallel) &= exp(-\frac{(\parallel n_j-n_i \parallel)^2} {2\sigma_s^2})\\
+    \zeta_{ij} = S_j
+  \end{aligned}
+\end{equation}
+\subsection{Updating Vertexes}
+\begin{equation}
+  v_i' = v_i + \frac{1}{18} \sum_{v_j \in N_i^v} \sum_{ (v_i, v_j) \in \Delta F_m} n_m'(n_m' \cdot (v_j - v_i))
+\end{equation}
 \section{Problems And TODO}
 %% \begin{equation}\label{eq:area}
 %%   S = \pi r^2
