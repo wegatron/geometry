@@ -1,7 +1,7 @@
 #include "bilateral_normal_filter.h"
 
 #include <fstream>
-
+#include "vtk.h"
 using namespace std;
 
 #define E 2.7182818284590
@@ -14,7 +14,7 @@ zsw::BilateralNormalFilter::BilateralNormalFilter()
   ut_ = 15; // suitable for most cases
   b_s_ = 0.1; // the most important parameter, 0.1 is suitable for preserving features
   st_ = 3; // usually 3, can be larger if noise is in high level
-  b_c_ = 0.3; // should dynamiclly caculated as the average distance of 1-ring face center distance
+  // b_c_ = 0.3; // should dynamiclly caculated as the average distance of 1-ring face center distance
 }
 
 void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
@@ -23,12 +23,13 @@ void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
     std::cout << "smooth normal step " << i << std::endl;
     filterNormal(trimesh);
   }
-  // writeTriMesh("/home/wegatron/tmp/tooth_debug0.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_, trimesh.face_normal_);
+
   for(size_t i=0; i<ut_; ++i) {
     std::cout << "update vertex step " << i << std::endl;
     updateVertex(trimesh);
   }
-  jtf::mesh::save_obj("/home/wegatron/tmp/tooth_res.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_);
+  // jtf::mesh::save_obj("/home/wegatron/tmp/tooth_res.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_);
+  // writeTriMesh("/home/wegatron/tmp/tooth_debug0.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_, trimesh.face_normal_);
 }
 
 void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
@@ -170,4 +171,22 @@ void zsw::writeTriMesh(const std::string &filename, const zjucad::matrix::matrix
   // }
 
   ofs.close();
+}
+
+void zsw::writeVtk(const std::string &filename, const zjucad::matrix::matrix<size_t> &mesh,
+                   const zjucad::matrix::matrix<double> &node)
+{
+  size_t vn = node.size(2);
+
+  std::ofstream outf(filename.c_str());
+
+  outf.precision(15);
+
+  if (outf.fail()) {
+    std::cerr << "# [ ERROR: draw singularity to vtk ] cannot open file: "
+              << filename << std::endl;
+  }
+
+  tri2vtk(outf, &node[0], vn, &mesh[0], mesh.size(2));
+  outf.close();
 }

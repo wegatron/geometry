@@ -11,6 +11,7 @@ namespace zsw
   public:
     BilateralNormalFilter();
     void filter(jtf::mesh::tri_mesh &trimesh);
+    void setSt(size_t st) { st_ = st; }
   private:
     void filterNormal(jtf::mesh::tri_mesh &trimesh);
     void updateVertex(jtf::mesh::tri_mesh &trimesh);
@@ -29,6 +30,9 @@ namespace zsw
   void writeTriMesh(const std::string &filename, const zjucad::matrix::matrix<size_t> &mesh,
                     const zjucad::matrix::matrix<double> &node,
                     const zjucad::matrix::matrix<double> &normal);
+
+  void writeVtk(const std::string &filename, const zjucad::matrix::matrix<size_t> &mesh,
+                const zjucad::matrix::matrix<double> &node);
 }
 
 #endif /* BILATER_NORMAL_FILTER_H */
