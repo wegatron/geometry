@@ -71,7 +71,8 @@ Just directly apply the traditional bilateral filter to the normal field:
 where $c_i, n_i$  is the center and normal of face i, $K_i$ is the nomalize factor. $W_c, W_s$ are Guass function, $\zeta_{ij}$ is the weight to account for the influence from surface sampling rate, choose the area $S_j$ of the face j:
 \begin{equation}
   \begin{aligned}
-    K_i &= \sum_{j\in N(i)} \zeta_{ij} W_c(\parallel c_j-c_i\parallel) W_s(\parallel n_j - n_i \parallel) \\
+    K_i &= \sum_{j\in N(i)} \zeta_{ij} W_c(\parallel c_j-c_i\parallel) W_s(\parallel n_j - n_i \parallel)  [paper]\\
+    K_i &= 1/norm(\sum_{j\in N(i)} \zeta_{ij} W_c(\parallel c_j-c_i\parallel) W_s(\parallel n_j - n_i \parallel) n_j) [mine] \\
     W_c(\parallel c_j-c_i \parallel) &= exp(-\frac{(\parallel c_j-c_i \parallel)^2}{2\sigma_c^2})\\
     W_s(\parallel n_j-n_i \parallel) &= exp(-\frac{(\parallel n_j-n_i \parallel)^2} {2\sigma_s^2})\\
     \zeta_{ij} = S_j
@@ -96,9 +97,32 @@ The $\sigma_s$'s influence on $W_s$ is:
    {Blue $\sigma_s$ is 0.3, Red one is 0.9, the horizontal axis is the angle of face normal $n_i$ and $n_j$.}
 \centering
 \end{figure}
-From the Figure 1, as we want to preserve the feature of the model, I set $\sigma_s = 0.3$. For $\sigma_c$ set as the paper's saying: The $\sigma_c$  using the average distance of all adjacent facets in an input mesh generally works the best in our experiments.
+From the Figure 1, as we want to preserve the feature of the model, I set $\sigma_s = 0.3$. For $\sigma_c$ set as the paper's saying: The $\sigma_c$  using the average distance of all adjacent facets in an input mesh generally works the best in our experiments. \\
+For number of iterations for smoothing face normals usually 3, however if noise is in high level, this could be larger.\\
+For number of iterations for updating vertex positions 15 is suitable in most cases.
 \section{Details}
 One-ring face $N_{\rom{1}}$ is a set of faces that share edges with $f_i$, and the second type $N_{\rom{2}}$ is a set of faces that common vertices with $f_i$. As the paper's author speculate $N_{\rom{2}}$ is able to better characterize sharp features which is more suitable for CAD-like models. Here I using $N_{\rom{1}}$.
+\begin{algorithm}
+\caption{Filtering Normal One Iteration}\label{euclid}
+\begin{algorithmic}
+ \Procedure{Init Procedure}{}
+ \State caculate each face's area
+ \State caculate each face's normal matrix: fnormal
+ \State tmp\_fnormal = fnormal
+ \EndProcedure
+ \For{each face i in mesh}
+ \State query 1-ring face set of face i
+ \State new\_ni = (0,0,0)
+ \For{face j in face set}
+ \State caculate $W_c$  and $W_s$
+ \State new\_ni += $S_j*W_c*W_s*fnormal(colon(), j)$
+ \EndFor
+ \State tmp\_fnormal(colon(), i) = new\_ni / norm(new\_ni)
+\EndFor
+\State fnormal = tmp\_fnormal
+\end{algorithmic}
+\end{algorithm}
+
 %% \begin{equation}\label{eq:area}
 %%   S = \pi r^2
 %% \end{equation}

@@ -11,18 +11,19 @@ typedef zjucad::matrix::matrix<size_t> matrixst;
 
 zsw::BilateralNormalFilter::BilateralNormalFilter()
 {
-  st_ = 16;
-  ut_ = 20;
-  b_c_ = 0.3;
-  b_s_ = 0.18;
+  ut_ = 15; // suitable for most cases
+  b_s_ = 0.1; // the most important parameter, 0.1 is suitable for preserving features
+  st_ = 3; // usually 3, can be larger if noise is in high level
+  b_c_ = 0.3; // should dynamiclly caculated as the average distance of 1-ring face center distance
 }
 void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
 {
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " dynamiclly caculate the b_c_" << std::endl;
   for(size_t i=0; i<st_; ++i) {
     std::cout << "smooth normal step " << i << std::endl;
     filterNormal(trimesh);
   }
-  writeTriMesh("/home/wegatron/tmp/tooth_debug0.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_, trimesh.face_normal_);
+  // writeTriMesh("/home/wegatron/tmp/tooth_debug0.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_, trimesh.face_normal_);
   for(size_t i=0; i<ut_; ++i) {
     std::cout << "update vertex step " << i << std::endl;
     updateVertex(trimesh);
@@ -37,24 +38,28 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
   matrixst &mesh = trimesh.trimesh_.mesh_;
   matrixd &normal = trimesh.face_normal_;
   matrixd &face_area = trimesh.face_area_;
+  matrixd tmp_normal = normal;
   assert(node.size(1) == 3 && mesh.size(1) == 3 && normal.size(2)==mesh.size(2));
   for(size_t i=0; i<mesh.size(2); ++i) {
     // caculate c_i, n_i
     matrixd ci = ( node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)) )/3;
     matrixd ni = normal(colon(), i);
+    assert(fabs(zjucad::matrix::norm(ni)-1) < 1e-4);
     vector<size_t> fid_one_ring;
     if(!queryFidOneRing(i, trimesh, fid_one_ring)) { continue; } // boundary cell
-    double wa = 0.0;
+    // double wa = 0.0;
     matrixd new_ni = zjucad::matrix::zeros(3,1);
     for(const size_t fid : fid_one_ring) {
       const matrixd cj = ( node(colon(), mesh(0,fid)) + node(colon(), mesh(1,fid)) + node(colon(), mesh(2,fid)) )/3;
       const matrixd nj = normal(colon(), fid);
       const double w_tmp = face_area[fid]*pow(E, -dot(cj-ci, cj-ci)/b_c_)*pow(E, -dot(nj-ni, nj-ni)/b_s_);
-      wa += w_tmp;
+      // wa += w_tmp;
       new_ni += w_tmp * nj;
     }
-    normal(colon(), i) = new_ni/wa;
+    assert(zjucad::matrix::norm(ni) > 1e-4);
+    tmp_normal(colon(), i) = new_ni/norm(new_ni); // normalize
   }
+  normal = tmp_normal;
 }
 
 bool zsw::BilateralNormalFilter::queryFidOneRing(const size_t fid, const jtf::mesh::tri_mesh &trimesh,  std::vector<size_t> &fid_one_ring)
