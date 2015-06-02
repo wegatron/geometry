@@ -15,7 +15,8 @@ namespace zsw
     void filterNormal(jtf::mesh::tri_mesh &trimesh);
     void updateVertex(jtf::mesh::tri_mesh &trimesh);
     // return false if face is boundary face
-    bool queryFidOneRing(const size_t fid, const jtf::mesh::tri_mesh &trimesh, std::vector<size_t> &fid_one_ring);
+    bool queryFidOneRingI(const size_t fid, const jtf::mesh::tri_mesh &trimesh, std::vector<size_t> &fid_one_ring);
+    bool queryFidOneRingII(const size_t fid, const jtf::mesh::tri_mesh &trimesh, std::vector<size_t> &fid_one_ring);
     double calBc(const size_t fid, const std::vector<size_t> &fid_one_ring, const zjucad::matrix::matrix<size_t> &mesh,
                  const zjucad::matrix::matrix<double> &node);
 

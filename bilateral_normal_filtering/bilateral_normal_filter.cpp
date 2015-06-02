@@ -46,7 +46,7 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
     matrixd ni = normal(colon(), i);
     assert(fabs(zjucad::matrix::norm(ni)-1) < 1e-4);
     vector<size_t> fid_one_ring;
-    if(!queryFidOneRing(i, trimesh, fid_one_ring)) { continue; } // boundary cell
+    if(!queryFidOneRingI(i, trimesh, fid_one_ring)) { continue; } // boundary cell
     // double wa = 0.0;
     matrixd new_ni = zjucad::matrix::zeros(3,1);
     b_c_ = calBc(i, fid_one_ring, mesh, node);
@@ -63,7 +63,7 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
   normal = tmp_normal;
 }
 
-bool zsw::BilateralNormalFilter::queryFidOneRing(const size_t fid, const jtf::mesh::tri_mesh &trimesh,  std::vector<size_t> &fid_one_ring)
+bool zsw::BilateralNormalFilter::queryFidOneRingI(const size_t fid, const jtf::mesh::tri_mesh &trimesh,  std::vector<size_t> &fid_one_ring)
 {
   zjucad::matrix::matrix<size_t> vid = trimesh.trimesh_.mesh_(zjucad::matrix::colon(), fid);
 
@@ -100,6 +100,11 @@ bool zsw::BilateralNormalFilter::queryFidOneRing(const size_t fid, const jtf::me
   return true;
 }
 
+bool queryFidOneRingII(const size_t fid, const jtf::mesh::tri_mesh &trimesh, std::vector<size_t> &fid_one_ring)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  return false;
+}
 
 void zsw::BilateralNormalFilter::updateVertex(jtf::mesh::tri_mesh &trimesh)
 {
