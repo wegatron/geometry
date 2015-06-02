@@ -16,9 +16,9 @@ zsw::BilateralNormalFilter::BilateralNormalFilter()
   st_ = 3; // usually 3, can be larger if noise is in high level
   b_c_ = 0.3; // should dynamiclly caculated as the average distance of 1-ring face center distance
 }
+
 void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " dynamiclly caculate the b_c_" << std::endl;
   for(size_t i=0; i<st_; ++i) {
     std::cout << "smooth normal step " << i << std::endl;
     filterNormal(trimesh);
@@ -49,6 +49,7 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
     if(!queryFidOneRing(i, trimesh, fid_one_ring)) { continue; } // boundary cell
     // double wa = 0.0;
     matrixd new_ni = zjucad::matrix::zeros(3,1);
+    b_c_ = calBc(i, fid_one_ring, mesh, node);
     for(const size_t fid : fid_one_ring) {
       const matrixd cj = ( node(colon(), mesh(0,fid)) + node(colon(), mesh(1,fid)) + node(colon(), mesh(2,fid)) )/3;
       const matrixd nj = normal(colon(), fid);
@@ -116,6 +117,21 @@ void zsw::BilateralNormalFilter::updateVertex(jtf::mesh::tri_mesh &trimesh)
     node(colon(), mesh(1,i)) = v1 + ni*dot(ni, v2+v0-2*v1)/18.0;
     node(colon(), mesh(2,i)) = v2 + ni*dot(ni, v0+v1-2*v2)/18.0;
   }
+}
+
+double zsw::BilateralNormalFilter::calBc(const size_t fid, const std::vector<size_t> &fid_one_ring,
+                                         const zjucad::matrix::matrix<size_t> &mesh,
+                                         const zjucad::matrix::matrix<double> &node)
+{
+  using namespace zjucad::matrix;
+  matrixd ci = node(colon(), mesh(0, fid)) + node(colon(), mesh(1, fid)) + node(colon(), mesh(2, fid));
+  double dis = 0.0;
+  for(size_t t_fid : fid_one_ring) {
+    matrixd cj = node(colon(), mesh(0, t_fid)) + node(colon(), mesh(1, t_fid)) + node(colon(), mesh(2, t_fid));
+    dis += norm(ci-cj);
+  }
+  dis /= fid_one_ring.size();
+  return dis*dis;
 }
 
 void zsw::writeTriMesh(const std::string &filename, const zjucad::matrix::matrix<size_t> &mesh,
