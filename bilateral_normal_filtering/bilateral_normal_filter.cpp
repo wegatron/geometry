@@ -14,6 +14,7 @@ zsw::BilateralNormalFilter::BilateralNormalFilter()
   ut_ = 15; // suitable for most cases
   b_s_ = 0.1; // the most important parameter, 0.1 is suitable for preserving features
   st_ = 3; // usually 3, can be larger if noise is in high level, usually around 5
+  ring_type_ = ONE_EDGE_RING;
   // b_c_ = 0.3; // should dynamiclly caculated as the average distance of 1-ring face center distance
 }
 
@@ -44,25 +45,17 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
   preProcess(trimesh);
 #pragma omp parallel for
   for(size_t i=0; i<mesh.size(2); ++i) {
-    // caculate c_i, n_i
-    vector<size_t> fid_one_ring;
-// #if ONE_RING_I
-    // if(!queryFidOneRingI(i, trimesh, fid_one_ring)) { continue; } // boundary cell
-    queryFidOneRingI(i, trimesh, fid_one_ring);
-// #else
-//     queryFidOneRingII(i, mesh, fid_one_ring);
-// #endif
     matrixd ci = fc_(colon(), i);
     matrixd ni = normal(colon(), i);
 #if DEBUG
-    if(fid_one_ring.size()<3) {
-      std::cerr << "[INFO] fid" << i << " one ring: "<< fid_one_ring.size() << std::endl;
+    if(one_ring_.size()<3) {
+      std::cerr << "[INFO] fid" << i << " one ring: "<< one_ring_.size() << std::endl;
     }
 #endif
     double wa = 0.0;
     matrixd new_ni = zjucad::matrix::zeros(3,1);
-    b_c_ = calBc(i, fid_one_ring, mesh, node);
-    for(const size_t fid : fid_one_ring) {
+    b_c_ = calBc(i, mesh, node);
+    for(const size_t fid : one_ring_[i]) {
       const matrixd cj = fc_(colon(), fid);
       const matrixd nj = normal(colon(), fid);
       const double w_tmp = face_area[fid]*pow(E, -dot(cj-ci, cj-ci)/b_c_)*pow(E, -dot(nj-ni, nj-ni)/b_s_);
@@ -82,76 +75,29 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
   normal = tmp_normal;
 }
 
-bool zsw::BilateralNormalFilter::queryFidOneRingI(const size_t fid, const jtf::mesh::tri_mesh &trimesh,  std::vector<size_t> &fid_one_ring)
-{
-  zjucad::matrix::matrix<size_t> vid = trimesh.trimesh_.mesh_(zjucad::matrix::colon(), fid);
-
-  {
-    std::pair<size_t, size_t> res = trimesh.ea_->query(vid[0], vid[1]);
-    if(res.first == -1 || res.second == -1) {
-      // std::cout << vid[0] << " " << vid[1] << std::endl;
-      // std::cout << res.first << " " << res.second << std::endl;
-      return false;
-    }
-    if(res.first != fid) { fid_one_ring.push_back(res.first); }
-    else { fid_one_ring.push_back(res.second); }
-  }
-  {
-    std::pair<size_t, size_t> res = trimesh.ea_->query(vid[0], vid[2]);
-    if(res.first == -1 || res.second == -1) {
-      // std::cout << vid[0] << " " << vid[2] << std::endl;
-      // std::cout << res.first << " " << res.second << std::endl;
-      return false;
-    }
-    if(res.first != fid) { fid_one_ring.push_back(res.first); }
-    else { fid_one_ring.push_back(res.second); }
-  }
-  {
-    std::pair<size_t, size_t> res = trimesh.ea_->query(vid[1], vid[2]);
-    if(res.first == -1 || res.second == -1) {
-      // std::cout << vid[1] << " " << vid[2] << std::endl;
-      // std::cout << res.first << " " << res.second << std::endl;
-      return false;
-    }
-    if(res.first != fid) { fid_one_ring.push_back(res.first); }
-    else { fid_one_ring.push_back(res.second); }
-  }
-  return true;
-}
-
-void zsw::BilateralNormalFilter::queryFidOneRingII(const size_t fid, const matrixst &mesh, std::vector<size_t> &fid_one_ring)
-{
-  typedef std::multimap<size_t, size_t>::iterator mit;
-  assert(v2f_.size()!=0);
-  set<size_t> tmp_one_ring_f;
-  for(size_t i=0; i<3; ++i) {
-    std::pair<mit, mit> ret = v2f_.equal_range(mesh(i, fid));
-    for(mit tmp_it = ret.first; tmp_it!= ret.second; ++tmp_it) {
-      tmp_one_ring_f.insert(tmp_it->second);
-    }
-  }
-  tmp_one_ring_f.erase(fid);
-  fid_one_ring.resize(tmp_one_ring_f.size());
-  std::copy(tmp_one_ring_f.begin(), tmp_one_ring_f.end(), fid_one_ring.begin());
-}
-
 void zsw::BilateralNormalFilter::preProcess(const jtf::mesh::tri_mesh &trimesh)
 {
   using namespace zjucad::matrix;
-  const matrixst &mesh = trimesh.trimesh_.mesh_;
-#if !ONE_RING_I
-  for(size_t i=0; i<mesh.size(2); ++i) {
-    v2f_.insert(std::pair<size_t, size_t>(mesh(0,i),i));
-    v2f_.insert(std::pair<size_t, size_t>(mesh(1,i),i));
-    v2f_.insert(std::pair<size_t, size_t>(mesh(2,i),i));
+  if(ring_type_ == ONE_EDGE_RING) {
+    processEdgeOneRing(trimesh, one_ring_);
+  } else if(ring_type_ == ONE_VERTEX_RING) {
+    processVertexOneRing(trimesh, one_ring_);
   }
-#endif
-  fc_.resize(3, mesh.size(2));
-  const matrixd &node = trimesh.trimesh_.node_;
-  #pragma omp parallel for
-  for(size_t i=0;i<mesh.size(2); ++i) {
-    fc_(colon(), i) = (node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)))/3.0;
-  }
+  // #if !ONE_RING_I
+  //   for(size_t i=0; i<mesh.size(2); ++i) {
+  //     v2f_.insert(std::pair<size_t, size_t>(mesh(0,i),i));
+  //     v2f_.insert(std::pair<size_t, size_t>(mesh(1,i),i));
+  //     v2f_.insert(std::pair<size_t, size_t>(mesh(2,i),i));
+  //   }
+  // #endif
+    const matrixst &mesh = trimesh.trimesh_.mesh_;
+    fc_.resize(3, mesh.size(2));
+    const matrixd &node = trimesh.trimesh_.node_;
+#pragma omp parallel for
+    for(size_t i=0;i<mesh.size(2); ++i) {
+      fc_(colon(), i) = (node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)))/3.0;
+    }
+    // preprocess weight
 }
 
 void zsw::BilateralNormalFilter::updateVertex(jtf::mesh::tri_mesh &trimesh)
@@ -172,18 +118,19 @@ void zsw::BilateralNormalFilter::updateVertex(jtf::mesh::tri_mesh &trimesh)
   }
 }
 
-double zsw::BilateralNormalFilter::calBc(const size_t fid, const std::vector<size_t> &fid_one_ring,
+double zsw::BilateralNormalFilter::calBc(const size_t fid,
                                          const zjucad::matrix::matrix<size_t> &mesh,
                                          const zjucad::matrix::matrix<double> &node)
 {
   using namespace zjucad::matrix;
   matrixd ci = fc_(colon(), fid);
   double dis = 0.0;
-  for(size_t t_fid : fid_one_ring) {
+  assert(one_ring_[fid].size()!=0);
+  for(size_t t_fid : one_ring_[fid]) {
     matrixd cj = fc_(colon(), t_fid);
     dis += norm(ci-cj);
   }
-  dis /= fid_one_ring.size();
+  dis /= one_ring_[fid].size();
   return 2*dis*dis;
 }
 
@@ -236,4 +183,37 @@ void zsw::writeVtk(const std::string &filename, const zjucad::matrix::matrix<siz
 
   tri2vtk(outf, &node[0], vn, &mesh[0], mesh.size(2));
   outf.close();
+}
+
+void zsw::processEdgeOneRing(const jtf::mesh::tri_mesh &trimesh, std::vector<set<size_t>> &one_ring)
+{
+  using namespace zjucad::matrix;
+  const matrixst &mesh = trimesh.trimesh_.mesh_;
+  one_ring.resize(mesh.size(2));
+  #pragma omp parallel for
+  for(size_t fid=0; fid<mesh.size(2); ++fid) {
+    zjucad::matrix::matrix<size_t> vid = mesh(colon(), fid);
+    {
+      std::pair<size_t, size_t> res = trimesh.ea_->query(vid[0], vid[1]);
+      if(res.first != fid && res.first!=-1)   { one_ring[fid].insert(res.first); }
+      else if(res.second!=fid && res.second!=-1) { one_ring[fid].insert(res.second); }
+    }
+
+    {
+      std::pair<size_t, size_t> res = trimesh.ea_->query(vid[0], vid[2]);
+      if(res.first != fid && res.first!=-1)   { one_ring[fid].insert(res.first); }
+      else if(res.second!=fid && res.second!=-1) { one_ring[fid].insert(res.second); }
+    }
+
+    {
+      std::pair<size_t, size_t> res = trimesh.ea_->query(vid[1], vid[2]);
+      if(res.first != fid && res.first!=-1)   { one_ring[fid].insert(res.first); }
+      else if(res.second!=fid && res.second!=-1) { one_ring[fid].insert(res.second); }
+    }
+  }
+}
+
+void zsw::processVertexOneRing(const jtf::mesh::tri_mesh &trimesh, std::vector<set<size_t>> &one_ring)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }
