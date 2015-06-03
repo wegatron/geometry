@@ -41,10 +41,8 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
   matrixd &face_area = trimesh.face_area_;
   matrixd tmp_normal = normal;
   assert(node.size(1) == 3 && mesh.size(1) == 3 && normal.size(2)==mesh.size(2));
-#if !ONE_RING_I
   preProcess(trimesh);
-#endif
-  #pragma omp parallel for
+#pragma omp parallel for
   for(size_t i=0; i<mesh.size(2); ++i) {
     // caculate c_i, n_i
     vector<size_t> fid_one_ring;
@@ -54,7 +52,7 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
 #else
     queryFidOneRingII(i, mesh, fid_one_ring);
 #endif
-    matrixd ci = ( node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)) )/3;
+    matrixd ci = fc_(colon(), i);
     matrixd ni = normal(colon(), i);
 #if DEBUG
     if(fid_one_ring.size()<3) {
@@ -65,7 +63,7 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
     matrixd new_ni = zjucad::matrix::zeros(3,1);
     b_c_ = calBc(i, fid_one_ring, mesh, node);
     for(const size_t fid : fid_one_ring) {
-      const matrixd cj = ( node(colon(), mesh(0,fid)) + node(colon(), mesh(1,fid)) + node(colon(), mesh(2,fid)) )/3;
+      const matrixd cj = fc_(colon(), j);
       const matrixd nj = normal(colon(), fid);
       const double w_tmp = face_area[fid]*pow(E, -dot(cj-ci, cj-ci)/b_c_)*pow(E, -dot(nj-ni, nj-ni)/b_s_);
       wa += w_tmp;
@@ -141,10 +139,18 @@ void zsw::BilateralNormalFilter::preProcess(const jtf::mesh::tri_mesh &trimesh)
 {
   using namespace zjucad::matrix;
   const matrixst &mesh = trimesh.trimesh_.mesh_;
+#if !ONE_RING_I
   for(size_t i=0; i<mesh.size(2); ++i) {
     v2f_.insert(std::pair<size_t, size_t>(mesh(0,i),i));
     v2f_.insert(std::pair<size_t, size_t>(mesh(1,i),i));
     v2f_.insert(std::pair<size_t, size_t>(mesh(2,i),i));
+  }
+#endif
+  fc_.resize(3, mesh.size(2));
+  const matrixd &node = trimesh.trimesh_.node_;
+  #pragma omp parallel for
+  for(size_t i=0;i<mesh.size(2); ++i) {
+    fc_(colon(), i) = (node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)))/3.0;
   }
 }
 

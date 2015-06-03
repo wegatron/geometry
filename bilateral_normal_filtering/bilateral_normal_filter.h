@@ -26,7 +26,11 @@ namespace zsw
     double calBc(const size_t fid, const std::vector<size_t> &fid_one_ring, const zjucad::matrix::matrix<size_t> &mesh,
                  const zjucad::matrix::matrix<double> &node);
 
-    std::multimap<size_t, size_t> v2f_;
+    std::multimap<size_t, size_t> v2f_; // vertex 2 face using in query one ring unused
+
+    std::multimap<size_t, size_t> one_ring_;
+    zjucad::matrix::matrix<double> fc_; // face_center_
+
     size_t st_;  // number of iterations of smooth normal
     size_t ut_; // number of iterations of update vertexes
     double b_c_; // 2*sigma_c^2
