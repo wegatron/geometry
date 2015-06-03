@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.6)
 
 project(bilter_filter)
 
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};$ENV{HOME}/usr/share/cmake/Modules/")
+
 include($ENV{HOME}/usr/share/cmake/Modules/geo_sim_sdk.cmake)
 
 #include_directories(CMAKE_CURRENT_SOURCE_DIR/include)
@@ -14,6 +16,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
 ###
 ##FIND_PACKAGE
 ###
+
+find_package(Eigen3 REQUIRED)
+if(EIGEN3_FOUND)
+  include_directories(${EIGEN3_INCLUDE_DIR})
+endif(EIGEN3_FOUND)
+
 
 # add_subdirectory(src)
 

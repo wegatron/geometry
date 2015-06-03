@@ -41,38 +41,43 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
   matrixd &face_area = trimesh.face_area_;
   matrixd tmp_normal = normal;
   assert(node.size(1) == 3 && mesh.size(1) == 3 && normal.size(2)==mesh.size(2));
-#if !ONE_RING_I
   preProcess(trimesh);
-#endif
+#pragma omp parallel for
   for(size_t i=0; i<mesh.size(2); ++i) {
     // caculate c_i, n_i
-    matrixd ci = ( node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)) )/3;
-    matrixd ni = normal(colon(), i);
     vector<size_t> fid_one_ring;
-#if ONE_RING_I
-    if(!queryFidOneRingI(i, trimesh, fid_one_ring)) { continue; } // boundary cell
-#else
-    queryFidOneRingII(i, mesh, fid_one_ring);
-#endif
+// #if ONE_RING_I
+    // if(!queryFidOneRingI(i, trimesh, fid_one_ring)) { continue; } // boundary cell
+    queryFidOneRingI(i, trimesh, fid_one_ring);
+// #else
+//     queryFidOneRingII(i, mesh, fid_one_ring);
+// #endif
+    matrixd ci = fc_(colon(), i);
+    matrixd ni = normal(colon(), i);
+#if DEBUG
     if(fid_one_ring.size()<3) {
       std::cerr << "[INFO] fid" << i << " one ring: "<< fid_one_ring.size() << std::endl;
     }
+#endif
     double wa = 0.0;
     matrixd new_ni = zjucad::matrix::zeros(3,1);
     b_c_ = calBc(i, fid_one_ring, mesh, node);
     for(const size_t fid : fid_one_ring) {
-      const matrixd cj = ( node(colon(), mesh(0,fid)) + node(colon(), mesh(1,fid)) + node(colon(), mesh(2,fid)) )/3;
+      const matrixd cj = fc_(colon(), fid);
       const matrixd nj = normal(colon(), fid);
       const double w_tmp = face_area[fid]*pow(E, -dot(cj-ci, cj-ci)/b_c_)*pow(E, -dot(nj-ni, nj-ni)/b_s_);
       wa += w_tmp;
       new_ni += w_tmp * nj;
     }
     new_ni /= wa;
-    if(zjucad::matrix::norm(new_ni) > 1e-8) {
+    if(zjucad::matrix::norm(new_ni) > 1e-5) {
       tmp_normal(colon(), i) = new_ni/norm(new_ni); // normalize
-    } else {
+    }
+#if DEBUG
+    else {
       std::cerr << "normal so min" << std::endl;
     }
+#endif
   }
   normal = tmp_normal;
 }
@@ -134,10 +139,18 @@ void zsw::BilateralNormalFilter::preProcess(const jtf::mesh::tri_mesh &trimesh)
 {
   using namespace zjucad::matrix;
   const matrixst &mesh = trimesh.trimesh_.mesh_;
+#if !ONE_RING_I
   for(size_t i=0; i<mesh.size(2); ++i) {
     v2f_.insert(std::pair<size_t, size_t>(mesh(0,i),i));
     v2f_.insert(std::pair<size_t, size_t>(mesh(1,i),i));
     v2f_.insert(std::pair<size_t, size_t>(mesh(2,i),i));
+  }
+#endif
+  fc_.resize(3, mesh.size(2));
+  const matrixd &node = trimesh.trimesh_.node_;
+  #pragma omp parallel for
+  for(size_t i=0;i<mesh.size(2); ++i) {
+    fc_(colon(), i) = (node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)))/3.0;
   }
 }
 
@@ -164,14 +177,14 @@ double zsw::BilateralNormalFilter::calBc(const size_t fid, const std::vector<siz
                                          const zjucad::matrix::matrix<double> &node)
 {
   using namespace zjucad::matrix;
-  matrixd ci = node(colon(), mesh(0, fid)) + node(colon(), mesh(1, fid)) + node(colon(), mesh(2, fid));
+  matrixd ci = fc_(colon(), fid);
   double dis = 0.0;
   for(size_t t_fid : fid_one_ring) {
-    matrixd cj = node(colon(), mesh(0, t_fid)) + node(colon(), mesh(1, t_fid)) + node(colon(), mesh(2, t_fid));
+    matrixd cj = fc_(colon(), t_fid);
     dis += norm(ci-cj);
   }
   dis /= fid_one_ring.size();
-  return dis*dis;
+  return 2*dis*dis;
 }
 
 void zsw::writeTriMesh(const std::string &filename, const zjucad::matrix::matrix<size_t> &mesh,
