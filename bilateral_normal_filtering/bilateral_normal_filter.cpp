@@ -41,12 +41,22 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
   matrixd &face_area = trimesh.face_area_;
   matrixd tmp_normal = normal;
   assert(node.size(1) == 3 && mesh.size(1) == 3 && normal.size(2)==mesh.size(2));
+#if !ONE_RING_I
+  preProcess(trimesh);
+#endif
   for(size_t i=0; i<mesh.size(2); ++i) {
     // caculate c_i, n_i
     matrixd ci = ( node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)) )/3;
     matrixd ni = normal(colon(), i);
     vector<size_t> fid_one_ring;
+#if ONE_RING_I
     if(!queryFidOneRingI(i, trimesh, fid_one_ring)) { continue; } // boundary cell
+#else
+    queryFidOneRingII(i, mesh, fid_one_ring);
+#endif
+    if(fid_one_ring.size()<3) {
+      std::cerr << "[INFO] fid" << i << " one ring: "<< fid_one_ring.size() << std::endl;
+    }
     double wa = 0.0;
     matrixd new_ni = zjucad::matrix::zeros(3,1);
     b_c_ = calBc(i, fid_one_ring, mesh, node);
@@ -104,10 +114,31 @@ bool zsw::BilateralNormalFilter::queryFidOneRingI(const size_t fid, const jtf::m
   return true;
 }
 
-bool queryFidOneRingII(const size_t fid, const jtf::mesh::tri_mesh &trimesh, std::vector<size_t> &fid_one_ring)
+void zsw::BilateralNormalFilter::queryFidOneRingII(const size_t fid, const matrixst &mesh, std::vector<size_t> &fid_one_ring)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  return false;
+  typedef std::multimap<size_t, size_t>::iterator mit;
+  assert(v2f_.size()!=0);
+  set<size_t> tmp_one_ring_f;
+  for(size_t i=0; i<3; ++i) {
+    std::pair<mit, mit> ret = v2f_.equal_range(mesh(i, fid));
+    for(mit tmp_it = ret.first; tmp_it!= ret.second; ++tmp_it) {
+      tmp_one_ring_f.insert(tmp_it->second);
+    }
+  }
+  tmp_one_ring_f.erase(fid);
+  fid_one_ring.resize(tmp_one_ring_f.size());
+  std::copy(tmp_one_ring_f.begin(), tmp_one_ring_f.end(), fid_one_ring.begin());
+}
+
+void zsw::BilateralNormalFilter::preProcess(const jtf::mesh::tri_mesh &trimesh)
+{
+  using namespace zjucad::matrix;
+  const matrixst &mesh = trimesh.trimesh_.mesh_;
+  for(size_t i=0; i<mesh.size(2); ++i) {
+    v2f_.insert(std::pair<size_t, size_t>(mesh(0,i),i));
+    v2f_.insert(std::pair<size_t, size_t>(mesh(1,i),i));
+    v2f_.insert(std::pair<size_t, size_t>(mesh(2,i),i));
+  }
 }
 
 void zsw::BilateralNormalFilter::updateVertex(jtf::mesh::tri_mesh &trimesh)
