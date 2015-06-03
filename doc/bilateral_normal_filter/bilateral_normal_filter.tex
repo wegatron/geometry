@@ -122,7 +122,11 @@ One-ring face $N_{\rom{1}}$ is a set of faces that share edges with $f_i$, and t
 \State fnormal = tmp\_fnormal
 \end{algorithmic}
 \end{algorithm}
-
+\section{Limitations}
+As the author says, the iterative method cannot guarantee convergence, more iterations lead to smoother normal fields (i.e., possibly larger normal errors). I find more iterations lead to sharp edges which is not expected(see the cube's case). So this method has big limitations on mesh with high level noise.
+\section{Thinking}
+May be if we want to filter high level noise, we can't simply classify noise and feature just by face normal's difference by $W_s$,
+we need to extended to n-ring, and find a more intellectual way to tell them apart.
 %% \begin{equation}\label{eq:area}
 %%   S = \pi r^2
 %% \end{equation}

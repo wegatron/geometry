@@ -13,7 +13,7 @@ zsw::BilateralNormalFilter::BilateralNormalFilter()
 {
   ut_ = 15; // suitable for most cases
   b_s_ = 0.1; // the most important parameter, 0.1 is suitable for preserving features
-  st_ = 3; // usually 3, can be larger if noise is in high level
+  st_ = 3; // usually 3, can be larger if noise is in high level, usually around 5
   // b_c_ = 0.3; // should dynamiclly caculated as the average distance of 1-ring face center distance
 }
 
@@ -45,21 +45,24 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
     // caculate c_i, n_i
     matrixd ci = ( node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)) )/3;
     matrixd ni = normal(colon(), i);
-    assert(fabs(zjucad::matrix::norm(ni)-1) < 1e-4);
     vector<size_t> fid_one_ring;
     if(!queryFidOneRingI(i, trimesh, fid_one_ring)) { continue; } // boundary cell
-    // double wa = 0.0;
+    double wa = 0.0;
     matrixd new_ni = zjucad::matrix::zeros(3,1);
     b_c_ = calBc(i, fid_one_ring, mesh, node);
     for(const size_t fid : fid_one_ring) {
       const matrixd cj = ( node(colon(), mesh(0,fid)) + node(colon(), mesh(1,fid)) + node(colon(), mesh(2,fid)) )/3;
       const matrixd nj = normal(colon(), fid);
       const double w_tmp = face_area[fid]*pow(E, -dot(cj-ci, cj-ci)/b_c_)*pow(E, -dot(nj-ni, nj-ni)/b_s_);
-      // wa += w_tmp;
+      wa += w_tmp;
       new_ni += w_tmp * nj;
     }
-    assert(zjucad::matrix::norm(ni) > 1e-4);
-    tmp_normal(colon(), i) = new_ni/norm(new_ni); // normalize
+    new_ni /= wa;
+    if(zjucad::matrix::norm(new_ni) > 1e-8) {
+      tmp_normal(colon(), i) = new_ni/norm(new_ni); // normalize
+    } else {
+      std::cerr << "normal so min" << std::endl;
+    }
   }
   normal = tmp_normal;
 }

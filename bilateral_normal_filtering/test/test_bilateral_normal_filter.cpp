@@ -20,8 +20,24 @@ void filterTrimesh(const string &obj_prefix)
 
 int main(int argc, char *argv[])
 {
-  filterTrimesh("/home/wegatron/workspace/geometry/result/bilateral_filter/cube/cube");
-  filterTrimesh("/home/wegatron/workspace/geometry/result/bilateral_filter/newTest/3/UpperJaw_after");
-  filterTrimesh("/home/wegatron/workspace/geometry/result/bilateral_filter/newTest/4/buda");
+  // filterTrimesh("/home/wegatron/workspace/geometry/result/bilateral_filter/cube/cube");
+#pragma omp parallel sections
+  {
+    {
+      filterTrimesh("/home/wegatron/workspace/geometry/result/bilateral_filter/newTest/3/UpperJaw_after");
+    }
+#pragma omp section
+    {
+      filterTrimesh("/home/wegatron/workspace/geometry/result/bilateral_filter/newTest/4/buda");
+    }
+#pragma omp section
+    {
+    filterTrimesh("/home/wegatron/workspace/geometry/result/bilateral_filter/newTest/2/Tooth_15");
+  }
+#pragma omp section
+    {
+      filterTrimesh("/home/wegatron/workspace/geometry/result/bilateral_filter/newTest/6/UpperJaw");
+    }
+  }
   return 0;
 }
