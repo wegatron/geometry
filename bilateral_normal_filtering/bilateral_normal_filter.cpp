@@ -44,19 +44,23 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
 #if !ONE_RING_I
   preProcess(trimesh);
 #endif
+  #pragma omp parallel for
   for(size_t i=0; i<mesh.size(2); ++i) {
     // caculate c_i, n_i
-    matrixd ci = ( node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)) )/3;
-    matrixd ni = normal(colon(), i);
     vector<size_t> fid_one_ring;
 #if ONE_RING_I
-    if(!queryFidOneRingI(i, trimesh, fid_one_ring)) { continue; } // boundary cell
+    // if(!queryFidOneRingI(i, trimesh, fid_one_ring)) { continue; } // boundary cell
+    queryFidOneRingI(i, trimesh, fid_one_ring);
 #else
     queryFidOneRingII(i, mesh, fid_one_ring);
 #endif
+    matrixd ci = ( node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)) )/3;
+    matrixd ni = normal(colon(), i);
+#if DEBUG
     if(fid_one_ring.size()<3) {
       std::cerr << "[INFO] fid" << i << " one ring: "<< fid_one_ring.size() << std::endl;
     }
+#endif
     double wa = 0.0;
     matrixd new_ni = zjucad::matrix::zeros(3,1);
     b_c_ = calBc(i, fid_one_ring, mesh, node);
@@ -68,11 +72,14 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
       new_ni += w_tmp * nj;
     }
     new_ni /= wa;
-    if(zjucad::matrix::norm(new_ni) > 1e-8) {
+    if(zjucad::matrix::norm(new_ni) > 1e-5) {
       tmp_normal(colon(), i) = new_ni/norm(new_ni); // normalize
-    } else {
+    }
+#if DEBUG
+    else {
       std::cerr << "normal so min" << std::endl;
     }
+#endif
   }
   normal = tmp_normal;
 }

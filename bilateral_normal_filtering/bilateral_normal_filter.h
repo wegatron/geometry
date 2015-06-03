@@ -4,7 +4,9 @@
 #include <vector>
 #include <jtflib/mesh/trimesh.h>
 
-/* #define ONE_RING_I 1 */
+#define ONE_RING_I 1
+
+#define DEBUG 1
 
 namespace zsw
 {
