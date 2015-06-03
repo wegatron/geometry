@@ -63,7 +63,7 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
     matrixd new_ni = zjucad::matrix::zeros(3,1);
     b_c_ = calBc(i, fid_one_ring, mesh, node);
     for(const size_t fid : fid_one_ring) {
-      const matrixd cj = fc_(colon(), j);
+      const matrixd cj = fc_(colon(), fid);
       const matrixd nj = normal(colon(), fid);
       const double w_tmp = face_area[fid]*pow(E, -dot(cj-ci, cj-ci)/b_c_)*pow(E, -dot(nj-ni, nj-ni)/b_s_);
       wa += w_tmp;
@@ -177,14 +177,14 @@ double zsw::BilateralNormalFilter::calBc(const size_t fid, const std::vector<siz
                                          const zjucad::matrix::matrix<double> &node)
 {
   using namespace zjucad::matrix;
-  matrixd ci = node(colon(), mesh(0, fid)) + node(colon(), mesh(1, fid)) + node(colon(), mesh(2, fid));
+  matrixd ci = fc_(colon(), fid);
   double dis = 0.0;
   for(size_t t_fid : fid_one_ring) {
-    matrixd cj = node(colon(), mesh(0, t_fid)) + node(colon(), mesh(1, t_fid)) + node(colon(), mesh(2, t_fid));
+    matrixd cj = fc_(colon(), t_fid);
     dis += norm(ci-cj);
   }
   dis /= fid_one_ring.size();
-  return dis*dis;
+  return 2*dis*dis;
 }
 
 void zsw::writeTriMesh(const std::string &filename, const zjucad::matrix::matrix<size_t> &mesh,
