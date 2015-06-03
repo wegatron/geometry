@@ -45,17 +45,24 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
 #pragma omp parallel for
   for(size_t i=0; i<mesh.size(2); ++i) {
     // caculate c_i, n_i
+    vector<size_t> fid_one_ring;
+// #if ONE_RING_I
+    // if(!queryFidOneRingI(i, trimesh, fid_one_ring)) { continue; } // boundary cell
+    queryFidOneRingI(i, trimesh, fid_one_ring);
+// #else
+//     queryFidOneRingII(i, mesh, fid_one_ring);
+// #endif
     matrixd ci = fc_(colon(), i);
     matrixd ni = normal(colon(), i);
 #if DEBUG
-    if(one_ring_[i].size()<3) {
+    if(fid_one_ring.size()<3) {
       std::cerr << "[INFO] fid" << i << " one ring: "<< fid_one_ring.size() << std::endl;
     }
 #endif
     double wa = 0.0;
     matrixd new_ni = zjucad::matrix::zeros(3,1);
     b_c_ = calBc(i, fid_one_ring, mesh, node);
-    for(const size_t fid : one_ring_[i]) {
+    for(const size_t fid : fid_one_ring) {
       const matrixd cj = fc_(colon(), fid);
       const matrixd nj = normal(colon(), fid);
       const double w_tmp = face_area[fid]*pow(E, -dot(cj-ci, cj-ci)/b_c_)*pow(E, -dot(nj-ni, nj-ni)/b_s_);

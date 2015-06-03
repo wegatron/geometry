@@ -2,6 +2,7 @@
 #define BILATER_NORMAL_FILTER_H
 
 #include <vector>
+#include <set>
 #include <jtflib/mesh/trimesh.h>
 
 #include <Eigen/Sparse>
@@ -36,7 +37,7 @@ namespace zsw
     std::multimap<size_t, size_t> v2f_; // vertex 2 face using in query one ring unused
 
     zjucad::matrix::matrix<double> fc_; // face_center_
-    std::vector<set<size_t>> one_ring_;
+    std::vector<std::set<size_t>> one_ring_;
     Eigen::SparseMatrix<size_t> weight_;
 
     size_t st_;  // number of iterations of smooth normal
