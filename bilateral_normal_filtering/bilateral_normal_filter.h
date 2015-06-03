@@ -13,6 +13,10 @@ namespace zsw
   class BilateralNormalFilter final
   {
   public:
+    enum REGION_TYPE {
+      ONE_EDGE_REGION,
+      ONE_VERTEX_REGION
+    };
     BilateralNormalFilter();
     void filter(jtf::mesh::tri_mesh &trimesh);
     void setSt(size_t st) { st_ = st; }
