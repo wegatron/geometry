@@ -29,8 +29,6 @@ void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
     std::cout << "update vertex step " << i << std::endl;
     updateVertex(trimesh);
   }
-  // jtf::mesh::save_obj("/home/wegatron/tmp/tooth_res.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_);
-  // writeTriMesh("/home/wegatron/tmp/tooth_debug0.obj", trimesh.trimesh_.mesh_, trimesh.trimesh_.node_, trimesh.face_normal_);
 }
 
 void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
@@ -83,13 +81,6 @@ void zsw::BilateralNormalFilter::preProcess(const jtf::mesh::tri_mesh &trimesh)
   } else if(ring_type_ == ONE_VERTEX_RING) {
     processVertexOneRing(trimesh, one_ring_);
   }
-  // #if !ONE_RING_I
-  //   for(size_t i=0; i<mesh.size(2); ++i) {
-  //     v2f_.insert(std::pair<size_t, size_t>(mesh(0,i),i));
-  //     v2f_.insert(std::pair<size_t, size_t>(mesh(1,i),i));
-  //     v2f_.insert(std::pair<size_t, size_t>(mesh(2,i),i));
-  //   }
-  // #endif
     const matrixst &mesh = trimesh.trimesh_.mesh_;
     fc_.resize(3, mesh.size(2));
     const matrixd &node = trimesh.trimesh_.node_;
