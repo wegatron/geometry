@@ -39,7 +39,7 @@ namespace zsw
     RING_TYPE ring_type_;
     size_t st_;  // number of iterations of smooth normal
     size_t ut_; // number of iterations of update vertexes
-    double b_c_; // 2*sigma_c^2
+    /* double b_c_; // 2*sigma_c^2 */
     double b_s_; // 2*sigma_s^2
   };
 
