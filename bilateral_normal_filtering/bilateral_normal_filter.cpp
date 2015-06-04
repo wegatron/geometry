@@ -37,12 +37,9 @@ void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
 void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
 {
   using namespace zjucad::matrix;
-  const matrixd &node = trimesh.trimesh_.node_;
   const matrixst &mesh = trimesh.trimesh_.mesh_;
-  const matrixd &face_area = trimesh.face_area_;
   matrixd &normal = trimesh.face_normal_;
   matrixd tmp_normal = normal;
-  assert(node.size(1) == 3 && mesh.size(1) == 3 && normal.size(2)==mesh.size(2));
   #pragma omp parallel for
   for(size_t i=0; i<mesh.size(2); ++i) {
     double wa = 0.0;
@@ -77,8 +74,9 @@ void zsw::BilateralNormalFilter::preCompute(const jtf::mesh::tri_mesh &trimesh)
 
   // compute face center
   const matrixst &mesh = trimesh.trimesh_.mesh_;
-  fc_.resize(3, mesh.size(2));
   const matrixd &node = trimesh.trimesh_.node_;
+  assert(node.size(1) == 3 && mesh.size(1) == 3 && normal.size(2)==mesh.size(2));
+  fc_.resize(3, mesh.size(2));
 #pragma omp parallel for
   for(size_t i=0;i<mesh.size(2); ++i) {
     fc_(colon(), i) = (node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)))/3.0;
@@ -161,10 +159,6 @@ void zsw::writeTriMesh(const std::string &filename, const zjucad::matrix::matrix
   for(size_t i=0; i<mesh.size(2); ++i) {
     ofs << "f " << mesh(0,i)+1 << "//" << i  << " " << mesh(1,i)+1 << "//" << i  << " " << mesh(2,i)+1 << "//" << i << std::endl;
   }
-
-  // for(size_t i=0; i<mesh.size(2); ++i) {
-  //   ofs << "f " << mesh(0,i)+1 <<  " " << mesh(1,i)+1 << " " << mesh(2,i)+1 << std::endl;
-  // }
 
   ofs.close();
 }
