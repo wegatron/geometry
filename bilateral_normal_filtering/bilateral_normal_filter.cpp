@@ -81,14 +81,14 @@ void zsw::BilateralNormalFilter::preProcess(const jtf::mesh::tri_mesh &trimesh)
   } else if(ring_type_ == ONE_VERTEX_RING) {
     processVertexOneRing(trimesh, one_ring_);
   }
-    const matrixst &mesh = trimesh.trimesh_.mesh_;
-    fc_.resize(3, mesh.size(2));
-    const matrixd &node = trimesh.trimesh_.node_;
+  const matrixst &mesh = trimesh.trimesh_.mesh_;
+  fc_.resize(3, mesh.size(2));
+  const matrixd &node = trimesh.trimesh_.node_;
 #pragma omp parallel for
-    for(size_t i=0;i<mesh.size(2); ++i) {
-      fc_(colon(), i) = (node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)))/3.0;
-    }
-    // preprocess weight
+  for(size_t i=0;i<mesh.size(2); ++i) {
+    fc_(colon(), i) = (node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)))/3.0;
+  }
+  // preprocess weight
 }
 
 void zsw::BilateralNormalFilter::updateVertex(jtf::mesh::tri_mesh &trimesh)

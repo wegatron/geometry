@@ -21,18 +21,20 @@ namespace zsw
       ONE_VERTEX_RING
     };
     BilateralNormalFilter();
-    void filter(jtf::mesh::tri_mesh &trimesh);
     void setSt(size_t st) { st_ = st; }
     void setRingType(RING_TYPE ring_type) { ring_type_ = ring_type; }
+    void filter(jtf::mesh::tri_mesh &trimesh);
   private:
-    void filterNormal(jtf::mesh::tri_mesh &trimesh);
-    void updateVertex(jtf::mesh::tri_mesh &trimesh);
+
     void preProcess(const jtf::mesh::tri_mesh &trimesh);
     double calBc(const size_t fid, const zjucad::matrix::matrix<size_t> &mesh, const zjucad::matrix::matrix<double> &node);
 
+    void filterNormal(jtf::mesh::tri_mesh &trimesh);
+    void updateVertex(jtf::mesh::tri_mesh &trimesh);
+
     zjucad::matrix::matrix<double> fc_; // face_center_
     std::vector<std::set<size_t>> one_ring_;
-    Eigen::SparseMatrix<size_t> weight_;
+    Eigen::SparseMatrix<double> weight_;
 
     RING_TYPE ring_type_;
     size_t st_;  // number of iterations of smooth normal

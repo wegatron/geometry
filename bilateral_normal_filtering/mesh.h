@@ -64,7 +64,7 @@ namespace zsw {
     };
 
     class TriMesh{
-      Eigen::Matrix<size_t, 3, Eigen::Dynamic> tri_;
+      Matrixst tri_;
       Matrixd vertex_;
       // extra data
       std::shared_ptr<Matrixd> face_normal_;
