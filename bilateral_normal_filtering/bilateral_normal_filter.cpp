@@ -1,6 +1,8 @@
 #include "bilateral_normal_filter.h"
 
 #include <fstream>
+#include <chrono>
+
 #include <zjucad/matrix/io.h>
 #include "vtk.h"
 using namespace std;
@@ -21,17 +23,26 @@ zsw::BilateralNormalFilter::BilateralNormalFilter()
 
 void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
 {
+  auto t1 = std::chrono::high_resolution_clock::now();
   preCompute(trimesh);
-  std::cerr << "precompute done!" << std::endl;
+  auto t2 = std::chrono::high_resolution_clock::now();
+  std::cerr << "precompute  using:" << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+            << " milliseconds\n" << std::endl;
+
   for(size_t i=0; i<st_; ++i) {
     std::cout << "smooth normal step " << i << std::endl;
     filterNormal(trimesh);
   }
-
+  auto t3 = std::chrono::high_resolution_clock::now();
+  std::cerr << "filter normal using:" << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+            << "milliseconds\n" << std::endl;
   for(size_t i=0; i<ut_; ++i) {
     std::cout << "update vertex step " << i << std::endl;
     updateVertex(trimesh);
   }
+  auto t4 = std::chrono::high_resolution_clock::now();
+  std::cerr << "update vertex using:" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
+            << "milliseconds\n" << std::endl;
 }
 
 void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
@@ -85,14 +96,16 @@ void zsw::BilateralNormalFilter::preCompute(const jtf::mesh::tri_mesh &trimesh)
   const zjucad::matrix::matrix<double> &face_area = trimesh.face_area_;
   const matrixd &normal = trimesh.face_normal_;
   std::list<Eigen::Triplet<double>> triplet_list;
+#pragma omp parallel for
   for(size_t i = 0; i<mesh.size(2); ++i) {
-    double b_c = calBc(i, mesh, node);
-    matrixd ci = fc_(colon(), i);
-    matrixd ni = normal(colon(), i);
+    const double b_c = calBc(i, mesh, node);
+    const matrixd ci = fc_(colon(), i);
+    const matrixd ni = normal(colon(), i);
     for( size_t fid : one_ring_[i]) {
       const matrixd cj = fc_(colon(), fid);
       const matrixd nj = normal(colon(), fid);
       const double w_tmp = face_area[fid]*pow(E, -dot(cj-ci, cj-ci)/b_c)*pow(E, -dot(nj-ni, nj-ni)/b_s_);
+#pragma omp critical
       triplet_list.push_back(Eigen::Triplet<double>(i, fid, w_tmp));
     }
   }
@@ -103,18 +116,26 @@ void zsw::BilateralNormalFilter::preCompute(const jtf::mesh::tri_mesh &trimesh)
 void zsw::BilateralNormalFilter::updateVertex(jtf::mesh::tri_mesh &trimesh)
 {
   using namespace zjucad::matrix;
-
   matrixd &node = trimesh.trimesh_.node_;
   matrixst &mesh = trimesh.trimesh_.mesh_;
   matrixd &normal = trimesh.face_normal_;
+#pragma omp parallel for
   for(size_t i=0; i<mesh.size(2); ++i) {
-    matrixd v0 = node(colon(), mesh(0,i));
-    matrixd v1 = node(colon(), mesh(1,i));
-    matrixd v2 = node(colon(), mesh(2,i));
-    matrixd ni = normal(colon(), i);
-    node(colon(), mesh(0,i)) = v0 + ni*dot(ni, v2+v1-2*v0)/18.0;
-    node(colon(), mesh(1,i)) = v1 + ni*dot(ni, v2+v0-2*v1)/18.0;
-    node(colon(), mesh(2,i)) = v2 + ni*dot(ni, v0+v1-2*v2)/18.0;
+    const matrixd v0 = node(colon(), mesh(0,i));
+    const matrixd v1 = node(colon(), mesh(1,i));
+    const matrixd v2 = node(colon(), mesh(2,i));
+    const matrixd ni = normal(colon(), i);
+    const matrixd tmp_0 = v0  + ni*dot(ni, v2+v1-2*v0)/18.0;
+    const matrixd tmp_1 = v1 + ni*dot(ni, v2+v0-2*v1)/18.0;
+    const matrixd tmp_2 = v2 + ni*dot(ni, v0+v1-2*v2)/18.0;
+    for(size_t j=0; j<3; ++j) {
+#pragma omp atomic write
+      node(j, mesh(0,i)) = tmp_0[j];
+#pragma omp atomic write
+      node(j, mesh(1,i)) = tmp_1[j];
+#pragma omp atomic write
+      node(j, mesh(2,i)) = tmp_2[j];
+    }
   }
 }
 
