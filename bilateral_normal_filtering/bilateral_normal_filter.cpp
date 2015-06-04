@@ -21,8 +21,8 @@ zsw::BilateralNormalFilter::BilateralNormalFilter()
 
 void zsw::BilateralNormalFilter::filter(jtf::mesh::tri_mesh &trimesh)
 {
-  preProcess(trimesh);
-  std::cerr << "preprocess done!" << std::endl;
+  preCompute(trimesh);
+  std::cerr << "precompute done!" << std::endl;
   for(size_t i=0; i<st_; ++i) {
     std::cout << "smooth normal step " << i << std::endl;
     filterNormal(trimesh);
@@ -65,7 +65,7 @@ void zsw::BilateralNormalFilter::filterNormal(jtf::mesh::tri_mesh &trimesh)
   normal = tmp_normal;
 }
 
-void zsw::BilateralNormalFilter::preProcess(const jtf::mesh::tri_mesh &trimesh)
+void zsw::BilateralNormalFilter::preCompute(const jtf::mesh::tri_mesh &trimesh)
 {
   // compute one_ring
   using namespace zjucad::matrix;
@@ -84,19 +84,6 @@ void zsw::BilateralNormalFilter::preProcess(const jtf::mesh::tri_mesh &trimesh)
     fc_(colon(), i) = (node(colon(), mesh(0,i)) + node(colon(), mesh(1,i)) + node(colon(), mesh(2,i)))/3.0;
   }
 
-  // preprocess weight
-  // const zjucad::matrix::matrix<double> &face_area = trimesh.face_area_;
-  // const matrixd &face_normal = trimesh.face_normal_;
-  // std::list<Eigen::Triplet<double>> triplet_list;
-  // for(size_t i = 0; i<mesh.size(2); ++i) {
-  //   b_c_ = calBc(i, mesh, node);
-  //   for( size_t j : one_ring_[i]) {
-  //     double tmp_v = face_area[j]
-  //       * pow(E, -dot(fc_(colon(), i) - fc_(colon(), j), fc_(colon(), i) - fc_(colon(), j))/b_c_)
-  //       * pow(E, -dot(face_normal(colon(), i) - face_normal(colon(), j), face_normal(colon(), i) - face_normal(colon(), j))/b_s_);
-  //     triplet_list.push_back(Eigen::Triplet<double>(i, j, tmp_v));
-  //   }
-  // }
   const zjucad::matrix::matrix<double> &face_area = trimesh.face_area_;
   const matrixd &normal = trimesh.face_normal_;
   std::list<Eigen::Triplet<double>> triplet_list;
