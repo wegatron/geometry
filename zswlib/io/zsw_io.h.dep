@@ -1,0 +1,80 @@
+#ifndef ZSW_IO_H
+#define ZSW_IO_H
+
+#include <string>
+#include <map>
+#include <vector>
+
+#include <Eigen/Dense>
+
+#include <zjucad/matrix/matrix.h>
+
+namespace zsw{
+
+  namespace obj{
+    /**
+     *!!!Be careful, the Eigen Matrix must store in column-major(default storage major).
+     */
+    int readTexture(const std::string &path, std::map<int,int> &texture_map,
+                    Eigen::Matrix<double, 2, -1> &texture_points);
+    /**
+     *!!!Be careful, the Eigen Matrix must store in column-major(default storage major).
+     */
+    int readNormal(const std::string &path, std::map<int,int> &normal_map,
+                   Eigen::Matrix<double, 3, -1> &normals);
+    /**
+     * read a triangle mesh in obj.
+     * !!!Be careful, the Eigen Matrix must store in column-major(default storage major).
+     */
+    int readObjBasic(const std::string &path, Eigen::Matrix<double,3,-1> &vertexes,
+                     Eigen::Matrix<int,3,-1> &faces);
+
+    int writeObjMesh(const std::string &path, const Eigen::Matrix<double, 3, -1> &vertexes,
+                     const Eigen::Matrix<int, 3, -1> &faces,
+                     const Eigen::Matrix<double, 3, -1> *normals=NULL,
+                     const std::map<int,int> *normal_map=NULL,
+                     const std::string *mtl_file=NULL, const std::string *mtl_name=NULL,
+                     const Eigen::Matrix<double, 2, -1> *texture_points=NULL,
+                     const std::map<int,int> *texture_map=NULL);
+
+    struct material {
+      double color_[3][3];
+      std::string name_, texture_;
+    };
+
+    int read_mtl(const std::string &path, std::vector<material> &mats, const std::string &obj_path);
+
+    int load_obj_mesh(const std::string &path, zjucad::matrix::matrix<double> *vertexes,
+                      zjucad::matrix::matrix<int> *tris, zjucad::matrix::matrix<double> *normal=0,
+                      zjucad::matrix::matrix<double> *texture=0, std::vector<material> *mats=0);
+
+  }
+
+  enum FileType{ text=0, binary=1};
+  /**
+   * return 1 binary
+   * return 0 text
+   * other error
+   */
+  int fileType(const std::string &path);
+
+
+  int load_stl_binary(const std::string &path, zjucad::matrix::matrix<int> &tris,
+                      zjucad::matrix::matrix<double> &vertex);
+
+  template<typename T>
+    void read_binary(std::istream &is, T &t)
+    {
+      is.read((char*)(&t), sizeof(T));
+    }
+
+  int load_stl_ascii(const std::string &path, zjucad::matrix::matrix<int> &tris,
+                     zjucad::matrix::matrix<double> &vertex);
+
+  /* std::string& trim(std::string& str); */
+
+  int load_stl(const std::string &path, zjucad::matrix::matrix<int> &tris,
+               zjucad::matrix::matrix<double> &vertex);
+}
+
+#endif /* ZSW_IO_H */
