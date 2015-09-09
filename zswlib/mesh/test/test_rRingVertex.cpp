@@ -6,14 +6,14 @@
 int main(int argc, char *argv[])
 {
   zsw::mesh::TriMesh tm;
-  if(!OpenMesh::IO::read_mesh(tm, "E:/workspace/geometry/RBMLS/result/plane2.obj")) {
-    std::cerr << "read mesh: " << "E:/workspace/geometry/RBMLS/result/plane2.obj" << std::endl;
+  if(!OpenMesh::IO::read_mesh(tm, "/home/wegatron/data/3dmodels/sphere_out.obj")) {
+    std::cerr << "read mesh: " << "/home/wegatron/data/3dmodels/sphere_out.obj" << std::endl;
     return __LINE__;
   }
-  std::vector<zsw::FakeSet<size_t>> ring;
-  zsw::mesh::rRingVertex(tm, ring, 5);
-  BOOST_FOREACH(size_t vid, ring[4]) {
-    std::cout << vid << " ";
+  std::vector<zsw::FakeSet<std::size_t>> ring;
+  zsw::mesh::rRingVertex(tm,2, ring);
+  for(size_t vid : ring[1346]) {
+    std::cout << vid << std::endl;
   }
   return 0;
 }

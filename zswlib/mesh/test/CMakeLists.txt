@@ -35,7 +35,7 @@ endif(EIGEN3_FOUND)
 # include_directories(E:/usr/Windows/64/vc2010)
 # set(OPENMESH_LIBRARIES E:/usr/Windows/64/vc2010/OpenMesh/Core/bin/OpenMeshCore.lib)
 find_package(OpenMesh REQUIRED)
-include_directories($OPENMESH_INCLUDE_DIRS$)
+include_directories(${OPENMESH_INCLUDE_DIRS}$)
 
 # add_subdirectory(mesh)
 # add_subdirectory(log)
