@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 set( CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};$ENV{HOME}/usr/share/cmake/Modules/")
 
-project(isotopic_approximation)
+
 
 include($ENV{HOME}/usr/share/cmake/Modules/geo_sim_sdk.cmake)
 
@@ -12,6 +12,8 @@ link_geo_sim_sdk()
 #include_directories(CMAKE_CURRENT_SOURCE_DIR/include)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp -fPIC")
+
+project(test)
 
 ###
 ##FIND_PACKAGE
@@ -25,23 +27,7 @@ endif(EIGEN3_FOUND)
 find_package(OpenMesh REQUIRED)
 include_directories(${OPENMESH_INCLUDE_DIRS})
 
-# add_subdirectory(src)
 
-file(GLOB headers *.h)
-file(GLOB src *.cpp)
+add_executable(test_sampling test_sampling.cpp)
 
-add_library(isotropic_approximat SHARED ${headers} ${src})
-
-target_link_libraries(isotropic_approximat ${OPENMESH_LIBRARIES})
-
-add_subdirectory(test)
-
-# add_subdirectory()
-
-# aux_source_directory_with_headers(. src headers)
-
-# add_library_from_dir(name mode dir)
-# add_executable_from_dir(name dir)
-
-# default_install_cxx(TARGET name)
-# default_install_c(TARGET name)
+target_link_libraries(test_sampling isotropic_approximat ${OPENMESH_LIBRARIES})
