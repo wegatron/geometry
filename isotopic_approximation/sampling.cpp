@@ -91,6 +91,50 @@ void zsw::Sampler::calcLocalCoordinate(const Eigen::Matrix<zsw::Scalar, 3, 3> &t
 
 void zsw::Sampler::resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points, Eigen::Matrix<zsw::Scalar,3,1> &sample_point)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  // adjust the sample point into the triangle
+  if(!sameSide(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), sample_point)) {
+    projectToLine(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,1), sample_point);
+    if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,1)-sample_point) < -zsw::const_val::eps) { // sample point is not on v0-v1
+      if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,1)-tri_points.block<3,1>(0,0)) > 0) {
+        sample_point = tri_points.block<3,1>(0,1);
+      } else { sample_point = tri_points.block<3,1>(0,0); }
+    }
+  } else if(!sameSide(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,2), tri_points.block<3,1>(0,1), sample_point)) {
+    projectToLine(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,2), sample_point);
+    if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,2)-sample_point) < -zsw::const_val::eps) { // sample point is not on v0-v2
+      if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,2)-tri_points.block<3,1>(0,0)) > 0) {
+        sample_point = tri_points.block<3,1>(0,2);
+      } else { sample_point = tri_points.block<3,1>(0,0); }
+    }
+  } else if(!sameSide(tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), tri_points.block<3,1>(0,0), sample_point)) {
+    projectToLine(tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), sample_point);
+    if((sample_point-tri_points.block<3,1>(0,1)).dot(tri_points.block<3,1>(0,2)-sample_point) < -zsw::const_val::eps) { // sample point is not on v1-v2
+      if((sample_point-tri_points.block<3,1>(0,1)).dot(tri_points.block<3,1>(0,2)-tri_points.block<3,1>(0,1)) > 0) {
+        sample_point = tri_points.block<3,1>(0,2);
+      } else { sample_point = tri_points.block<3,1>(0,1); }
+    }
+  }
+}
 
+bool zsw::Sampler::sameSide(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt)
+{
+  Eigen::Matrix<zsw::Scalar,3,3> v_check;
+  v_check.block<3,1>(0,0) = v1-v0;
+  v_check.block<3,1>(0,1) = vr-v0;
+  v_check.block<3,1>(0,2) = vt-v0;
+#ifndef NDEBUG
+  assert(fabs(v_check.determinant()) < zsw::const_val::eps);
+#endif
+  Eigen::Matrix<zsw::Scalar,3,1> vn0 = v_check.block<3,1>(0,0).cross(v_check.block<3,1>(0,1));
+  Eigen::Matrix<zsw::Scalar,3,1> vn1 = v_check.block<3,1>(0,0).cross(v_check.block<3,1>(0,2));
+  return vn0.dot(vn1)>zsw::const_val::eps;
+}
+
+void zsw::Sampler::projectToLine(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, Eigen::Matrix<zsw::Scalar,3,1> &sample_point)
+{
+  Eigen::Matrix<zsw::Scalar,3,1> ab = v1-v0;
+  Eigen::Matrix<zsw::Scalar,3,1> ac = sample_point-v0;
+  Eigen::Matrix<zsw::Scalar,3,1> cb = v1-sample_point;
+  Eigen::Matrix<zsw::Scalar,3,1> n=(ab.cross(ac)).cross(ab);  n.normalize();
+  sample_point += (cb.dot(n)) * n;
 }

@@ -45,9 +45,19 @@ void test_sampleTriangle()
   ofs.close();
 }
 
+void test_sameSide()
+{
+  Eigen::Matrix<zsw::Scalar,3,1> v0, v1, vr, vt;
+  v0 << -1, 0, 0; v1 << 5, 1, 0;
+  vr << 0, 0, 0; vt << 0, 0.1667, 0;
+  zsw::Sampler sampler;
+  std::cerr << sampler.sameSide(v0,v1,vr,vt) << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
-  test_sampleTriangle();
+  // test_sampleTriangle();
   //test_calcLocalCoordinate();
+  test_sameSide();
   return 0;
 }

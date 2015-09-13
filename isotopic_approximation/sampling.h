@@ -23,7 +23,16 @@ namespace zsw
      * if not move onto the triangle, make sure the new circle cover the area of the triangle covered by the earlier circle.
      */
     void resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points, Eigen::Matrix<zsw::Scalar,3,1> &sample_point);
+
+    /***
+     * check if vr and vt is in the same side of line v0, v1
+     * all the point are in the same plane.
+     */
+    bool sameSide(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt);
+
+    void projectToLine(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, Eigen::Matrix<zsw::Scalar,3,1> &sample_point);
   };
+
 }
 
 #endif /* SAMPLING_H */
