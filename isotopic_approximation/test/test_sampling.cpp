@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <zswlib/const_val.h>
 #include "../sampling.h"
 
 using namespace std;
@@ -54,10 +55,30 @@ void test_sameSide()
   std::cerr << sampler.sameSide(v0,v1,vr,vt) << std::endl;
 }
 
+void test_projectToLine()
+{
+  Eigen::Matrix<zsw::Scalar,3,1> a = Eigen::Matrix<zsw::Scalar,3,1>::Random();
+  Eigen::Matrix<zsw::Scalar,3,1> b = Eigen::Matrix<zsw::Scalar,3,1>::Random();
+  Eigen::Matrix<zsw::Scalar,3,1> c0 = Eigen::Matrix<zsw::Scalar,3,1>::Random();
+  Eigen::Matrix<zsw::Scalar,3,1> c1 = c0;
+  zsw::Sampler sampler;
+  sampler.projectToLine(a, b, c1);
+  if(fabs((c1-c0).dot(b-a)) > zsw::const_val::eps) {
+    std::cerr << "Error with projectToLine!" << std::endl;
+  } else if(((c1-a).cross(b-a)).norm() > zsw::const_val::eps) {
+    std::cerr << "Error with projectToLine!" << std::endl;
+  }
+  std::cerr << "a " << a.transpose() << std::endl;
+  std::cerr << "b " << b.transpose() << std::endl;
+  std::cerr << "c0 " << c0.transpose() << std::endl;
+  std::cerr << "c1 " << c1.transpose() << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
   // test_sampleTriangle();
   //test_calcLocalCoordinate();
-  test_sameSide();
+  // test_sameSide();
+  test_projectToLine();
   return 0;
 }
