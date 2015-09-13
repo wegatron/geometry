@@ -74,11 +74,40 @@ void test_projectToLine()
   std::cerr << "c1 " << c1.transpose() << std::endl;
 }
 
+void test_resolvePoint()
+{
+  {
+    Eigen::Matrix<zsw::Scalar,3,3> tri_points;
+    tri_points<<0,0,2,
+      0,4,2,
+      0,0,0;
+    Eigen::Matrix<zsw::Scalar,3,1> sample_point;
+    sample_point << 2,3,0;
+    zsw::Sampler sampler;
+    sampler.resolvePoint(tri_points, sample_point);
+    std::cerr << sample_point.transpose() << std::endl;
+  }
+
+  {
+    Eigen::Matrix<zsw::Scalar,3,3> tri_points;
+    tri_points<<0,4,2,
+      0,0,2,
+      0,0,0;
+    Eigen::Matrix<zsw::Scalar,3,1> sample_point;
+    sample_point << 2,3,0;
+    zsw::Sampler sampler;
+    sampler.resolvePoint(tri_points, sample_point);
+    std::cerr << sample_point.transpose() << std::endl;
+  }
+
+}
+
 int main(int argc, char *argv[])
 {
-  // test_sampleTriangle();
+  test_sampleTriangle();
   //test_calcLocalCoordinate();
   // test_sameSide();
-  test_projectToLine();
+  // test_projectToLine();
+  // test_resolvePoint();
   return 0;
 }
