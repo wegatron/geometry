@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <OpenMesh/Core/IO/MeshIO.hh>
 #include <zswlib/const_val.h>
 #include "../sampling.h"
 
@@ -99,12 +100,38 @@ void test_resolvePoint()
     sampler.resolvePoint(tri_points, sample_point);
     std::cerr << sample_point.transpose() << std::endl;
   }
+}
 
+void test_sampleing()
+{
+  zsw::mesh::TriMesh tm;
+  if(!OpenMesh::IO::read_mesh(tm, "/home/wegatron/workspace/geometry/data/cube.obj")) {
+    std::cerr << "[ERROR] can't read mesh: /home/wegatron/workspace/geometry/data/cube.obj"<< std::endl;
+    return;
+  }
+  zsw::Sampler sampler;
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> samples;
+  sampler.sampleSigmaDense(tm, 0.03, samples);
+
+  // write obj file
+  ofstream ofs("/home/wegatron/tmp.obj", std::ofstream::out);
+  for(zsw::mesh::TriMesh::ConstFaceIter f_it=tm.faces_begin(); f_it!=tm.faces_end(); ++f_it) {
+    ofs << "f";
+    for(zsw::mesh::TriMesh::FaceVertexIter fv_it=tm.fv_iter(*f_it); fv_it.is_valid(); ++fv_it) {
+      ofs << " " << fv_it->idx()+1;
+    }
+  }
+
+  for(Eigen::Matrix<zsw::Scalar,3,1> &tmp_sample : samples) {
+    ofs << "v " << tmp_sample.transpose() << std::endl;
+  }
+  ofs.close();
 }
 
 int main(int argc, char *argv[])
 {
-  test_sampleTriangle();
+  //test_sampleTriangle();
+  test_sampleing();
   //test_calcLocalCoordinate();
   // test_sameSide();
   // test_projectToLine();

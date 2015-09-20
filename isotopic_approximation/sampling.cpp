@@ -14,6 +14,9 @@ void zsw::Sampler::sampleSigmaDense(const zsw::mesh::TriMesh &tm, const zsw::Sca
     }
     sampleTriangle(tri_points, sigma, samples);
   }
+  for(zsw::mesh::TriMesh::ConstVertexIter v_it=tm.vertices_begin(); v_it!=tm.vertices_end(); ++v_it) {
+    samples.push_back(tm.point(*v_it));
+  }
 }
 
 void zsw::Sampler::sampleTriangle(Eigen::Matrix<zsw::Scalar, 3, 3> tri_points, const zsw::Scalar sigma, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples)
@@ -49,10 +52,11 @@ void zsw::Sampler::sampleTriangle(Eigen::Matrix<zsw::Scalar, 3, 3> tri_points, c
       // resolve point
       Eigen::Matrix<zsw::Scalar,3,1> tmp_sample;
       tmp_sample << tmp_x+sigma*0.7071067811865475244, tmp_y-sigma*0.7071067811865475244, 0;
-      resolvePoint(tri_points, tmp_sample);
-      if(reflection) { tmp_sample(1) = -tmp_sample(1); }
-      tmp_sample = inv_rotate*tmp_sample-translate;
-      samples.push_back(tmp_sample);
+      if(resolvePoint(tri_points, tmp_sample)) {
+        if(reflection) { tmp_sample(1) = -tmp_sample(1); }
+        tmp_sample = inv_rotate*tmp_sample-translate;
+        samples.push_back(tmp_sample);
+      }
     }
     bound_x[0] += step_x[0];
     bound_x[1] += step_x[1];
@@ -64,10 +68,11 @@ void zsw::Sampler::sampleTriangle(Eigen::Matrix<zsw::Scalar, 3, 3> tri_points, c
     for(zsw::Scalar tmp_x=bound_x[0]; tmp_x<bound_x[1]; tmp_x+=step) {
       Eigen::Matrix<zsw::Scalar,3,1> tmp_sample;
       tmp_sample << tmp_x+sigma*0.7071067811865475244, tmp_y-sigma*0.7071067811865475244, 0;
-      resolvePoint(tri_points, tmp_sample);
-      if(reflection) { tmp_sample(1) = -tmp_sample(1); }
-      tmp_sample = inv_rotate*tmp_sample-translate;
-      samples.push_back(tmp_sample);
+      if(resolvePoint(tri_points, tmp_sample)) {
+        if(reflection) { tmp_sample(1) = -tmp_sample(1); }
+        tmp_sample = inv_rotate*tmp_sample-translate;
+        samples.push_back(tmp_sample);
+      }
     }
   }
 }
@@ -84,36 +89,40 @@ void zsw::Sampler::calcLocalCoordinate(const Eigen::Matrix<zsw::Scalar, 3, 3> &t
 
   // let x1 one the x axis
   m<<1,0,0;
-  n=tri_points.block<3,1>(0,1)-tri_points.block<3,1>(0,0);
+  n=rotate*(tri_points.block<3,1>(0,1)-tri_points.block<3,1>(0,0));
   qn = Eigen::Quaternion<zsw::Scalar>::FromTwoVectors(n,m);
   rotate = qn.toRotationMatrix() * rotate;
 }
 
-void zsw::Sampler::resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points, Eigen::Matrix<zsw::Scalar,3,1> &sample_point)
+bool zsw::Sampler::resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points, Eigen::Matrix<zsw::Scalar,3,1> &sample_point)
 {
   // adjust the sample point into the triangle
   if(!sameSide(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), sample_point)) {
     projectToLine(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,1), sample_point);
     if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,1)-sample_point) < -zsw::const_val::eps) { // sample point is not on v0-v1
-      if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,1)-tri_points.block<3,1>(0,0)) > 0) {
-        sample_point = tri_points.block<3,1>(0,1);
-      } else { sample_point = tri_points.block<3,1>(0,0); }
+      return false;
+      // if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,1)-tri_points.block<3,1>(0,0)) > 0) {
+      //   sample_point = tri_points.block<3,1>(0,1);
+      // } else { sample_point = tri_points.block<3,1>(0,0); }
     }
   } else if(!sameSide(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,2), tri_points.block<3,1>(0,1), sample_point)) {
     projectToLine(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,2), sample_point);
     if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,2)-sample_point) < -zsw::const_val::eps) { // sample point is not on v0-v2
-      if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,2)-tri_points.block<3,1>(0,0)) > 0) {
-        sample_point = tri_points.block<3,1>(0,2);
-      } else { sample_point = tri_points.block<3,1>(0,0); }
+      return false;
+      // if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,2)-tri_points.block<3,1>(0,0)) > 0) {
+      //   sample_point = tri_points.block<3,1>(0,2);
+      // } else { sample_point = tri_points.block<3,1>(0,0); }
     }
   } else if(!sameSide(tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), tri_points.block<3,1>(0,0), sample_point)) {
     projectToLine(tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), sample_point);
     if((sample_point-tri_points.block<3,1>(0,1)).dot(tri_points.block<3,1>(0,2)-sample_point) < -zsw::const_val::eps) { // sample point is not on v1-v2
-      if((sample_point-tri_points.block<3,1>(0,1)).dot(tri_points.block<3,1>(0,2)-tri_points.block<3,1>(0,1)) > 0) {
-        sample_point = tri_points.block<3,1>(0,2);
-      } else { sample_point = tri_points.block<3,1>(0,1); }
+      return false;
+      // if((sample_point-tri_points.block<3,1>(0,1)).dot(tri_points.block<3,1>(0,2)-tri_points.block<3,1>(0,1)) > 0) {
+      //   sample_point = tri_points.block<3,1>(0,2);
+      // } else { sample_point = tri_points.block<3,1>(0,1); }
     }
   }
+  return true;
 }
 
 bool zsw::Sampler::sameSide(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt)

@@ -21,8 +21,9 @@ namespace zsw
     /***
      * check if sample point is inner the triangle,
      * if not move onto the triangle, make sure the new circle cover the area of the triangle covered by the earlier circle.
+     * if the point should move to the triangle point, then discard this point, as each triangle point will be sample at last.
      */
-    void resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points, Eigen::Matrix<zsw::Scalar,3,1> &sample_point);
+    bool resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points, Eigen::Matrix<zsw::Scalar,3,1> &sample_point);
 
     /***
      * check if vr and vt is in the same side of line v0, v1
