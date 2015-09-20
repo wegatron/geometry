@@ -29,5 +29,7 @@ include_directories(${OPENMESH_INCLUDE_DIRS})
 
 
 add_executable(test_sampling test_sampling.cpp)
+add_executable(test_gen_surf test_surf_genator.cpp)
 
 target_link_libraries(test_sampling isotropic_approximat ${OPENMESH_LIBRARIES})
+target_link_libraries(test_gen_surf isotropic_approximat ${OPENMESH_LIBRARIES})

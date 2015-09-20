@@ -9,7 +9,7 @@ namespace zsw
   {
   public:
     SurfaceGenerator() {}
-    void genSurface(const zsw::Scalar dis, zsw::mesh::TriMesh &tm, std::pair<zsw::mesh::TriMesh, zsw::mesh::TriMesh> &surf_mesh);
+    void genSurface(const zsw::Scalar dis, zsw::mesh::TriMesh &tm, zsw::mesh::TriMesh &bo_mesh, zsw::mesh::TriMesh &bi_mesh);
   };
 }
 
