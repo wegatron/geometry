@@ -1,11 +1,14 @@
 #include "surface_generator.h"
 
+#include <iostream>
+
 void zsw::SurfaceGenerator::genSurface(const zsw::Scalar dis, zsw::mesh::TriMesh &tm,
                                        zsw::mesh::TriMesh &bo_mesh, zsw::mesh::TriMesh &bi_mesh)
 {
   if(!tm.has_vertex_normals()) {
+    tm.request_face_normals();
     tm.request_vertex_normals();
-    tm.update_vertex_normals();
+    tm.update_normals();
   }
   bo_mesh  = tm;  bi_mesh  = tm;
   for(int i=0; i<tm.n_vertices(); ++i) {
