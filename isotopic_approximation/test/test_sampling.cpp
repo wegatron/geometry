@@ -105,8 +105,8 @@ void test_resolvePoint()
 void test_sampleing()
 {
   zsw::mesh::TriMesh tm;
-  if(!OpenMesh::IO::read_mesh(tm, "/home/wegatron/workspace/geometry/data/cube.obj")) {
-    std::cerr << "[ERROR] can't read mesh: /home/wegatron/workspace/geometry/data/cube.obj"<< std::endl;
+  if(!OpenMesh::IO::read_mesh(tm, "/home/wegatron/workspace/geometry/data/dragon.obj")) {
+    std::cerr << "[ERROR] can't read mesh: /home/wegatron/workspace/geometry/data/dragon.obj"<< std::endl;
     return;
   }
   zsw::Sampler sampler;
@@ -120,6 +120,10 @@ void test_sampleing()
     for(zsw::mesh::TriMesh::FaceVertexIter fv_it=tm.fv_iter(*f_it); fv_it.is_valid(); ++fv_it) {
       ofs << " " << fv_it->idx()+1;
     }
+    ofs << endl;
+  }
+  for(zsw::mesh::TriMesh::ConstVertexIter v_it=tm.vertices_begin(); v_it!=tm.vertices_end(); ++v_it) {
+    ofs << "v " << (tm.point(*v_it)).transpose() << endl;
   }
 
   for(Eigen::Matrix<zsw::Scalar,3,1> &tmp_sample : samples) {
