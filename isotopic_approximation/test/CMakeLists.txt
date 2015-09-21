@@ -27,9 +27,14 @@ endif(EIGEN3_FOUND)
 find_package(OpenMesh REQUIRED)
 include_directories(${OPENMESH_INCLUDE_DIRS})
 
+find_package(CGAL REQUIRED)
+include_directories(${CGAL_INCLUDE_DIRS})
+
 
 add_executable(test_sampling test_sampling.cpp)
 add_executable(test_gen_surf test_surf_genator.cpp)
+add_executable(test_cgal_triangulation test_triangle.cpp)
 
 target_link_libraries(test_sampling isotropic_approximat ${OPENMESH_LIBRARIES})
 target_link_libraries(test_gen_surf isotropic_approximat ${OPENMESH_LIBRARIES})
+target_link_libraries(test_cgal_triangulation ${CGAL_LIBRARY} ${GMP_LIBRARIES})

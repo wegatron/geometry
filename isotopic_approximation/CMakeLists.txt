@@ -25,6 +25,9 @@ endif(EIGEN3_FOUND)
 find_package(OpenMesh REQUIRED)
 include_directories(${OPENMESH_INCLUDE_DIRS})
 
+find_package(CGAL REQUIRED)
+include_directories(${CGAL_INCLUDE_DIRS})
+
 # add_subdirectory(src)
 
 file(GLOB headers *.h)
