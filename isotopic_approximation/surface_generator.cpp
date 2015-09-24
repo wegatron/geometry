@@ -17,3 +17,10 @@ void zsw::SurfaceGenerator::genSurface(const zsw::Scalar dis, zsw::mesh::TriMesh
     bi_mesh.set_point(pt_h, tm.point(pt_h)-dis*tm.normal(pt_h));
   }
 }
+
+void zsw::SurfaceGenerator::genPoints(const zsw::Scalar dis, std::vector<Delaunay::Point> &bz_points,
+                                      std::vector<Delaunay::Point> &bo_points,
+                                      std::vector<Delaunay::Point> &bi_points)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+}

@@ -29,17 +29,23 @@ namespace zsw {
 
     struct Tet
     {
-      size_t pt_ids_[4];
+      size_t pt_ids_[4]; // sorted
       std::vector<Point> sample_points_;
     };
 
-    TetMesh(const zsw::mesh::TriMesh &zero_mesh, const zsw::mesh::TriMesh &bo_mesh, const zsw::mesh::TriMesh &bi_mesh);
+    TetMesh(const std::vector<Point> bz_points, const std::vector<Point> &bo_points, const std::vector<Point> &bi_points);
+
+    /*** clean invalid points
+     * update tets and edges(keep invalid tets and edges)
+     */
+    void cleanup();
     void simplify();
     void writeVtk(const std::string &filepath);
     void writeZeroSetSurface(const std::string &filepath);
   private:
+    std::vector<Tet> tets_;
     std::vector<TetPoint> tet_points_;
-    Eigen::Matrix<size_t, 2, 1> edges_;
+    std::vector<std::pair<size_t, size_t>> edges_;
     std::vector<size_t> pf_;
   };
 }

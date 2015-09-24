@@ -3,6 +3,8 @@
 #include "../triangulation.h"
 #include "../surface_generator.h"
 
+using namespace std;
+
 int main(int argc, char *argv[])
 {
   zsw::mesh::TriMesh input_mesh;
@@ -10,9 +12,9 @@ int main(int argc, char *argv[])
     std::cerr << "[ERROR] can't read mesh!" << std::endl;
   }
   zsw::SurfaceGenerator sfg;
-  zsw::mesh::TriMesh bo_mesh, bi_mesh;
-  sfg.genSurface(0.05, input_mesh, bo_mesh, bi_mesh);
-  zsw::TetMesh tm(input_mesh, bo_mesh, bi_mesh);
+  vector<zsw::Point> bz_points, bo_points, bi_points;
+  sfg.genPoints(0.05, bz_points, bo_points, bi_points);
+  zsw::TetMesh tm(bz_points, bo_points, bi_points);
   tm.simplify();
   tm.writeVtk("/home/wegatron/tmp.vtk");
   return 0;
