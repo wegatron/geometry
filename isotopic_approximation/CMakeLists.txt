@@ -33,11 +33,12 @@ include_directories(${CGAL_INCLUDE_DIRS})
 file(GLOB headers *.h)
 file(GLOB src *.cpp)
 
-add_library(isotropic_approximat SHARED ${headers} ${src})
+add_library(isotropic_approximate SHARED ${headers} ${src})
 
-target_link_libraries(isotropic_approximat ${OPENMESH_LIBRARIES})
+target_link_libraries(isotropic_approximate ${OPENMESH_LIBRARIES})
 
 add_subdirectory(test)
+add_subdirectory(app)
 
 # add_subdirectory()
 

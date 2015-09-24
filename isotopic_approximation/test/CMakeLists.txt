@@ -35,6 +35,6 @@ add_executable(test_sampling test_sampling.cpp)
 add_executable(test_gen_surf test_surf_genator.cpp)
 add_executable(test_cgal_triangulation test_triangle.cpp)
 
-target_link_libraries(test_sampling isotropic_approximat ${OPENMESH_LIBRARIES})
-target_link_libraries(test_gen_surf isotropic_approximat ${OPENMESH_LIBRARIES})
+target_link_libraries(test_sampling isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY})
+target_link_libraries(test_gen_surf isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY})
 target_link_libraries(test_cgal_triangulation ${CGAL_LIBRARY} ${GMP_LIBRARIES})

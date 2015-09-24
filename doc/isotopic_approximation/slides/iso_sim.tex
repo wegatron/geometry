@@ -104,16 +104,42 @@ ZJU\\ % Your institution for the title page
 \end{frame}
 
 \begin{frame}
-\frametitle{Overview} % Table of contents slide, comment this block out to remove it
+\frametitle{Background} % Table of contents slide, comment this block out to remove it
 \tableofcontents %Throughout your presentation, if you choose to use \section{} and \subsection{} commands, these will automatically be printed on this slide as an overview of your presentation
+\begin{block}{Relate Work}
+  Many method for mesh approximation, but inperfect on dealing with self-intersects, heterogeneous data, and very coarse approximations.
+\end{block}
 \begin{block}{Target}
-Generate a triangle surface mesh within a tolerance volume $\Omega$, isotropic to the boundary components of $\Omega$ and with a low triangle count.
+Generate a triangle surface mesh within a tolerance volume $\Omega$, isotopic to the boundary components of $\Omega$ and with a low triangle count.
 \end{block}
 \begin{example}[Result]
   \begin{figure}[h]
     \includegraphics[width=6cm]{res}
   \end{figure}
 \end{example}
+\end{frame}
+
+\begin{frame}
+  
+\frametitle{Main Idea}
+\begin{figure}
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{main_idea}
+    \caption{inner and outer boundary}
+    %\label{fig:y equals x}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{main_idea_2}
+    \caption{triangulation and zero set}
+    %\label{fig:three sin x}
+  \end{subfigure}
+  %\caption{constratint}
+  %\label{fig:three graphs}
+\end{figure}
 \end{frame}
 
 %----------------------------------------------------------------------------------------
