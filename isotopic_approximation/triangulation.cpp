@@ -10,7 +10,7 @@ using namespace std;
 
 namespace zsw
 {
-  TetMesh::TetMesh(const vector<Point> bz_points, const vector<Point> &bo_points, const vector<Point> &bi_points)
+  TetMesh::TetMesh(const vector<Point> bz_points, const vector<Point> &bo_points, const vector<Point> &bi_points) : pf_(bz_points.size()*3, -1)
   {
     std::vector<pair<Point, size_t>> tmo; // outer tetmesh and inner tetmesh
     size_t cnt = -1;
@@ -31,13 +31,13 @@ namespace zsw
     Delaunay ti(tmi.begin(), tmi.end());
     // fill data
     for(const Point &pt : bz_points) {
-      tet_points_.push_back({true, pt, {}});
+      tet_points_.push_back({0, pt, {}});
     }
     for(const Point &pt : bo_points) {
-      tet_points_.push_back({false, pt, {}});
+      tet_points_.push_back({1, pt, {}});
     }
     for(const Point &pt : bi_points) {
-      tet_points_.push_back({false, pt, {}});
+      tet_points_.push_back({-1, pt, {}});
     }
 
     ASSURE(to.is_valid(), exit(__LINE__));
@@ -54,18 +54,31 @@ namespace zsw
       tet_points_[p_ids[2]].tet_ids_.push_back(tet_id);
       tet_points_[p_ids[3]].tet_ids_.push_back(tet_id);
       // @todo take sample points
-      std::cerr << " @TODO take sample points in the tet!" << std::endl;
     }
 
-    // edges
-    for(Delaunay::Finite_edges_iterator eit=to.finite_edges_begin();
-        eit!=to.finite_edges_end(); ++eit) {
-      // pair<size_t, size_t> edge(eit->vertex(0)->info(), eit->vertex(1)->info());
-      // if(edge.first > edge.second) { swap(edge.first, edge.second); }
-      edges_.push_back(pair<size_t, size_t>(eit->second, eit->third));
-      std::cerr << "@TODO check edge is half edge or not!" << std::endl;
+    for(Delaunay::Finite_cells_iterator cit=ti.finite_cells_begin();
+        cit!=ti.finite_cells_end(); ++cit) {
+      size_t p_ids[4] = {cit->vertex(0)->info(), cit->vertex(1)->info(), cit->vertex(2)->info(), cit->vertex(3)->info()};
+      tets_.push_back({{p_ids[0], p_ids[1], p_ids[2], p_ids[3]}, {}});
+      ++tet_id;
+      tet_points_[p_ids[0]].tet_ids_.push_back(tet_id);
+      tet_points_[p_ids[1]].tet_ids_.push_back(tet_id);
+      tet_points_[p_ids[2]].tet_ids_.push_back(tet_id);
+      tet_points_[p_ids[3]].tet_ids_.push_back(tet_id);
+      // @todo take sample points
     }
 
+    std::cerr << "cell num:" << tet_id << std::endl;
+    std::cerr << " @TODO take sample points in the tet!" << std::endl;
+    std::cerr << "@TODO add edges!" << std::endl;
+    // // edges
+    // for(Delaunay::Finite_edges_iterator eit=to.finite_edges_begin();
+    //     eit!=to.finite_edges_end(); ++eit) {
+    //   // pair<size_t, size_t> edge(eit->vertex(0)->info(), eit->vertex(1)->info());
+    //   // if(edge.first > edge.second) { swap(edge.first, edge.second); }
+    //   edges_.push_back(pair<size_t, size_t>(eit->second, eit->third));
+    //   //std::cerr << "@TODO check edge is half edge or not!" << std::endl;
+    // }
   }
 
   void TetMesh::simplify()
@@ -88,7 +101,7 @@ namespace zsw
 
     std::vector<size_t> id_map(tet_points_.size(), -1);
     for(size_t i=0; i<pf_.size(); ++i) {
-      size_t tmp = pf_[i];
+      size_t tmp = i;
       while(pf_[tmp] != -1) { tmp = pf_[tmp]; }
       id_map[i] = index[tmp];
     }
@@ -122,15 +135,21 @@ namespace zsw
       pts_data.push_back(tet_point.pt_data_[1]);
       pts_data.push_back(tet_point.pt_data_[2]);
     }
-    for(const Tet &tet : tets_) {
-      if(tet.pt_ids_[0]==tet.pt_ids_[1] || tet.pt_ids_[1] == tet.pt_ids_[2]  || tet.pt_ids_[2] == tet.pt_ids_[3]) { continue;  }
-      tets_data.push_back(tet.pt_ids_[0]+1);
-      tets_data.push_back(tet.pt_ids_[1]+1);
-      tets_data.push_back(tet.pt_ids_[2]+1);
-      tets_data.push_back(tet.pt_ids_[3]+1);
+    for(Tet &tet : tets_) {
+      if(!isValidTet(tet)) { continue; }
+      if(tet_points_[tet.pt_ids_[0]].point_type_==tet_points_[tet.pt_ids_[1]].point_type_ &&
+         tet_points_[tet.pt_ids_[1]].point_type_==tet_points_[tet.pt_ids_[2]].point_type_ &&
+         tet_points_[tet.pt_ids_[2]].point_type_==tet_points_[tet.pt_ids_[3]].point_type_) { continue; } // useless tet the same type
+
+      tets_data.push_back(tet.pt_ids_[0]);
+      tets_data.push_back(tet.pt_ids_[1]);
+      tets_data.push_back(tet.pt_ids_[2]);
+      tets_data.push_back(tet.pt_ids_[3]);
     }
     size_t n_pts = pts_data.size()/3;
     size_t n_tets = tets_data.size()/4;
+    std::cout << "[INFO] point size:" << n_pts << std::endl;
+    std::cout << "[INFO] tet size:" << n_tets << std::endl;
     tet2vtk(ofs, &pts_data[0], n_pts, &tets_data[0], n_tets);
   }
 
@@ -142,7 +161,7 @@ namespace zsw
   bool TetMesh::isValidTet(Tet &tet)
   {
     for(size_t i=0; i<4; ++i) {
-      for(; pf_[tet.p_ids_[i]]!=-1; tet.p_ids_[i]=pf_[tet.p_ids_[i]]);
+      for(; pf_[tet.pt_ids_[i]]!=-1; tet.pt_ids_[i]=pf_[tet.pt_ids_[i]]);
     }
     sort(&(tet.pt_ids_[0]), &(tet.pt_ids_[0])+4);
     return (tet.pt_ids_[0]!=tet.pt_ids_[1]) &&  (tet.pt_ids_[1]!=tet.pt_ids_[2])

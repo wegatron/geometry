@@ -8,12 +8,13 @@ using namespace std;
 int main(int argc, char *argv[])
 {
   zsw::mesh::TriMesh input_mesh;
-  if(!OpenMesh::IO::read_mesh(input_mesh, "/home/wegatron/workspace/geometry/data/dragon.obj")) {
+  std::string file_path="/home/wegatron/workspace/geometry/data/sphere.obj";
+  if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     std::cerr << "[ERROR] can't read mesh!" << std::endl;
   }
   zsw::SurfaceGenerator sfg;
   vector<zsw::Point> bz_points, bo_points, bi_points;
-  sfg.genPoints(0.05, input_mesh, bz_points, bo_points, bi_points);
+  sfg.genPoints(0.2, input_mesh, bz_points, bo_points, bi_points);
   zsw::TetMesh tm(bz_points, bo_points, bi_points);
   tm.simplify();
   tm.writeVtk("/home/wegatron/tmp.vtk");

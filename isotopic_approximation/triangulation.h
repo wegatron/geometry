@@ -22,7 +22,7 @@ namespace zsw {
   public:
     struct TetPoint
     {
-      bool iszero_; // is in zero set
+      char point_type_; // outer_boundary 1, zero_set 0, inner_boundary -1
       Point pt_data_;
       std::vector<size_t> tet_ids_;
     };
@@ -44,7 +44,7 @@ namespace zsw {
     void writeZeroSetSurface(const std::string &filepath);
   private:
     bool isValidTet(Tet &tet);
-    bool isValidEdge(pair<size_t, size_t> &edge);
+    bool isValidEdge(std::pair<size_t, size_t> &edge);
     std::vector<Tet> tets_;
     std::vector<TetPoint> tet_points_;
     std::vector<std::pair<size_t, size_t>> edges_;
