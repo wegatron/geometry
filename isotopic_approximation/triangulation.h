@@ -38,11 +38,13 @@ namespace zsw {
     /*** clean invalid points
      * update tets and edges(keep invalid tets and edges)
      */
-    void cleanup();
+    void cleanPoints();
     void simplify();
     void writeVtk(const std::string &filepath);
     void writeZeroSetSurface(const std::string &filepath);
   private:
+    bool isValidTet(Tet &tet);
+    bool isValidEdge(pair<size_t, size_t> &edge);
     std::vector<Tet> tets_;
     std::vector<TetPoint> tet_points_;
     std::vector<std::pair<size_t, size_t>> edges_;

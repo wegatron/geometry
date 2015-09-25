@@ -1,0 +1,16 @@
+MY PROJECT -*- mode: org -*-
+
+** 对于一个输入mesh我生成两个边界， 内边界和外边界，然后对源网格做一个edge collapse，保证做完edge collapse之后的mesh不会和内外边界相交.
+
+** 读入模型生成内外边界， 定义源网格顶点为bz_points, 外边界顶点为bo_points, 内边界顶点为bi_points
+
+** 3d triangulation (bz_points 和 bo_points) (bz_points 和 bi_points) 然后将两个tetmesh合并. <为了保证所有bz_points仍然构成一个surface mesh, 但这种做法对一些特殊情况有可能还是有问题， 如果不行再做改进>
+
+
+** 对tetmesh 内部做一个均匀采样.
+
+** 对bz_point 构成的edge, 做edge collapse, 如果能在Kernel region 中找到采样点， 并且满足Link condition.
+这里没有去判断新的边是否会和内外边界相交，因为在kernel region中选点已经保证了这个条件被满足.
+循环遍历，直到找不到这样的边为止.
+
+** 得到结果

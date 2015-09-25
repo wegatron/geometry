@@ -22,7 +22,7 @@ namespace zsw
   public:
     SurfaceGenerator() {}
     void genSurface(const zsw::Scalar dis, zsw::mesh::TriMesh &tm, zsw::mesh::TriMesh &bo_mesh, zsw::mesh::TriMesh &bi_mesh);
-    void genPoints(const zsw::Scalar dis, std::vector<Delaunay::Point> &bz_points, std::vector<Delaunay::Point> &bo_points,
+    void genPoints(const zsw::Scalar dis, zsw::mesh::TriMesh &tm, std::vector<Delaunay::Point> &bz_points, std::vector<Delaunay::Point> &bo_points,
                    std::vector<Delaunay::Point> &bi_points);
   };
 }

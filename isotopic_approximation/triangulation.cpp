@@ -1,8 +1,10 @@
 #include "triangulation.h"
 
+//#include <algorithm>
 #include <fstream>
 #include <zswlib/mesh/vtk.h>
 #include <zswlib/error_ctrl.h>
+
 
 using namespace std;
 
@@ -71,7 +73,7 @@ namespace zsw
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
-  void TetMesh::cleanup()
+  void TetMesh::cleanPoints()
   {
     // set new index
     std::vector<TetPoint> n_tet_points;
@@ -114,7 +116,7 @@ namespace zsw
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
     std::vector<zsw::Scalar> pts_data;
     std::vector<size_t> tets_data;
-    cleanup();
+    cleanPoints();
     for(const TetPoint &tet_point : tet_points_) {
       pts_data.push_back(tet_point.pt_data_[0]);
       pts_data.push_back(tet_point.pt_data_[1]);
@@ -135,5 +137,22 @@ namespace zsw
   void TetMesh::writeZeroSetSurface(const std::string &filepath)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  bool TetMesh::isValidTet(Tet &tet)
+  {
+    for(size_t i=0; i<4; ++i) {
+      for(; pf_[tet.p_ids_[i]]!=-1; tet.p_ids_[i]=pf_[tet.p_ids_[i]]);
+    }
+    sort(&(tet.pt_ids_[0]), &(tet.pt_ids_[0])+4);
+    return (tet.pt_ids_[0]!=tet.pt_ids_[1]) &&  (tet.pt_ids_[1]!=tet.pt_ids_[2])
+      &&  (tet.pt_ids_[2]!=tet.pt_ids_[3]);
+  }
+
+  bool TetMesh::isValidEdge(pair<size_t, size_t> &edge)
+  {
+    for(; pf_[edge.first]!=-1; edge.first=pf_[edge.first]);
+    for(; pf_[edge.second]!=-1; edge.second=pf_[edge.second]);
+    return edge.first!=edge.second;
   }
 }
