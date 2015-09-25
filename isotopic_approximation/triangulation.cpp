@@ -80,15 +80,29 @@ namespace zsw
 
     for(Delaunay::Finite_edges_iterator eit=ti.finite_edges_begin();
         eit!=ti.finite_edges_end(); ++eit) {
-      if(tet_points_[eit->first].point_type_==0 && tet_points_[eit->second].point_type_==0) { continue; }
+      if(tet_points_[eit->second].point_type_==0 && tet_points_[eit->third].point_type_==0) { continue; }
       edges_.push_back(pair<size_t, size_t>(eit->second, eit->third));
     }
   }
 
   void TetMesh::simplify()
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    // collapse ZEdges
+    bool collapsable = true;
+    while(collapsable) {
+      collapsable = false;
+      for(pair<size_t,size_t> &edge : edges_) {
+        if(tet_points_[edge.first].point_type_==0 && tet_points_[edge.second].point_type_==0) {
+          if(collapseZEdge(edge)) { collapsable=true; break; }
+        }
+      }
+    }
+  }
 
+  bool TetMesh::collapseZEdge(std::pair<size_t,size_t> &edge)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    return false;
   }
 
   void TetMesh::cleanPoints()

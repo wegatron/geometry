@@ -159,3 +159,25 @@ void zsw::Sampler::projectToLine(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const
   Eigen::Matrix<zsw::Scalar,3,1> n=(ab.cross(ac)).cross(ab);  n.normalize();
   sample_point += (cb.dot(n)) * n;
 }
+
+void zsw::sampleTet(const zsw::Scalar dense, const Eigen::Matrix<zsw::Scalar, 3, 4> &tet_points, std::vector<Point> sample_points)
+{
+  Eigen::Matrix<zsw::Scalar, 3, 2> bbox;
+  calcBbox<zsw::Scalar, 3, 4>(tet_points, bbox);
+  for(zsw::Scalar v0=bbox(0,0); v0<bbox(0,1); v0+=dense) {
+    for(zsw::Scalar v1=bbox(0,0); v1<bbox(0,1); v1+=dense) {
+      for(zsw::Scalar v2=bbox(0,0); v2<bbox(0,1); v2+=dense) {
+        Point pt(v0,v1,v2);
+        if(inTet(pt, tet_points)) {
+          sample_points.push_back(pt);
+        }
+      }
+    }
+  }
+}
+
+bool zsw::inTet(const Point &pt, const Eigen::Matrix<zsw::Scalar,3,4> &tet_points)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  return false;
+}

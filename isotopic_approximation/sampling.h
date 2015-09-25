@@ -3,10 +3,10 @@
 
 #include <vector>
 #include <zswlib/mesh/mesh_type.h>
+#include "cgal_common.h"
 
 namespace zsw
 {
-
   class Sampler  final
   {
   public:
@@ -34,6 +34,30 @@ namespace zsw
     void projectToLine(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, Eigen::Matrix<zsw::Scalar,3,1> &sample_point);
   };
 
+  void sampleTet(const zsw::Scalar dense, const Eigen::Matrix<zsw::Scalar, 3, 4> &tet_points, std::vector<Point> sample_points);
+
+  template<typename SCALAR, size_t DIMENSION, size_t N>
+  void calcBbox(const Eigen::Matrix<SCALAR, DIMENSION, N> &points, Eigen::Matrix<SCALAR, DIMENSION, 2> &bbox)
+  {
+    assert(points.cols()==DIMENSION && points.rows()==N);
+    assert(bbox.cols()==DIMENSION);
+    assert(N>0);
+    bbox.template block<DIMENSION, 1>(0,0);
+    bbox.template block<DIMENSION,1>(0,0)=points.template block<DIMENSION,1>(0,0);
+    bbox.template block<DIMENSION,1>(0,1) = points.template block<DIMENSION,1>(0,0);
+    for(size_t i=1; i<N; ++i) {
+      for(size_t di=0; di<DIMENSION; ++di) {
+        if(points(di,i) < bbox(di, 0)) {
+          bbox(di,0) = points(di,i);
+        } else if(points(di,i) > bbox(di,1)) {
+          bbox(di,1) = points(di,i);
+        }
+      }
+    }
+  }
+  bool inTet(const Point &pt, const Eigen::Matrix<zsw::Scalar,3,4> &tet_points);
 }
+
+
 
 #endif /* SAMPLING_H */
