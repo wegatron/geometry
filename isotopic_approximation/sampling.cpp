@@ -127,25 +127,11 @@ bool zsw::Sampler::resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points
 
 bool zsw::sameSide2D(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt)
 {
-  // std::cerr << "--------------------" << std::endl;
-  // std::cerr << v0.transpose() << std::endl;
-  // std::cerr << v1.transpose() << std::endl;
-  // std::cerr << vr.transpose() << std::endl;
-  // std::cerr << vt.transpose() << std::endl;
-  // std::cerr << "--------------------" << std::endl;
   Eigen::Matrix<zsw::Scalar,3,3> v_check;
   v_check.block<3,1>(0,0) = v1-v0;
   v_check.block<3,1>(0,1) = vr-v0;
   v_check.block<3,1>(0,2) = vt-v0;
-#ifndef NDEBUG
   assert(fabs(v_check.determinant()) < zsw::const_val::eps);
-  // if(fabs(v_check.determinant()) > zsw::const_val::eps) {
-  //   std::cerr << "v0 " << v0.transpose() << std::endl;
-  //   std::cerr << "v1 " << v1.transpose() << std::endl;
-  //   std::cerr << "vr " << vr.transpose() << std::endl;
-  //   std::cerr << "vt " << vt.transpose() << std::endl;
-  // }
-#endif
   Eigen::Matrix<zsw::Scalar,3,1> vn0 = v_check.block<3,1>(0,0).cross(v_check.block<3,1>(0,1));
   Eigen::Matrix<zsw::Scalar,3,1> vn1 = v_check.block<3,1>(0,0).cross(v_check.block<3,1>(0,2));
   return vn0.dot(vn1)>zsw::const_val::eps;

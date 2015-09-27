@@ -25,7 +25,8 @@ namespace zsw {
       std::vector<Point> sample_points_;
     };
 
-    TetMesh(const std::vector<Point> bz_points, const std::vector<Point> &bo_points, const std::vector<Point> &bi_points);
+    TetMesh(const std::vector<Point> bz_points, const std::vector<Point> &bo_points, const std::vector<Point> &bi_points,
+            const zsw::Scalar sample_dense);
 
     /*** clean invalid points
      * update tets and edges(keep invalid tets and edges)
@@ -35,6 +36,7 @@ namespace zsw {
     void writeVtk(const std::string &filepath);
     void writeZeroSetSurface(const std::string &filepath);
   private:
+    zsw::Scalar sample_dense_;
     bool collapseZEdge(std::pair<size_t,size_t> &edge);
     bool isValidTet(Tet &tet);
     bool isValidEdge(std::pair<size_t, size_t> &edge);

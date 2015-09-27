@@ -15,8 +15,8 @@ int main(int argc, char *argv[])
   zsw::SurfaceGenerator sfg;
   vector<zsw::Point> bz_points, bo_points, bi_points;
   sfg.genPoints(0.2, input_mesh, bz_points, bo_points, bi_points);
-  zsw::TetMesh tm(bz_points, bo_points, bi_points);
-  tm.simplify();
+  zsw::TetMesh tm(bz_points, bo_points, bi_points, 0.02);
+  //tm.simplify();
   tm.writeVtk("/home/wegatron/tmp.vtk");
   return 0;
 }

@@ -4,14 +4,19 @@
 #include <fstream>
 #include <zswlib/mesh/vtk.h>
 #include <zswlib/error_ctrl.h>
-
+#include <zswlib/zsw_clock_c11.h>
+#include "sampling.h"
 
 using namespace std;
 
+#define DEBUG 1
+
 namespace zsw
 {
-  TetMesh::TetMesh(const vector<Point> bz_points, const vector<Point> &bo_points, const vector<Point> &bi_points) : pf_(bz_points.size()*3, -1)
+  TetMesh::TetMesh(const vector<Point> bz_points, const vector<Point> &bo_points, const vector<Point> &bi_points,
+                   const zsw::Scalar sample_dense) : pf_(bz_points.size()*3, -1)
   {
+    sample_dense_ = sample_dense;
     // add points
     for(const Point &pt : bz_points) {
       tet_points_.push_back({0, pt, {}});
@@ -56,8 +61,22 @@ namespace zsw
       tet_points_[p_ids[1]].tet_ids_.push_back(tet_id);
       tet_points_[p_ids[2]].tet_ids_.push_back(tet_id);
       tet_points_[p_ids[3]].tet_ids_.push_back(tet_id);
-      // @todo take sample points
+
+      //take sample points
+      // static zsw::common::ClockC11 clock;
+      // static int count = 0;
+      // count++;
+      // if(count%100 == 0) {       std::cerr << "cost:" << clock.time() << std::endl;      }
+      Eigen::Matrix<zsw::Scalar, 3, 4> sample_tet_points;
+      for(size_t i=0; i<4; ++i) {
+        sample_tet_points(0,i) = tet_points_[p_ids[i]].pt_data_[0];
+        sample_tet_points(1,i) = tet_points_[p_ids[i]].pt_data_[1];
+        sample_tet_points(2,i) = tet_points_[p_ids[i]].pt_data_[2];
+      }
+      zsw::sampleTet(sample_dense_, sample_tet_points, tets_.back().sample_points_);
     }
+
+    std::cout << "[INFO] stage 1 finished! tet size:" << tet_id << std::endl;
 
     for(Delaunay::Finite_cells_iterator cit=ti.finite_cells_begin();
         cit!=ti.finite_cells_end(); ++cit) {
@@ -68,9 +87,16 @@ namespace zsw
       tet_points_[p_ids[1]].tet_ids_.push_back(tet_id);
       tet_points_[p_ids[2]].tet_ids_.push_back(tet_id);
       tet_points_[p_ids[3]].tet_ids_.push_back(tet_id);
-      // @todo take sample points
+
+      // take sample_points
+      Eigen::Matrix<zsw::Scalar, 3, 4> sample_tet_points;
+      for(size_t i=0; i<4; ++i) {
+        sample_tet_points(0,i) = tet_points_[p_ids[i]].pt_data_[0];
+        sample_tet_points(1,i) = tet_points_[p_ids[i]].pt_data_[1];
+        sample_tet_points(2,i) = tet_points_[p_ids[i]].pt_data_[2];
+      }
+      zsw::sampleTet(sample_dense_, sample_tet_points, tets_.back().sample_points_);
     }
-    std::cerr << " @TODO take sample points in the tet!" << std::endl;
 
     // add edges
     for(Delaunay::Finite_edges_iterator eit=to.finite_edges_begin();
@@ -103,7 +129,6 @@ namespace zsw
   bool TetMesh::collapseZEdge(std::pair<size_t,size_t> &edge)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-
     return false;
   }
 
@@ -156,6 +181,21 @@ namespace zsw
       pts_data.push_back(tet_point.pt_data_[1]);
       pts_data.push_back(tet_point.pt_data_[2]);
     }
+
+    #ifdef DEBUG
+    // add sampling points in the tet
+    for(Tet &tet : tets_) {
+      if(!isValidTet(tet)) { continue; }
+      if(tet_points_[tet.pt_ids_[0]].point_type_==tet_points_[tet.pt_ids_[1]].point_type_ &&
+         tet_points_[tet.pt_ids_[1]].point_type_==tet_points_[tet.pt_ids_[2]].point_type_ &&
+         tet_points_[tet.pt_ids_[2]].point_type_==tet_points_[tet.pt_ids_[3]].point_type_) { continue; } // useless tet the same type
+      for(const Point &pt : tet.sample_points_) {
+        pts_data.push_back(pt[0]);
+        pts_data.push_back(pt[1]);
+        pts_data.push_back(pt[2]);
+      }
+    }
+    #endif
     for(Tet &tet : tets_) {
       if(!isValidTet(tet)) { continue; }
       if(tet_points_[tet.pt_ids_[0]].point_type_==tet_points_[tet.pt_ids_[1]].point_type_ &&
