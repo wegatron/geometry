@@ -91,6 +91,7 @@ namespace zsw
     bool collapsable = true;
     while(collapsable) {
       collapsable = false;
+      // here the edges_'s vector size should not change
       for(pair<size_t,size_t> &edge : edges_) {
         if(tet_points_[edge.first].point_type_==0 && tet_points_[edge.second].point_type_==0) {
           if(collapseZEdge(edge)) { collapsable=true; break; }
@@ -102,6 +103,7 @@ namespace zsw
   bool TetMesh::collapseZEdge(std::pair<size_t,size_t> &edge)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+
     return false;
   }
 

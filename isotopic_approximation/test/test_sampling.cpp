@@ -2,6 +2,8 @@
 #include <fstream>
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <zswlib/const_val.h>
+#include <zswlib/error_ctrl.h>
+#include <zswlib/mesh/vtk.h>
 #include "../sampling.h"
 
 using namespace std;
@@ -52,8 +54,7 @@ void test_sameSide()
   Eigen::Matrix<zsw::Scalar,3,1> v0, v1, vr, vt;
   v0 << -1, 0, 0; v1 << 5, 1, 0;
   vr << 0, 0, 0; vt << 0, 0.1667, 0;
-  zsw::Sampler sampler;
-  std::cerr << sampler.sameSide(v0,v1,vr,vt) << std::endl;
+  std::cerr << zsw::sameSide2D(v0,v1,vr,vt) << std::endl;
 }
 
 void test_projectToLine()
@@ -132,10 +133,32 @@ void test_sampleing()
   ofs.close();
 }
 
+void test_sample_tet()
+{
+  Eigen::Matrix<zsw::Scalar,3,4> tet_points;
+  tet_points << 2,0,0,1,
+                          0,4,-1,1,
+                          0,0,0,4;
+  std::vector<zsw::Point> sample_points;
+  zsw::sampleTet(0.4, tet_points, sample_points);
+  std::ofstream ofs;
+  OPEN_STREAM("/home/wegatron/test_sample_tet.vtk", ofs, std::ofstream::out, return);
+  vector<zsw::Scalar> pt_data(12, 0);
+  copy(tet_points.data(), tet_points.data()+12, &pt_data[0]);
+  for(const zsw::Point &pt : sample_points) {
+    pt_data.push_back(pt[0]);
+    pt_data.push_back(pt[1]);
+    pt_data.push_back(pt[2]);
+  }
+  size_t tets[4] = {0,1,2,3};
+  tet2vtk(ofs, &pt_data[0], 4+sample_points.size(), &tets[0], 1);
+}
+
 int main(int argc, char *argv[])
 {
+  test_sample_tet();
   //test_sampleTriangle();
-  test_sampleing();
+  //test_sampleing();
   //test_calcLocalCoordinate();
   // test_sameSide();
   // test_projectToLine();

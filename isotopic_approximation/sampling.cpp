@@ -97,7 +97,7 @@ void zsw::Sampler::calcLocalCoordinate(const Eigen::Matrix<zsw::Scalar, 3, 3> &t
 bool zsw::Sampler::resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points, Eigen::Matrix<zsw::Scalar,3,1> &sample_point)
 {
   // adjust the sample point into the triangle
-  if(!sameSide(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), sample_point)) {
+  if(!sameSide2D(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), sample_point)) {
     projectToLine(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,1), sample_point);
     if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,1)-sample_point) < -zsw::const_val::eps) { // sample point is not on v0-v1
       return false;
@@ -105,7 +105,7 @@ bool zsw::Sampler::resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points
       //   sample_point = tri_points.block<3,1>(0,1);
       // } else { sample_point = tri_points.block<3,1>(0,0); }
     }
-  } else if(!sameSide(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,2), tri_points.block<3,1>(0,1), sample_point)) {
+  } else if(!sameSide2D(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,2), tri_points.block<3,1>(0,1), sample_point)) {
     projectToLine(tri_points.block<3,1>(0,0), tri_points.block<3,1>(0,2), sample_point);
     if((sample_point-tri_points.block<3,1>(0,0)).dot(tri_points.block<3,1>(0,2)-sample_point) < -zsw::const_val::eps) { // sample point is not on v0-v2
       return false;
@@ -113,7 +113,7 @@ bool zsw::Sampler::resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points
       //   sample_point = tri_points.block<3,1>(0,2);
       // } else { sample_point = tri_points.block<3,1>(0,0); }
     }
-  } else if(!sameSide(tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), tri_points.block<3,1>(0,0), sample_point)) {
+  } else if(!sameSide2D(tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), tri_points.block<3,1>(0,0), sample_point)) {
     projectToLine(tri_points.block<3,1>(0,1), tri_points.block<3,1>(0,2), sample_point);
     if((sample_point-tri_points.block<3,1>(0,1)).dot(tri_points.block<3,1>(0,2)-sample_point) < -zsw::const_val::eps) { // sample point is not on v1-v2
       return false;
@@ -125,7 +125,7 @@ bool zsw::Sampler::resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points
   return true;
 }
 
-bool zsw::Sampler::sameSide(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt)
+bool zsw::sameSide2D(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt)
 {
   // std::cerr << "--------------------" << std::endl;
   // std::cerr << v0.transpose() << std::endl;
@@ -160,13 +160,13 @@ void zsw::Sampler::projectToLine(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const
   sample_point += (cb.dot(n)) * n;
 }
 
-void zsw::sampleTet(const zsw::Scalar dense, const Eigen::Matrix<zsw::Scalar, 3, 4> &tet_points, std::vector<Point> sample_points)
+void zsw::sampleTet(const zsw::Scalar dense, const Eigen::Matrix<zsw::Scalar, 3, 4> &tet_points, std::vector<Point> &sample_points)
 {
   Eigen::Matrix<zsw::Scalar, 3, 2> bbox;
   calcBbox<zsw::Scalar, 3, 4>(tet_points, bbox);
   for(zsw::Scalar v0=bbox(0,0); v0<bbox(0,1); v0+=dense) {
-    for(zsw::Scalar v1=bbox(0,0); v1<bbox(0,1); v1+=dense) {
-      for(zsw::Scalar v2=bbox(0,0); v2<bbox(0,1); v2+=dense) {
+    for(zsw::Scalar v1=bbox(1,0); v1<bbox(1,1); v1+=dense) {
+      for(zsw::Scalar v2=bbox(2,0); v2<bbox(2,1); v2+=dense) {
         Point pt(v0,v1,v2);
         if(inTet(pt, tet_points)) {
           sample_points.push_back(pt);
@@ -178,6 +178,25 @@ void zsw::sampleTet(const zsw::Scalar dense, const Eigen::Matrix<zsw::Scalar, 3,
 
 bool zsw::inTet(const Point &pt, const Eigen::Matrix<zsw::Scalar,3,4> &tet_points)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  return false;
+  Eigen::Matrix<zsw::Scalar,3,1> vt;
+  vt << pt[0], pt[1], pt[2];
+  for(size_t i=0; i<4; ++i) {
+    Eigen::Matrix<zsw::Scalar,3,1> v[3];
+    size_t id=0;
+    for(size_t pi=0; pi<4; ++pi) {
+      if(pi==i) { continue; }
+      v[id++] = tet_points.block<3,1>(0,pi);
+    }
+    if(!sameSide3D(v[0], v[1], v[2], tet_points.block<3,1>(0,i), vt)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool zsw::sameSide3D(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> v1, const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt)
+{
+  Eigen::Matrix<zsw::Scalar,3,1> n=(v1-v0).cross(v2-v0);
+  zsw::Scalar value[2]={n.dot(vr-v0), n.dot(vt-v0)};
+  return (value[0]>=0 && value[1]>=0) || (value[0]<=0 && value[1]<=0);
 }

@@ -25,22 +25,16 @@ namespace zsw
      */
     bool resolvePoint(const Eigen::Matrix<zsw::Scalar,3,3> &tri_points, Eigen::Matrix<zsw::Scalar,3,1> &sample_point);
 
-    /***
-     * check if vr and vt is in the same side of line v0, v1
-     * all the point are in the same plane.
-     */
-    bool sameSide(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt);
-
     void projectToLine(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, Eigen::Matrix<zsw::Scalar,3,1> &sample_point);
   };
 
-  void sampleTet(const zsw::Scalar dense, const Eigen::Matrix<zsw::Scalar, 3, 4> &tet_points, std::vector<Point> sample_points);
+  void sampleTet(const zsw::Scalar dense, const Eigen::Matrix<zsw::Scalar, 3, 4> &tet_points, std::vector<Point> &sample_points);
 
   template<typename SCALAR, size_t DIMENSION, size_t N>
-  void calcBbox(const Eigen::Matrix<SCALAR, DIMENSION, N> &points, Eigen::Matrix<SCALAR, DIMENSION, 2> &bbox)
+    void calcBbox(const Eigen::Matrix<SCALAR, DIMENSION, N> &points, Eigen::Matrix<SCALAR, DIMENSION, 2> &bbox)
   {
-    assert(points.cols()==DIMENSION && points.rows()==N);
-    assert(bbox.cols()==DIMENSION);
+    assert(points.rows()==DIMENSION && points.cols()==N);
+    assert(bbox.rows()==DIMENSION);
     assert(N>0);
     bbox.template block<DIMENSION, 1>(0,0);
     bbox.template block<DIMENSION,1>(0,0)=points.template block<DIMENSION,1>(0,0);
@@ -56,6 +50,15 @@ namespace zsw
     }
   }
   bool inTet(const Point &pt, const Eigen::Matrix<zsw::Scalar,3,4> &tet_points);
+
+  /***
+   * check if vr and vt is in the same side of line v0, v1
+   * all the point are in the same plane.
+   */
+  bool sameSide2D(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt);
+
+  bool sameSide3D(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> v1, const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr, const Eigen::Matrix<zsw::Scalar,3,1> &vt);
+
 }
 
 
