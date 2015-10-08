@@ -34,3 +34,4 @@ AC/input
 *.log
 *.aux
 *.pdf
+/.project
