@@ -40,9 +40,11 @@ namespace zsw
     // add tets
     size_t tet_id=0;
     addTets(to, tet_id);
-    //std::cerr << "[INFO] stage 1 finished! tet size:" << tet_id << std::endl;
+    std::cerr << "[INFO] stage 1 finished! tet size:" << tet_id << std::endl;
     addTets(ti, tet_id);
+    std::cerr << "[INFO] stage 2 finished! tet size:" << tet_id << std::endl;
     addEdges(ti,to);
+    std::cerr << "[INFO] stage 3 finish add edges!" << std::endl;
   }
 
   void TetMesh::addEdges(const Delaunay &ti, const Delaunay &to)
@@ -199,6 +201,7 @@ namespace zsw
     std::vector<zsw::Scalar> pts_data;
     std::vector<size_t> tets_data;
     cleanVertices();
+    std::cerr << "[INFO] finish clean vertices!" << std::endl;
     for(const Vertex &v : vertices_) {
       pts_data.push_back(v.pt_[0]);
       pts_data.push_back(v.pt_[1]);
@@ -236,7 +239,7 @@ namespace zsw
     // set new index
     const std::vector<Vertex> old_vertices=vertices_;
     vertices_.clear();
-    std::vector<size_t> index(vertices_.size(), -1);
+    std::vector<size_t> index(old_vertices.size(), -1);
     size_t id = -1;
     for(size_t i=0; i<old_vertices.size(); ++i) {
       if(old_vertices[i].father_ == -1) {

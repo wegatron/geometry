@@ -8,7 +8,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
   zsw::mesh::TriMesh input_mesh;
-  std::string file_path="/home/wegatron/workspace/geometry/data/sphere.obj";
+  std::string file_path="/home/wegatron/workspace/geometry/data/sphere.stl";
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     std::cerr << "[ERROR] can't read mesh!" << std::endl;
   }
