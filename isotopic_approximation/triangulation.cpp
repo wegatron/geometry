@@ -63,19 +63,16 @@ namespace zsw
 
     for(Edge & te : edges_) {
       set<size_t> te_fv;
-      set<size_t> tet_id_set;
-      vector<size_t> tet_ids;
-      for(size_t tet_id : vertices_[te.vind0_].tet_ids_) { tet_id_set.insert(tet_id); }
-      for(size_t tet_id : vertices_[te.vind1_].tet_ids_) {
-        if(tet_id_set.find(tet_id)!=tet_id_set.end()) { tet_ids.push_back(tet_id); }
-      }
-
-      for(size_t tet_id : tet_ids) {
-        Tet &tt=tets_[tet_id];
-        if(tt.vind0_ != te.vind0_ && tt.vind0_ !=te.vind1_) { te_fv.insert(tt.vind0_); }
-        if(tt.vind1_ != te.vind0_ && tt.vind1_ !=te.vind1_) { te_fv.insert(tt.vind1_); }
-        if(tt.vind2_ != te.vind0_ && tt.vind2_ !=te.vind1_) { te_fv.insert(tt.vind2_); }
-        if(tt.vind3_ != te.vind0_ && tt.vind3_ !=te.vind1_) { te_fv.insert(tt.vind3_); }
+      for(size_t tet_id : vertices_[te.vind0_].tet_ids_) {
+        if(!tets_[tet_id].valid_) { continue; }
+        if(tets_[tet_id].vind0_==te.vind1_ || tets_[tet_id].vind1_==te.vind1_ || tets_[tet_id].vind2_==te.vind1_
+           || tets_[tet_id].vind3_==te.vind1_) { // a tet with v0 and v1
+          Tet &tt=tets_[tet_id];
+          if(tt.vind0_ != te.vind0_ && tt.vind0_ !=te.vind1_) { te_fv.insert(tt.vind0_); }
+          if(tt.vind1_ != te.vind0_ && tt.vind1_ !=te.vind1_) { te_fv.insert(tt.vind1_); }
+          if(tt.vind2_ != te.vind0_ && tt.vind2_ !=te.vind1_) { te_fv.insert(tt.vind2_); }
+          if(tt.vind3_ != te.vind0_ && tt.vind3_ !=te.vind1_) { te_fv.insert(tt.vind3_); }
+        }
       }
       te.fv_.resize(te_fv.size());
       copy(te_fv.begin(), te_fv.end(), te.fv_.begin());
@@ -143,9 +140,6 @@ namespace zsw
 
   bool TetMesh::collapseZEdge(Edge &edge)
   {
-    // for(; pf_[edge.first]!=-1; edge.first=pf_[edge.first]);
-    // for(; pf_[edge.second]!=-1; edge.second=pf_[edge.second]);
-
     // // using clean tets
     // std::vector<size_t> tet_ids;
     // for(size_t id : tet_points_[edge.first].tet_ids_) {
@@ -192,6 +186,11 @@ namespace zsw
     // }
     // return isfind;
     return false;
+  }
+
+  void TetMesh::collapseEdge(Edge &edge, const Point &pt)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
   void TetMesh::writeVtk(const std::string &filepath)
