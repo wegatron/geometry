@@ -52,13 +52,13 @@ namespace zsw
     // add edges
     for(Delaunay::Finite_edges_iterator eit=to.finite_edges_begin();
         eit!=to.finite_edges_end(); ++eit) {
-      edges_.push_back({eit->second, eit->third});
+      edges_.push_back({eit->second, eit->third, true, {}});
     }
 
     for(Delaunay::Finite_edges_iterator eit=ti.finite_edges_begin();
         eit!=ti.finite_edges_end(); ++eit) {
       if(vertices_[eit->second].pt_type_==0 && vertices_[eit->third].pt_type_==0) { continue; }
-      edges_.push_back({eit->second, eit->third});
+      edges_.push_back({eit->second, eit->third, true, {}});
     }
 
     for(Edge & te : edges_) {
@@ -124,73 +124,75 @@ namespace zsw
   {
     // collapse ZEdges
     bool collapsable = true;
+    size_t pre_collapse_ind=-1;
+    vector<size_t> pre_fv;
     while(collapsable) {
       collapsable = false;
       // here the edges_'s vector size should not change
       for(Edge &edge : edges_) {
+        if(!edge.valid_) { continue; }
+        if(edge.vind0_==pre_collapse_ind && binary_search(pre_fv.begin(), pre_fv.end(), edge.vind1_)) { edge.valid_=false; continue; }
+        if(edge.vind1_==pre_collapse_ind && binary_search(pre_fv.begin(), pre_fv.end(), edge.vind0_)) { edge.valid_=false; continue; }
         for(; vertices_[edge.vind0_].father_!=-1; edge.vind0_=vertices_[edge.vind0_].father_);
         for(; vertices_[edge.vind1_].father_!=-1; edge.vind1_=vertices_[edge.vind1_].father_);
         if(edge.vind0_==edge.vind1_) { continue; }
         if(vertices_[edge.vind0_].pt_type_==0 && vertices_[edge.vind1_].pt_type_==0) {
-          if(collapseZEdge(edge)) { collapsable=true; break; }
+          if(collapseZEdge(edge, pre_collapse_ind)) { fv=edge.fv_; collapsable=true; break; }
         }
       }
     }
   }
 
-  bool TetMesh::collapseZEdge(Edge &edge)
+  bool TetMesh::collapseZEdge(Edge &edge, const size_t pre_collapse_ind)
   {
-    // // using clean tets
-    // std::vector<size_t> tet_ids;
-    // for(size_t id : tet_points_[edge.first].tet_ids_) {
-    //   if(isValidTet(tets_[id])) {     tet_ids.push_back(id);      }
-    // }
-    // tet_points_[edge.first].tet_ids_=tet_ids;
+    /**
+     *check if edge satisfy the link condition: the linked points of v0 and v1 is a valid triangle
+     **/
+    // clean edge.fv_
+    if(pre_collapse_ind != -1) {
+      size_t father_ind = vertices_[pre_collapse_ind].father_;
+      size_t father_cnt=0;
+      auto it=edge.fv_.begin();
+      for(; it!=edge.fv_.end(); ++it) {
+        if(*it==pre_collapse_ind) {
+          *it=father_ind;
+          if(++father_cnt==2) { edge.fv_.erase(it); break; }
+        }
+        if(*it==father_ind) {
+          if(++father_cnt==2) { edge.fv_.erase(it); break; }
+        }
+      }
+    }
 
-    // tet_ids.clear();
-    // for(size_t id : tet_points_[edge.second].tet_ids_) {
-    //   if(isValidTet(tets_[id])) {     tet_ids.push_back(id);      }
-    // }
-    // tet_points_[edge.second].tet_ids_=tet_ids;
+    // linked vids
+    set<size_t> vid_set;
+    vector<size_t> linked_vids;
+    for(size_t tet_id : vertices_[edge.vind0_].tet_ids_) {
+      if(!tets_[tet_id].valid_) { continue; }
+      vid_set.insert(tets_[tet_id].vind0_);
+      vid_set.insert(tets_[tet_id].vind1_);
+      vid_set.insert(tets_[tet_id].vind2_);
+      vid_set.insert(tets_[tet_id].vind3_);
+    }
+    for(size_t tet_id : vertices_[edge.vind1_].tet_ids_) {
+      if(!tets_[tet_id].valid_) { continue; }
+      if(vid_set.find(tets_[tet_id].vind0_)!=vid_set.end()) { linked_vids.push_back(tets_[tet_id].vind0_); }
+      if(vid_set.find(tets_[tet_id].vind1_)!=vid_set.end()) { linked_vids.push_back(tets_[tet_id].vind1_); }
+      if(vid_set.find(tets_[tet_id].vind2_)!=vid_set.end()) { linked_vids.push_back(tets_[tet_id].vind2_); }
+      if(vid_set.find(tets_[tet_id].vind3_)!=vid_set.end()) { linked_vids.push_back(tets_[tet_id].vind3_); }
+    }
 
-    // // kernel_region_judge
-    // KernelRegionJudger krj;
-    // for(size_t id : tet_points_[edge.first].tet_ids_) {
-    //   updateKrj(id);
-    // }
-    // for(size_t id : tet_points_[edge.second].tet_ids_) {
-    //   updateKrj(id);
-    // }
+    if(linked_vids.size() != edge.fv_.size()) { return false; }
 
-    // bool isfind=false;
-    // Point ret_pt;
-    // for(size_t id : tet_points_[edge.first].tet_ids_) {
-    //   for(Point pt : tets_[id].sample_points_) {
-    //     if(krj.judge(pt)) { isfind=true; ret_pt=pt; break; }
-    //   }
-    // }
-    // vector<int> new_tet_ids;
-    // if(!isfind) {
-    //   for(size_t id : tet_points_[edge.second].tet_ids_) {
-    //     new_tet_ids.push_back(id);
-    //     for(Point pt : tets_[id].sample_points_) {
-    //       if(krj.judge(pt)) { isfind=true; ret_pt=pt; break; }
-    //     }
-    //   }
-    // }
-
-    // if(isfind) {      // resolve
-    //   tet_points_[edge.first].point_type_=0;
-    //   tet_points_[edge.first].pt_data_=ret_pt;
-    //   pf_[edge.second]=edge.first;
-    // }
-    // return isfind;
+    // kernel region sampling point
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     return false;
   }
 
   void TetMesh::collapseEdge(Edge &edge, const Point &pt)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+
   }
 
   void TetMesh::writeVtk(const std::string &filepath)
