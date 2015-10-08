@@ -41,6 +41,7 @@ namespace zsw {
       size_t vind1_;
       size_t vind2_;
       size_t vind3_;
+      bool valid_;
     };
 
     struct Edge
@@ -57,6 +58,7 @@ namespace zsw {
     void writeVtk(const std::string &filepath);
     void writeZeroSetSurface(const std::string &filepath);
   private:
+    void cleanVertices();
     void addTets(const Delaunay &td, size_t &tet_id);
     void addEdges(const Delaunay &ti, const Delaunay &to);
     bool collapseZEdge(Edge &edge);
