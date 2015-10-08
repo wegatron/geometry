@@ -128,8 +128,54 @@ namespace zsw
 
   bool TetMesh::collapseZEdge(std::pair<size_t,size_t> &edge)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    return false;
+    for(; pf_[edge.first]!=-1; edge.first=pf_[edge.first]);
+    for(; pf_[edge.second]!=-1; edge.second=pf_[edge.second]);
+
+    // using clean tets
+    std::vector<size_t> tet_ids;
+    for(size_t id : tet_points_[edge.first].tet_ids_) {
+      if(isValidTet(tets_[id])) {     tet_ids.push_back(id);      }
+    }
+    tet_points_[edge.first].tet_ids_=tet_ids;
+
+    tet_ids.clear();
+    for(size_t id : tet_points_[edge.second].tet_ids_) {
+      if(isValidTet(tets_[id])) {     tet_ids.push_back(id);      }
+    }
+    tet_points_[edge.second].tet_ids_=tet_ids;
+
+    // kernel_region_judge
+    KernelRegionJudger krj;
+    for(size_t id : tet_points_[edge.first].tet_ids_) {
+      updateKrj(id);
+    }
+    for(size_t id : tet_points_[edge.second].tet_ids_) {
+      updateKrj(id);
+    }
+
+    bool isfind=false;
+    Point ret_pt;
+    for(size_t id : tet_points_[edge.first].tet_ids_) {
+      for(Point pt : tets_[id].sample_points_) {
+        if(krj.judge(pt)) { isfind=true; ret_pt=pt; break; }
+      }
+    }
+    vector<int> new_tet_ids;
+    if(!isfind) {
+      for(size_t id : tet_points_[edge.second].tet_ids_) {
+        new_tet_ids.push_back(id);
+        for(Point pt : tets_[id].sample_points_) {
+          if(krj.judge(pt)) { isfind=true; ret_pt=pt; break; }
+        }
+      }
+    }
+
+    if(isfind) {      // resolve
+      tet_points_[edge.first].point_type_=0;
+      tet_points_[edge.first].pt_data_=ret_pt;
+      pf_[edge.second]=edge.first;
+    }
+    return isfind;
   }
 
   void TetMesh::cleanPoints()

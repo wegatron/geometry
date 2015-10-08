@@ -9,6 +9,19 @@
 
 namespace zsw {
 
+  class KernelRegionJudger
+  {
+  public:
+    KernelRegionJudger();
+    void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+                       const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr);
+    bool judge(const Point &pt);
+  private:
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v0;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v1;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v2;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vr;
+  };
   class TetMesh
   {
   public:
@@ -36,10 +49,11 @@ namespace zsw {
     void writeVtk(const std::string &filepath);
     void writeZeroSetSurface(const std::string &filepath);
   private:
-    zsw::Scalar sample_dense_;
+    void updateKrj(size_t tet_id);
     bool collapseZEdge(std::pair<size_t,size_t> &edge);
     bool isValidTet(Tet &tet);
     bool isValidEdge(std::pair<size_t, size_t> &edge);
+    zsw::Scalar sample_dense_;
     std::vector<Tet> tets_;
     std::vector<TetPoint> tet_points_;
     std::vector<std::pair<size_t, size_t>> edges_;
