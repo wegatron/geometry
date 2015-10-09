@@ -66,7 +66,7 @@ namespace zsw {
     void addEdges(const Delaunay &ti, const Delaunay &to);
     void updateFv(Edge &edge);
 
-    bool collapseEdge(Edge &edge, size_t &pre_v0, size_t &pre_v1);
+    bool collapseEdge(Edge &edge);
     void collapseEdge(Edge &edge, const Point &pt);
     bool isValidEdge(Edge &edge)
     {

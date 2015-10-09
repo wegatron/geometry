@@ -153,55 +153,52 @@ namespace zsw
   {
     // collapse ZEdges
     bool collapsable = true;
-    size_t pre_v0=-1;
-    size_t pre_v1=-1;
-    vector<size_t> empty_vec;
-    vector<size_t> *pre_fv_ptr=&empty_vec;
     while(collapsable) {
       collapsable = false;
-      const vector<size_t> &pre_fv=*pre_fv_ptr;
       // here the edges_'s vector size should not change
       for(Edge &edge : edges_) {
         if(!edge.valid_) { continue; }
-        bool npre_v_edge=true;
-        // update edge and remove invalid edge
-        if(edge.vind0_==pre_v1) {
-          edge.vind0_=pre_v0;
-          if(binary_search(pre_fv.begin(), pre_fv.end(), edge.vind1_)) { edge.valid_=false; continue; }
-          updateFv(edge);
-          npre_v_edge=false;
-        }
-        if(edge.vind1_==pre_v1) {
-          edge.vind1_=pre_v0;
-          if(binary_search(pre_fv.begin(), pre_fv.end(), edge.vind0_)) { edge.valid_=false; continue; }
-          updateFv(edge);
-          npre_v_edge=false;
-        }
-        if(edge.vind0_==pre_v0 || edge.vind1_==pre_v0) { updateFv(edge); }
-
-        // update edge.fv_
-        if(npre_v_edge) { // edge has no pre_vertex
-          size_t tind0=zsw::bsearch(edge.fv_, pre_v0);
-          size_t tind1=zsw::bsearch(edge.fv_, pre_v1);
-          if(tind1!=-1) {
-            if(tind0==-1) { edge.fv_[tind1]=pre_v0; sort(edge.fv_.begin(), edge.fv_.end()); }
-            else { --edge.fv_cnt_; }
-          }
-        }
         if(vertices_[edge.vind0_].pt_type_==0 && vertices_[edge.vind1_].pt_type_==0
-           && collapseEdge(edge, pre_v0, pre_v1)) { pre_fv_ptr=&edge.fv_; collapsable=true; break; }
+           && collapseEdge(edge)) { collapsable=true; }
       }
-    }
+      //   bool npre_v_edge=true;
+      //   // update edge and remove invalid edge
+      //   if(edge.vind0_==pre_v1) {
+      //     edge.vind0_=pre_v0;
+      //     if(binary_search(pre_fv.begin(), pre_fv.end(), edge.vind1_)) { edge.valid_=false; continue; }
+      //     updateFv(edge);
+      //     npre_v_edge=false;
+      //   }
+      //   if(edge.vind1_==pre_v1) {
+      //     edge.vind1_=pre_v0;
+      //     if(binary_search(pre_fv.begin(), pre_fv.end(), edge.vind0_)) { edge.valid_=false; continue; }
+      //     updateFv(edge);
+      //     npre_v_edge=false;
+      //   }
+      //   if(edge.vind0_==pre_v0 || edge.vind1_==pre_v0) { updateFv(edge); }
+
+      //   // update edge.fv_
+      //   if(npre_v_edge) { // edge has no pre_vertex
+      //     size_t tind0=zsw::bsearch(edge.fv_, pre_v0);
+      //     size_t tind1=zsw::bsearch(edge.fv_, pre_v1);
+      //     if(tind1!=-1) {
+      //       if(tind0==-1) { edge.fv_[tind1]=pre_v0; sort(edge.fv_.begin(), edge.fv_.end()); }
+      //       else { --edge.fv_cnt_; }
+      //     }
+      //   }
+      //   if(vertices_[edge.vind0_].pt_type_==0 && vertices_[edge.vind1_].pt_type_==0
+      //      && collapseEdge(edge, pre_v0, pre_v1)) { pre_fv_ptr=&edge.fv_; collapsable=true; break; }
+      // }
   }
 
-  bool TetMesh::collapseEdge(Edge &edge, size_t &pre_v0, size_t &pre_v1)
+  bool TetMesh::collapseEdge(Edge &edge)
   {
     /**
      *check if edge satisfy the link condition: the linked points of v0 and v1 is a valid triangle
      **/
     // linked vids
     set<size_t> vid_set;
-    vector<size_t> linked_vids;
+    set<size_t> linked_vids;
     for(size_t tet_id : vertices_[edge.vind0_].tet_ids_) {
       if(!tets_[tet_id].valid_) { continue; }
       vid_set.insert(tets_[tet_id].vind0_);
@@ -211,14 +208,15 @@ namespace zsw
     }
     for(size_t tet_id : vertices_[edge.vind1_].tet_ids_) {
       if(!tets_[tet_id].valid_) { continue; }
-      if(vid_set.find(tets_[tet_id].vind0_)!=vid_set.end()) { linked_vids.push_back(tets_[tet_id].vind0_); }
-      if(vid_set.find(tets_[tet_id].vind1_)!=vid_set.end()) { linked_vids.push_back(tets_[tet_id].vind1_); }
-      if(vid_set.find(tets_[tet_id].vind2_)!=vid_set.end()) { linked_vids.push_back(tets_[tet_id].vind2_); }
-      if(vid_set.find(tets_[tet_id].vind3_)!=vid_set.end()) { linked_vids.push_back(tets_[tet_id].vind3_); }
+      if(vid_set.find(tets_[tet_id].vind0_)!=vid_set.end()) { linked_vids.insert(tets_[tet_id].vind0_); }
+      if(vid_set.find(tets_[tet_id].vind1_)!=vid_set.end()) { linked_vids.insert(tets_[tet_id].vind1_); }
+      if(vid_set.find(tets_[tet_id].vind2_)!=vid_set.end()) { linked_vids.insert(tets_[tet_id].vind2_); }
+      if(vid_set.find(tets_[tet_id].vind3_)!=vid_set.end()) { linked_vids.insert(tets_[tet_id].vind3_); }
     }
 
-    if(linked_vids.size() != edge.fv_cnt_) {
-      assert(linked_vids.size() > edge.fv_cnt_);
+    //linked_vids.erase(edge.vind0_); linked_vids.erase(edge.vind1_);
+    if(linked_vids.size() -2!= edge.fv_cnt_) {
+      assert(linked_vids.size()-2 > edge.fv_cnt_);
       return false;
     }
 
