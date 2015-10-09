@@ -12,7 +12,7 @@ namespace zsw
       int r=vals.size()-1;
       int middle=-1;
       while(l<r) {
-        middle=(l+t)>>1;
+        middle=(l+r)>>1;
         if(vals[middle] < value) { l=middle+1; }
         else if(vals[middle] > value) { r=middle-1; }
         else { break; }

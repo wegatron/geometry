@@ -82,23 +82,23 @@ namespace zsw
     }
   }
 
-  void updateFv(Edge &edge)
+  void TetMesh::updateFv(Edge &edge)
   {
     set<size_t> te_fv;
     for(size_t tet_id : vertices_[edge.vind0_].tet_ids_) {
       if(!tets_[tet_id].valid_) { continue; }
-      if(tets_[tet_id].vind0_==te.vind1_ || tets_[tet_id].vind1_==te.vind1_ || tets_[tet_id].vind2_==te.vind1_
-         || tets_[tet_id].vind3_==te.vind1_) { // a tet with v0 and v1
+      if(tets_[tet_id].vind0_==edge.vind1_ || tets_[tet_id].vind1_==edge.vind1_ || tets_[tet_id].vind2_==edge.vind1_
+         || tets_[tet_id].vind3_==edge.vind1_) { // a tet with v0 and v1
         Tet &tt=tets_[tet_id];
-        if(tt.vind0_ != te.vind0_ && tt.vind0_ !=te.vind1_) { te_fv.insert(tt.vind0_); }
-        if(tt.vind1_ != te.vind0_ && tt.vind1_ !=te.vind1_) { te_fv.insert(tt.vind1_); }
-        if(tt.vind2_ != te.vind0_ && tt.vind2_ !=te.vind1_) { te_fv.insert(tt.vind2_); }
-        if(tt.vind3_ != te.vind0_ && tt.vind3_ !=te.vind1_) { te_fv.insert(tt.vind3_); }
+        if(tt.vind0_ != edge.vind0_ && tt.vind0_ !=edge.vind1_) { te_fv.insert(tt.vind0_); }
+        if(tt.vind1_ != edge.vind0_ && tt.vind1_ !=edge.vind1_) { te_fv.insert(tt.vind1_); }
+        if(tt.vind2_ != edge.vind0_ && tt.vind2_ !=edge.vind1_) { te_fv.insert(tt.vind2_); }
+        if(tt.vind3_ != edge.vind0_ && tt.vind3_ !=edge.vind1_) { te_fv.insert(tt.vind3_); }
       }
     }
-    edge.fv_.resize(te_fv.size());
+    edge.fv_cnt_=te_fv.size();
+    edge.fv_.resize(edge.fv_cnt_);
     copy(te_fv.begin(), te_fv.end(), edge.fv_.begin());
-    edge.fv_cnt_=edge.fv_.size();
   }
 
   void TetMesh::addTets(const Delaunay &td, size_t &tet_id)
@@ -211,7 +211,7 @@ namespace zsw
     }
 
     if(linked_vids.size() != edge.fv_cnt_) {
-      assert(linked_vids.size() > edge.fv_cnt_; )
+      assert(linked_vids.size() > edge.fv_cnt_);
       return false;
     }
 
