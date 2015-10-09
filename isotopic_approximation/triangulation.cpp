@@ -72,20 +72,6 @@ namespace zsw
 
     for(Edge & te : edges_) {
       updateFv(te);
-      // set<size_t> te_fv;
-      // for(size_t tet_id : vertices_[te.vind0_].tet_ids_) {
-      //   if(!tets_[tet_id].valid_) { continue; }
-      //   if(tets_[tet_id].vind0_==te.vind1_ || tets_[tet_id].vind1_==te.vind1_ || tets_[tet_id].vind2_==te.vind1_
-      //      || tets_[tet_id].vind3_==te.vind1_) { // a tet with v0 and v1
-      //     Tet &tt=tets_[tet_id];
-      //     if(tt.vind0_ != te.vind0_ && tt.vind0_ !=te.vind1_) { te_fv.insert(tt.vind0_); }
-      //     if(tt.vind1_ != te.vind0_ && tt.vind1_ !=te.vind1_) { te_fv.insert(tt.vind1_); }
-      //     if(tt.vind2_ != te.vind0_ && tt.vind2_ !=te.vind1_) { te_fv.insert(tt.vind2_); }
-      //     if(tt.vind3_ != te.vind0_ && tt.vind3_ !=te.vind1_) { te_fv.insert(tt.vind3_); }
-      //   }
-      // }
-      // te.fv_.resize(te_fv.size());
-      // copy(te_fv.begin(), te_fv.end(), te.fv_.begin());
     }
   }
 
@@ -161,34 +147,6 @@ namespace zsw
         if(vertices_[edge.vind0_].pt_type_==0 && vertices_[edge.vind1_].pt_type_==0
            && collapseEdge(edge)) { collapsable=true; }
       }
-      //   bool npre_v_edge=true;
-      //   // update edge and remove invalid edge
-      //   if(edge.vind0_==pre_v1) {
-      //     edge.vind0_=pre_v0;
-      //     if(binary_search(pre_fv.begin(), pre_fv.end(), edge.vind1_)) { edge.valid_=false; continue; }
-      //     updateFv(edge);
-      //     npre_v_edge=false;
-      //   }
-      //   if(edge.vind1_==pre_v1) {
-      //     edge.vind1_=pre_v0;
-      //     if(binary_search(pre_fv.begin(), pre_fv.end(), edge.vind0_)) { edge.valid_=false; continue; }
-      //     updateFv(edge);
-      //     npre_v_edge=false;
-      //   }
-      //   if(edge.vind0_==pre_v0 || edge.vind1_==pre_v0) { updateFv(edge); }
-
-      //   // update edge.fv_
-      //   if(npre_v_edge) { // edge has no pre_vertex
-      //     size_t tind0=zsw::bsearch(edge.fv_, pre_v0);
-      //     size_t tind1=zsw::bsearch(edge.fv_, pre_v1);
-      //     if(tind1!=-1) {
-      //       if(tind0==-1) { edge.fv_[tind1]=pre_v0; sort(edge.fv_.begin(), edge.fv_.end()); }
-      //       else { --edge.fv_cnt_; }
-      //     }
-      //   }
-      //   if(vertices_[edge.vind0_].pt_type_==0 && vertices_[edge.vind1_].pt_type_==0
-      //      && collapseEdge(edge, pre_v0, pre_v1)) { pre_fv_ptr=&edge.fv_; collapsable=true; break; }
-      // }
     }
   }
 
@@ -276,14 +234,12 @@ namespace zsw
     for(size_t e_id : vertices_[e.vind1_].edge_ids_) {
       if(!edges_[e_id].valid_) { continue; }
       (edges_[e_id].vind0_!=e.vind1_) ? vid_set.insert(edges_[e_id].vind0_) : vid_set.insert(edges_[e_id].vind1_);
-      // if(edges_[e_id].vind0_!=e.vind1_) { vid_set.insert(edges_[e_id].vind0_); }
-      // else { vid_set.insert(edges_[e_id].vind1_); }
     }
     for(size_t vid : vid_set) {
       for(size_t e_id : vertices_[vid].edge_ids_) {
         if(binary_search(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind1_)
            && !binary_search(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind0_)) {
-          // todo insert e.vind0_ into fv_
+          // insert e.vind0_ into fv_
           edges_[e_id].fv_.insert(lower_bound(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind0_), e.vind0_);
         }
       }
