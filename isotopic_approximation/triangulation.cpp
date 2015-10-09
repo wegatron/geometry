@@ -54,13 +54,13 @@ namespace zsw
     // add edges
     for(Delaunay::Finite_edges_iterator eit=to.finite_edges_begin();
         eit!=to.finite_edges_end(); ++eit) {
-      edges_.push_back({eit->second, eit->third, true, {}});
+      edges_.push_back({eit->second, eit->third, 0, true, {}});
     }
 
     for(Delaunay::Finite_edges_iterator eit=ti.finite_edges_begin();
         eit!=ti.finite_edges_end(); ++eit) {
       if(vertices_[eit->second].pt_type_==0 && vertices_[eit->third].pt_type_==0) { continue; }
-      edges_.push_back({eit->second, eit->third, true, {}});
+      edges_.push_back({eit->second, eit->third, 0, true, {}});
     }
 
     for(Edge & te : edges_) {
@@ -98,6 +98,7 @@ namespace zsw
     }
     edge.fv_.resize(te_fv.size());
     copy(te_fv.begin(), te_fv.end(), edge.fv_.begin());
+    edge.fv_cnt_=edge.fv_.size();
   }
 
   void TetMesh::addTets(const Delaunay &td, size_t &tet_id)
@@ -175,7 +176,10 @@ namespace zsw
         if(npre_v_edge) { // edge has no pre_vertex
           size_t tind0=zsw::bsearch(edge.fv_, pre_v0);
           size_t tind1=zsw::bsearch(edge.fv_, pre_v1);
-          if(tind0==-1 && tind1!=-1) { edge.fv_[tind1]=pre_v0; sort(edge.fv_.begin(), edge.fv_.end()); }
+          if(tind1!=-1) {
+            if(tind0==-1) { edge.fv_[tind1]=pre_v0; sort(edge.fv_.begin(), edge.fv_.end()); }
+            else { --edge.fv_cnt_; }
+          }
         }
         if(vertices_[edge.vind0_].pt_type_==0 && vertices_[edge.vind1_].pt_type_==0
            && collapseEdge(edge, pre_v0, pre_v1)) { pre_fv_ptr=&edge.fv_; collapsable=true; break; }
@@ -188,21 +192,6 @@ namespace zsw
     /**
      *check if edge satisfy the link condition: the linked points of v0 and v1 is a valid triangle
      **/
-    // clean edge.fv_
-    if(pre_v1 != -1) {
-      size_t father_cnt=0;
-      auto it=edge.fv_.begin();
-      for(; it!=edge.fv_.end(); ++it) {
-        if(*it==pre_v1) {
-          *it=pre_v0;
-          if(++father_cnt==2) { edge.fv_.erase(it); break; }
-        }
-        if(*it==pre_v0) {
-          if(++father_cnt==2) { edge.fv_.erase(it); break; }
-        }
-      }
-    }
-
     // linked vids
     set<size_t> vid_set;
     vector<size_t> linked_vids;
@@ -221,7 +210,10 @@ namespace zsw
       if(vid_set.find(tets_[tet_id].vind3_)!=vid_set.end()) { linked_vids.push_back(tets_[tet_id].vind3_); }
     }
 
-    if(linked_vids.size() != edge.fv_.size()) { return false; }
+    if(linked_vids.size() != edge.fv_cnt_) {
+      assert(linked_vids.size() > edge.fv_cnt_; )
+      return false;
+    }
 
     // kernel region sampling point
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
@@ -234,7 +226,6 @@ namespace zsw
   void TetMesh::collapseEdge(Edge &edge, const Point &pt)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-
   }
 
   void TetMesh::writeVtk(const std::string &filepath)

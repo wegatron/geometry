@@ -48,6 +48,7 @@ namespace zsw {
     {
       size_t vind0_;
       size_t vind1_;
+      size_t fv_cnt_;
       bool valid_;
       std::vector<size_t> fv_; // the vertex construct a face with this edge must be sorted
     };
