@@ -52,15 +52,22 @@ namespace zsw
   void TetMesh::addEdges(const Delaunay &ti, const Delaunay &to)
   {
     // add edges
+    size_t edge_id=0;
     for(Delaunay::Finite_edges_iterator eit=to.finite_edges_begin();
         eit!=to.finite_edges_end(); ++eit) {
       edges_.push_back({eit->second, eit->third, 0, true, {}});
+      vertices_[eit->second].edge_ids_.push_back(edge_id);
+      vertices_[eit->third].edge_ids_.push_back(edge_id);
+      ++edge_id;
     }
 
     for(Delaunay::Finite_edges_iterator eit=ti.finite_edges_begin();
         eit!=ti.finite_edges_end(); ++eit) {
       if(vertices_[eit->second].pt_type_==0 && vertices_[eit->third].pt_type_==0) { continue; }
       edges_.push_back({eit->second, eit->third, 0, true, {}});
+      vertices_[eit->second].edge_ids_.push_back(edge_id);
+      vertices_[eit->third].edge_ids_.push_back(edge_id);
+      ++edge_id;
     }
 
     for(Edge & te : edges_) {

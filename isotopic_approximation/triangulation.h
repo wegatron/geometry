@@ -33,6 +33,7 @@ namespace zsw {
       Point pt_;
       size_t father_;
       std::vector<size_t> tet_ids_;
+      std::vector<size_t> edge_ids_;
     };
 
     struct Tet
@@ -50,7 +51,7 @@ namespace zsw {
       size_t vind1_;
       size_t fv_cnt_;
       bool valid_;
-      std::vector<size_t> fv_; // the vertex construct a face with this edge must be sorted
+      std::vector<size_t> fv_; // the vertex id, that construct a valid face with this edge. the vertex construct a face with this edge must be sorted
     };
 
     TetMesh(const std::vector<Point> bz_points, const std::vector<Point> &bo_points, const std::vector<Point> &bi_points,
