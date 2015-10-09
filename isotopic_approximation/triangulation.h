@@ -62,7 +62,7 @@ namespace zsw {
     void cleanVertices();
     void addTets(const Delaunay &td, size_t &tet_id);
     void addEdges(const Delaunay &ti, const Delaunay &to);
-    bool collapseZEdge(Edge &edge);
+    bool collapseEdge(Edge &edge, size_t &pre_v0, size_t &pre_v1);
     void collapseEdge(Edge &edge, const Point &pt);
     bool isValidEdge(Edge &edge)
     {
