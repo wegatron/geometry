@@ -238,7 +238,6 @@ namespace zsw
 
   void TetMesh::collapseEdge(Edge &e, const Point &pt)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     e.valid_=false;
     // update vertices_ and tets_
     vertices_[e.vind1_].father_=e.vind0_;
@@ -270,92 +269,120 @@ namespace zsw
         edges_[e_id].vind1_=e.vind0_;
       }
       if(binary_search(e.fv_.begin(), e.fv_.end(), tvid)) {  edges_[e_id].valid_=false; continue;  }
+      vertices_[e.vind0_].edge_ids_.push_back(e_id);
     }
-    // updatye te.fv_ and update te.fv_cnt_
-
-  }
-
-  void TetMesh::writeVtk(const std::string &filepath)
-  {
-    std::ofstream ofs;
-    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
-    std::vector<zsw::Scalar> pts_data;
-    std::vector<size_t> tets_data;
-    cleanVertices();
-    std::cerr << "[INFO] finish clean vertices!" << std::endl;
-    for(const Vertex &v : vertices_) {
-      pts_data.push_back(v.pt_[0]);
-      pts_data.push_back(v.pt_[1]);
-      pts_data.push_back(v.pt_[2]);
+    // updatye te.fv_ and update te.fv_cnt_ for e.vind1_ -> e.vind0_
+    set<size_t> vid_set;
+    for(size_t e_id : vertices_[e.vind1_].edge_ids_) {
+      if(!edges_[e_id].valid_) { continue; }
+      (edges_[e_id].vind0_!=e.vind1_) ? vid_set.insert(edges_[e_id].vind0_) : vid_set.insert(edges_[e_id].vind1_);
+      // if(edges_[e_id].vind0_!=e.vind1_) { vid_set.insert(edges_[e_id].vind0_); }
+      // else { vid_set.insert(edges_[e_id].vind1_); }
     }
-
-#ifdef DEBUG
-    // add sampling points
-    for(const Point &pt : sample_points_) {
-      pts_data.push_back(pt[0]);
-      pts_data.push_back(pt[1]);
-      pts_data.push_back(pt[2]);
-    }
-#endif
-    for(Tet &tet : tets_) {
-      if(!tet.valid_) { continue; }
-      if(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
-         vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
-         vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_) { continue; } // useless tet the same type
-
-      tets_data.push_back(tet.vind0_);
-      tets_data.push_back(tet.vind1_);
-      tets_data.push_back(tet.vind2_);
-      tets_data.push_back(tet.vind3_);
-    }
-    size_t n_pts = pts_data.size()/3;
-    size_t n_tets = tets_data.size()/4;
-    std::cout << "[INFO] point size:" << n_pts << std::endl;
-    std::cout << "[INFO] tet size:" << n_tets << std::endl;
-    tet2vtk(ofs, &pts_data[0], n_pts, &tets_data[0], n_tets);
-  }
-
-  void TetMesh::cleanVertices()
-  {
-    // set new index
-    const std::vector<Vertex> old_vertices=vertices_;
-    vertices_.clear();
-    std::vector<size_t> index(old_vertices.size(), -1);
-    size_t id = -1;
-    for(size_t i=0; i<old_vertices.size(); ++i) {
-      if(old_vertices[i].father_ == -1) {
-        index[i] = ++id;
-        vertices_.push_back(old_vertices[i]);
+    for(size_t vid : vid_set) {
+      for(size_t e_id : vertices_[vid].edge_ids_) {
+        if(binary_search(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind1_)
+           && !binary_search(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind0_)) {
+          // todo insert e.vind0_ into fv_
+          edges_[e_id].fv_.insert(lower_bound(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind0_), e.vind0_);
+        }
       }
     }
 
-    std::vector<size_t> id_map(old_vertices.size(), -1);
-    for(size_t i=0; i<old_vertices.size(); ++i) {
-      // size_t tmp=i;
-      // for(; index[tmp]==-1; tmp=old_vertices[tmp].father_);
-      // id_map[i]=index[tmp];
-      size_t tmp = i;
-      while(old_vertices[tmp].father_ != -1) { tmp = old_vertices[tmp].father_ ; }
-      id_map[i] = index[tmp];
+    // update vind0' edge which can construct a face with vind1
+    vid_set.clear();
+    for(size_t e_id : vertices_[e.vind0_].edge_ids_) {
+      if(!edges_[e_id].valid_) { continue; }
+      (edges_[e_id].vind0_!=e.vind0_) ? vid_set.insert(edges_[e_id].vind0_) : vid_set.insert(edges_[e_id].vind1_);
     }
-
-    // using id_map to update edges and tets
-    for(Tet &tet : tets_) {
-      if(!tet.valid_) { continue; }
-       tet.vind0_ = id_map[tet.vind0_];
-       tet.vind1_ = id_map[tet.vind1_];
-       tet.vind2_ = id_map[tet.vind2_];
-       tet.vind3_ = id_map[tet.vind3_];
-    }
-
-    for(Edge &edge : edges_) {
-      edge.vind0_ = id_map[edge.vind0_];
-      edge.vind1_ = id_map[edge.vind1_];
+    for(size_t vid: vid_set) {
+      for(size_t e_id : vertices_[vid].edge_ids_) {
+        if(binary_search(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind1_)) { updateFv(edges_[e_id]); }
+      }
     }
   }
 
-  void TetMesh::writeZeroSetSurface(const std::string &filepath)
-  {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    void TetMesh::writeVtk(const std::string &filepath)
+    {
+      std::ofstream ofs;
+      OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+      std::vector<zsw::Scalar> pts_data;
+      std::vector<size_t> tets_data;
+      cleanVertices();
+      std::cerr << "[INFO] finish clean vertices!" << std::endl;
+      for(const Vertex &v : vertices_) {
+        pts_data.push_back(v.pt_[0]);
+        pts_data.push_back(v.pt_[1]);
+        pts_data.push_back(v.pt_[2]);
+      }
+
+#ifdef DEBUG
+      // add sampling points
+      for(const Point &pt : sample_points_) {
+        pts_data.push_back(pt[0]);
+        pts_data.push_back(pt[1]);
+        pts_data.push_back(pt[2]);
+      }
+#endif
+      for(Tet &tet : tets_) {
+        if(!tet.valid_) { continue; }
+        if(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
+           vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
+           vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_) { continue; } // useless tet the same type
+
+        tets_data.push_back(tet.vind0_);
+        tets_data.push_back(tet.vind1_);
+        tets_data.push_back(tet.vind2_);
+        tets_data.push_back(tet.vind3_);
+      }
+      size_t n_pts = pts_data.size()/3;
+      size_t n_tets = tets_data.size()/4;
+      std::cout << "[INFO] point size:" << n_pts << std::endl;
+      std::cout << "[INFO] tet size:" << n_tets << std::endl;
+      tet2vtk(ofs, &pts_data[0], n_pts, &tets_data[0], n_tets);
+    }
+
+    void TetMesh::cleanVertices()
+    {
+      // set new index
+      const std::vector<Vertex> old_vertices=vertices_;
+      vertices_.clear();
+      std::vector<size_t> index(old_vertices.size(), -1);
+      size_t id = -1;
+      for(size_t i=0; i<old_vertices.size(); ++i) {
+        if(old_vertices[i].father_ == -1) {
+          index[i] = ++id;
+          vertices_.push_back(old_vertices[i]);
+        }
+      }
+
+      std::vector<size_t> id_map(old_vertices.size(), -1);
+      for(size_t i=0; i<old_vertices.size(); ++i) {
+        // size_t tmp=i;
+        // for(; index[tmp]==-1; tmp=old_vertices[tmp].father_);
+        // id_map[i]=index[tmp];
+        size_t tmp = i;
+        while(old_vertices[tmp].father_ != -1) { tmp = old_vertices[tmp].father_ ; }
+        id_map[i] = index[tmp];
+      }
+
+      // using id_map to update edges and tets
+      for(Tet &tet : tets_) {
+        if(!tet.valid_) { continue; }
+        tet.vind0_ = id_map[tet.vind0_];
+        tet.vind1_ = id_map[tet.vind1_];
+        tet.vind2_ = id_map[tet.vind2_];
+        tet.vind3_ = id_map[tet.vind3_];
+      }
+
+      for(Edge &edge : edges_) {
+        edge.vind0_ = id_map[edge.vind0_];
+        edge.vind1_ = id_map[edge.vind1_];
+      }
+    }
+
+    void TetMesh::writeZeroSetSurface(const std::string &filepath)
+    {
+      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    }
   }
-}
