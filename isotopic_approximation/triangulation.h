@@ -64,11 +64,11 @@ namespace zsw {
     void cleanVertices();
     void addTets(const Delaunay &td, size_t &tet_id);
     void addEdges(const Delaunay &ti, const Delaunay &to);
-    void updateFv(Edge &edge);
+    void updateFv(Edge &e);
 
-    bool collapseEdge(Edge &edge);
-    void collapseEdge(Edge &edge, const Point &pt);
-    bool findKernelRegionPoint(const Edge &edge, Point &pt) const;
+    bool collapseEdge(Edge &e);
+    void collapseEdge(Edge &e, const Point &pt);
+    bool findKernelRegionPoint(const Edge &e, Point &pt) const;
 
     zsw::Scalar sample_dense_;
     std::vector<Vertex> vertices_;

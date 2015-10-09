@@ -236,9 +236,43 @@ namespace zsw
     return false;
   }
 
-  void TetMesh::collapseEdge(Edge &edge, const Point &pt)
+  void TetMesh::collapseEdge(Edge &e, const Point &pt)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    e.valid_=false;
+    // update vertices_ and tets_
+    vertices_[e.vind1_].father_=e.vind0_;
+    vertices_[e.vind0_].pt_=pt;
+    vector<size_t> ntet_ids;
+    for(size_t tet_id : vertices_[e.vind0_].tet_ids_) {
+      if(!tets_[tet_id].valid_) { continue; }
+      if(tets_[tet_id].vind0_==e.vind1_ || tets_[tet_id].vind1_==e.vind1_ ||
+         tets_[tet_id].vind2_==e.vind1_ || tets_[tet_id].vind3_==e.vind1_) { tets_[tet_id].valid_=false; continue; }
+      ntet_ids.push_back(tet_id);
+    }
+    for(size_t tet_id : vertices_[e.vind1_]) {
+      if(!tets_[tet_id].valid_) { continue; }
+      if(tets_[tet_id].vind0_==e.vind0_ || tets_[tet_id].vind1_==e.vind0_ ||
+         tets_[tet_id].vind2_==e.vind0_ || tets_[tet_id].vind3_==e.vind0_) { tets_[tet_id].valid_=false; continue; }
+      ntet_ids.push_back(tet_id);
+    }
+    vertices_[e.vind0_].tet_ids_=ntet_ids;
+
+    // update edge's vind1_ -> vind0_ ,for te.vind0_ te.vind1_,
+    for(size_t e_id : vertices_[e.vind1_].edge_ids_) {
+      if(!edges_[e_id].valid_) { continue; }
+      size_t tvid = -1;
+      if(edges_[e_id].vind0_==e.vind1_)  {
+        tvid = edges_[e_id].vind1_;
+        edges_[e_id].vind0_=e.vind0_;
+      } else {
+        tvid = edges_[e_id].vind0_;
+        edges_[e_id].vind1_=e.vind0_;
+      }
+      if(binary_search(e.fv_.begin(), e.fv_.end(), tvid)) {  edges_[e_id].valid_=false; continue;  }
+    }
+    // updatye te.fv_ and update te.fv_cnt_
+
   }
 
   void TetMesh::writeVtk(const std::string &filepath)
