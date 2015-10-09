@@ -189,6 +189,7 @@ namespace zsw
       //   if(vertices_[edge.vind0_].pt_type_==0 && vertices_[edge.vind1_].pt_type_==0
       //      && collapseEdge(edge, pre_v0, pre_v1)) { pre_fv_ptr=&edge.fv_; collapsable=true; break; }
       // }
+    }
   }
 
   bool TetMesh::collapseEdge(Edge &edge)
@@ -221,11 +222,18 @@ namespace zsw
     }
 
     // kernel region sampling point
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    edge.valid_=false;
+    Point pt;
+    if(!findKernelRegionPoint(edge, pt)) { return false; }
 
-    // @todo update pre_v0 and pre_v1
+    // do collapse edge
+    collapseEdge(edge, pt);
     return true;
+  }
+
+  bool TetMesh::findKernelRegionPoint(const Edge &edge, Point &pt) const
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    return false;
   }
 
   void TetMesh::collapseEdge(Edge &edge, const Point &pt)

@@ -68,12 +68,7 @@ namespace zsw {
 
     bool collapseEdge(Edge &edge);
     void collapseEdge(Edge &edge, const Point &pt);
-    bool isValidEdge(Edge &edge)
-    {
-      for(; vertices_[edge.vind0_].father_!=-1; edge.vind0_=vertices_[edge.vind0_].father_);
-      for(; vertices_[edge.vind1_].father_!=-1; edge.vind1_=vertices_[edge.vind1_].father_);
-      return edge.vind0_ != edge.vind1_;
-    }
+    bool findKernelRegionPoint(const Edge &edge, Point &pt) const;
 
     zsw::Scalar sample_dense_;
     std::vector<Vertex> vertices_;
