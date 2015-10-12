@@ -221,6 +221,10 @@ namespace zsw
       if(!tets_[tet_id].valid_) { continue; }
       if(tets_[tet_id].vind0_==e.vind0_ || tets_[tet_id].vind1_==e.vind0_ ||
          tets_[tet_id].vind2_==e.vind0_ || tets_[tet_id].vind3_==e.vind0_) { tets_[tet_id].valid_=false; continue; }
+      if(tets_[tet_id].vind0_ == e.vind1_) { tets_[tet_id].vind0_=e.vind0_; }
+      else if(tets_[tet_id].vind1_==e.vind1_) { tets_[tet_id].vind1_=e.vind0_; }
+      else if(tets_[tet_id].vind2_==e.vind1_) { tets_[tet_id].vind2_=e.vind0_; }
+      else if(tets_[tet_id].vind3_==e.vind1_) { tets_[tet_id].vind3_=e.vind0_; }
       ntet_ids.push_back(tet_id);
     }
     vertices_[e.vind0_].tet_ids_=ntet_ids;
@@ -269,13 +273,12 @@ namespace zsw
     }
   }
 
-    void TetMesh::writeVtk(const std::string &filepath)
+    void TetMesh::writeVtk(const std::string &filepath) const
     {
       std::ofstream ofs;
       OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
       std::vector<zsw::Scalar> pts_data;
       std::vector<size_t> tets_data;
-      cleanVertices();
       std::cerr << "[INFO] finish clean vertices!" << std::endl;
       for(const Vertex &v : vertices_) {
         pts_data.push_back(v.pt_[0]);
@@ -291,7 +294,7 @@ namespace zsw
         pts_data.push_back(pt[2]);
       }
 #endif
-      for(Tet &tet : tets_) {
+      for(const Tet &tet : tets_) {
         if(!tet.valid_) { continue; }
         if(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
            vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
@@ -354,16 +357,17 @@ namespace zsw
     }
 
 #ifdef DEBUG
-  void TetMesh::testCollapseEdge(size_t vind0, size_t vind1)
+  bool TetMesh::testCollapseEdge(size_t vind0, size_t vind1)
   {
     for(Edge &edge : edges_) {
       // std::cerr << "edge:" << edge.vind0_ << " : " << edge.vind1_ << std::endl;
       if((edge.vind0_==vind0 && edge.vind1_==vind1) || (edge.vind0_==vind1 && edge.vind1_==vind0)) {
         collapseEdge(edge);
-        std::cerr << "collapsed fine!!!" << std::endl;
-        break;
+        std::cout << "edge: " << edge.vind0_ << ":" << edge.vind1_ << "collapsed fine!!!" << std::endl;
+        return true;
       }
     }
+    return false;
   }
 #endif
   }

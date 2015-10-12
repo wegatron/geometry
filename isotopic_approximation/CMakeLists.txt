@@ -28,6 +28,9 @@ include_directories(${OPENMESH_INCLUDE_DIRS})
 find_package(CGAL REQUIRED)
 include_directories(${CGAL_INCLUDE_DIRS})
 
+find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+include_directories(${BOOST_INCLUDE_DIRES})
+
 # add_subdirectory(src)
 
 file(GLOB headers *.h)

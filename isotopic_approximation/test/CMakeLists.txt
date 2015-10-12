@@ -39,4 +39,5 @@ add_executable(test_collapseEdge test_collapseEdge.cpp)
 target_link_libraries(test_sampling isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 target_link_libraries(test_gen_surf isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 target_link_libraries(test_cgal_triangulation ${CGAL_LIBRARY} ${GMP_LIBRARIES})
-target_link_libraries(test_collapseEdge isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
+target_link_libraries(test_collapseEdge isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES}
+  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})

@@ -61,13 +61,16 @@ namespace zsw {
             const zsw::Scalar sample_dense);
 
     void simplify();
-    void writeVtk(const std::string &filepath);
+    void cleanVertices();
+    void writeVtk(const std::string &filepath) const;
     void writeZeroSetSurface(const std::string &filepath);
 #ifdef DEBUG
-   void testCollapseEdge(size_t vind0, size_t vind1);
+    bool testCollapseEdge(size_t vind0, size_t vind1);
 #endif
+    const std::vector<Edge>& getEdges() const { return edges_; }
+    const std::vector<Vertex>& getVertices() const { return vertices_; }
+    const std::vector<Tet>& getTets() const { return tets_; }
   private:
-    void cleanVertices();
     void addTets(const Delaunay &td, size_t &tet_id);
     void addEdges(const Delaunay &ti, const Delaunay &to);
     void updateFv(Edge &e);
