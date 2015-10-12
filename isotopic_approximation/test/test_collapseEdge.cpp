@@ -10,6 +10,13 @@ using namespace std;
 
 BOOST_AUTO_TEST_SUITE(collapse_edge_with_fake_kernel_region)
 
+void calcFv(const zsw::TetMesh::Edge &edge, const vector<zsw::TetMesh::Vertex> &vertices,
+            const vector<zsw::TetMesh::Tet> &tets,
+            set<size_t> &fv)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+}
+
 BOOST_AUTO_TEST_CASE(collapse_edge_fkr0)
 {
   zsw::mesh::TriMesh input_mesh;
@@ -64,7 +71,33 @@ BOOST_AUTO_TEST_CASE(collapse_edge_fkr0)
     else { BOOST_CHECK(edges[eid].vind0_==vind0 || edges[eid].vind1_==vind0); }
   }
   BOOST_CHECK(tmp_cnt==1);
-  // check edges' fv
+  /// check edges' fv and fv_cnt
+  // check each edge linked by adjacent vertex's fv is right
+
+  set<size_t> vids;
+  for(size_t tet_id : updated_tet_ids) {
+    if(tets[tet_id].vind0_!=vind0) { vids.insert(tets[tet_id].vind0_); }
+    if(tets[tet_id].vind1_!=vind0) { vids.insert(tets[tet_id].vind1_); }
+    if(tets[tet_id].vind2_!=vind0) { vids.insert(tets[tet_id].vind2_); }
+    if(tets[tet_id].vind3_!=vind0) { vids.insert(tets[tet_id].vind3_); }
+  }
+
+  for(size_t vid : vids) {
+    for(size_t eid : vertices[vid].edge_ids_) {
+      if(!edges[eid].valid_) { continue; }
+      set<size_t> fv;
+      calcFv(edges[eid], vertices, tets, fv);
+      BOOST_CHECK(fv.size() == edges[eid].fv_cnt_);
+      bool flag=true;
+      size_t tfv_cnt=0;
+      for(size_t tfv : edges[eid].fv_) {
+        if(vertices[tfv].father_!=-1) { continue; }
+        if(fv.find(tfv)==fv.end()) { flag=false; break; }
+        ++tfv_cnt;
+      }
+      BOOST_CHECK(flag && tfv_cnt==edges[eid].fv_cnt_);
+    }
+  }
 
   tm.writeVtk("/home/wegatron/tmp/tmp_after.vtk");
 }
