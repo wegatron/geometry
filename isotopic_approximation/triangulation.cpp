@@ -237,10 +237,11 @@ namespace zsw
     }
     for(size_t vid : vid_set) {
       for(size_t e_id : vertices_[vid].edge_ids_) {
-        if(binary_search(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind1_)
-           && !binary_search(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind0_)) {
-          // insert e.vind0_ into fv_
-          edges_[e_id].fv_.insert(lower_bound(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind0_), e.vind0_);
+        if(binary_search(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind1_)) {
+          if(!binary_search(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind0_)) {
+            // insert e.vind0_ into fv_
+            edges_[e_id].fv_.insert(lower_bound(edges_[e_id].fv_.begin(), edges_[e_id].fv_.end(), e.vind0_), e.vind0_);
+          } else {  --edges_[e_id].fv_cnt_;  }
         }
       }
     }
