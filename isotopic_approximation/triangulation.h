@@ -8,6 +8,9 @@
 
 #include "cgal_common.h"
 
+#define DEBUG
+#define FAKE_KERNEL_REGION_POINT
+
 namespace zsw {
 
   /* class KernelRegionJudger */
@@ -60,6 +63,9 @@ namespace zsw {
     void simplify();
     void writeVtk(const std::string &filepath);
     void writeZeroSetSurface(const std::string &filepath);
+#ifdef DEBUG
+   void testCollapseEdge(size_t vind0, size_t vind1);
+#endif
   private:
     void cleanVertices();
     void addTets(const Delaunay &td, size_t &tet_id);

@@ -11,8 +11,6 @@
 
 using namespace std;
 
-#define DEBUG 1
-
 namespace zsw
 {
   TetMesh::TetMesh(const vector<Point> bz_points, const vector<Point> &bo_points, const vector<Point> &bi_points,
@@ -55,9 +53,12 @@ namespace zsw
     size_t edge_id=0;
     for(Delaunay::Finite_edges_iterator eit=to.finite_edges_begin();
         eit!=to.finite_edges_end(); ++eit) {
-      edges_.push_back({eit->second, eit->third, 0, true, {}});
-      vertices_[eit->second].edge_ids_.push_back(edge_id);
-      vertices_[eit->third].edge_ids_.push_back(edge_id);
+      const size_t vind0=eit->first->vertex(eit->second)->info();
+      const size_t vind1=eit->first->vertex(eit->third)->info();
+      // std::cerr << "add edge:" << eit->second << ":" << eit->third << std::endl;
+      edges_.push_back({vind0, vind1, 0, true, {}});
+      vertices_[vind0].edge_ids_.push_back(edge_id);
+      vertices_[vind1].edge_ids_.push_back(edge_id);
       ++edge_id;
     }
 
@@ -111,25 +112,27 @@ namespace zsw
       // if(count%100 == 0) {       std::cerr << "cost:" << clock.time() << std::endl;      }
 
       //take sample points
-      Eigen::Matrix<zsw::Scalar, 3, 4> sample_tet_points;
-      sample_tet_points(0,0) = vertices_[tmp_tet.vind0_].pt_[0];
-      sample_tet_points(1,0) = vertices_[tmp_tet.vind0_].pt_[1];
-      sample_tet_points(2,0) = vertices_[tmp_tet.vind0_].pt_[2];
+      if(0) {
+        Eigen::Matrix<zsw::Scalar, 3, 4> sample_tet_points;
+        sample_tet_points(0,0) = vertices_[tmp_tet.vind0_].pt_[0];
+        sample_tet_points(1,0) = vertices_[tmp_tet.vind0_].pt_[1];
+        sample_tet_points(2,0) = vertices_[tmp_tet.vind0_].pt_[2];
 
-      sample_tet_points(0,1) = vertices_[tmp_tet.vind1_].pt_[0];
-      sample_tet_points(1,1) = vertices_[tmp_tet.vind1_].pt_[1];
-      sample_tet_points(2,1) = vertices_[tmp_tet.vind1_].pt_[2];
+        sample_tet_points(0,1) = vertices_[tmp_tet.vind1_].pt_[0];
+        sample_tet_points(1,1) = vertices_[tmp_tet.vind1_].pt_[1];
+        sample_tet_points(2,1) = vertices_[tmp_tet.vind1_].pt_[2];
 
-      sample_tet_points(0,2) = vertices_[tmp_tet.vind2_].pt_[0];
-      sample_tet_points(1,2) = vertices_[tmp_tet.vind2_].pt_[1];
-      sample_tet_points(2,2) = vertices_[tmp_tet.vind2_].pt_[2];
+        sample_tet_points(0,2) = vertices_[tmp_tet.vind2_].pt_[0];
+        sample_tet_points(1,2) = vertices_[tmp_tet.vind2_].pt_[1];
+        sample_tet_points(2,2) = vertices_[tmp_tet.vind2_].pt_[2];
 
-      sample_tet_points(0,3) = vertices_[tmp_tet.vind3_].pt_[0];
-      sample_tet_points(1,3) = vertices_[tmp_tet.vind3_].pt_[1];
-      sample_tet_points(2,3) = vertices_[tmp_tet.vind3_].pt_[2];
+        sample_tet_points(0,3) = vertices_[tmp_tet.vind3_].pt_[0];
+        sample_tet_points(1,3) = vertices_[tmp_tet.vind3_].pt_[1];
+        sample_tet_points(2,3) = vertices_[tmp_tet.vind3_].pt_[2];
 
-      // add sample points into sample_points_
-      zsw::sampleTet(sample_dense_, sample_tet_points, sample_points_);
+        // add sample points into sample_points_
+        zsw::sampleTet(sample_dense_, sample_tet_points, sample_points_);
+      }
       ++tet_id;
     }
   }
@@ -191,6 +194,13 @@ namespace zsw
   bool TetMesh::findKernelRegionPoint(const Edge &edge, Point &pt) const
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    #ifdef FAKE_KERNEL_REGION_POINT
+    std::cerr << "FAKE_KERNEL_REGION_POINT" << std::endl;
+    pt= Point((vertices_[edge.vind0_].pt_[0] + vertices_[edge.vind1_].pt_[0])/2,
+              (vertices_[edge.vind0_].pt_[1] + vertices_[edge.vind1_].pt_[1])/2,
+              (vertices_[edge.vind0_].pt_[2] + vertices_[edge.vind1_].pt_[2])/2);
+    return true;
+    #endif
     return false;
   }
 
@@ -207,7 +217,7 @@ namespace zsw
          tets_[tet_id].vind2_==e.vind1_ || tets_[tet_id].vind3_==e.vind1_) { tets_[tet_id].valid_=false; continue; }
       ntet_ids.push_back(tet_id);
     }
-    for(size_t tet_id : vertices_[e.vind1_]) {
+    for(size_t tet_id : vertices_[e.vind1_].tet_ids_) {
       if(!tets_[tet_id].valid_) { continue; }
       if(tets_[tet_id].vind0_==e.vind0_ || tets_[tet_id].vind1_==e.vind0_ ||
          tets_[tet_id].vind2_==e.vind0_ || tets_[tet_id].vind3_==e.vind0_) { tets_[tet_id].valid_=false; continue; }
@@ -273,7 +283,7 @@ namespace zsw
         pts_data.push_back(v.pt_[2]);
       }
 
-#ifdef DEBUG
+#ifdef WRITE_SAMPLE_POINT
       // add sampling points
       for(const Point &pt : sample_points_) {
         pts_data.push_back(pt[0]);
@@ -342,4 +352,18 @@ namespace zsw
     {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
+
+#ifdef DEBUG
+  void TetMesh::testCollapseEdge(size_t vind0, size_t vind1)
+  {
+    for(Edge &edge : edges_) {
+      // std::cerr << "edge:" << edge.vind0_ << " : " << edge.vind1_ << std::endl;
+      if((edge.vind0_==vind0 && edge.vind1_==vind1) || (edge.vind0_==vind1 && edge.vind1_==vind0)) {
+        collapseEdge(edge);
+        std::cerr << "collapsed fine!!!" << std::endl;
+        break;
+      }
+    }
+  }
+#endif
   }
