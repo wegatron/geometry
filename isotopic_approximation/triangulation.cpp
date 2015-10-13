@@ -381,8 +381,8 @@ namespace zsw
     Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
     Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
     Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
-    if(vn.dot(vr) < 0) { vn=-vn; }
     vn.normalized();
+    if(vn.dot(vr-v0) < 0) { vn=-vn; }
     vec_vn.push_back(vn);
   }
 
@@ -390,7 +390,9 @@ namespace zsw
   {
     Eigen::Matrix<zsw::Scalar,3,1> ept; ept << pt[0], pt[1], pt[2];
     for(size_t i=0; i<vec_v0.size(); ++i) {
-      if(vec_vn[i].dot(ept-vec_v0[i]) < 0) { return false; }
+      if(vec_vn[i].dot(ept-vec_v0[i]) < 0) {
+        return false;
+      }
     }
     return true;
   }
