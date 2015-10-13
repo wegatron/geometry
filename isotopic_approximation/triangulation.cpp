@@ -188,19 +188,37 @@ namespace zsw
 
     // do collapse edge
     collapseEdge(edge, pt);
-    return true;
+Matrix<zsw::Scalar, 3, 1> v0, v1, v2, vr;    return true;
   }
 
   bool TetMesh::findKernelRegionPoint(const Edge &edge, Point &pt) const
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    #ifdef FAKE_KERNEL_REGION_POINT
+#ifdef FAKE_KERNEL_REGION_POINT
     std::cerr << "FAKE_KERNEL_REGION_POINT" << std::endl;
     pt= Point((vertices_[edge.vind0_].pt_[0] + vertices_[edge.vind1_].pt_[0])/2,
               (vertices_[edge.vind0_].pt_[1] + vertices_[edge.vind1_].pt_[1])/2,
               (vertices_[edge.vind0_].pt_[2] + vertices_[edge.vind1_].pt_[2])/2);
     return true;
-    #endif
+#else
+    KernelRegionJudger krj;
+    for(size_t tet_id : vertices_[edge.vind0_]) {
+      if(tets_[tet_id].vind0_ == edge.vind1_ || tets_[tet_id].vind1_ == edge.vind1_
+         || tets_[tet_id].vind2_ == edge.vind1_ || tets_[tet_id].vind3_ == edge.vind1_) {
+        continue;
+      }
+      std::triple<size_t, size_t, size_t> face;
+      size_t *ptr = &face.first;
+      if(tets_[tet_id].vind0_ != edge.vind1_) { *ptr=tets_[tet_id].vind0_; ++ptr; }
+      if(tets_[tet_id].vind1_ != edge.vind1_) { *ptr=tets_[tet_id].vind1_; ++ptr; }
+      if(tets_[tet_id].vind2_ != edge.vind1_) { *ptr=tets_[tet_id].vind2_; ++ptr; }
+      if(tets_[tet_id].vind3_ != edge.vind1_) { *ptr=tets_[tet_id].vind3_;}
+      faces.push_back(face);
+      Eigen::Matrix<zsw::Scalar, 3, 1> v0, v1, v2, vr;
+      krj.addConstraint(v0,v1,v2,vr);
+    }
+    // TODO find the sample point using the krj
+#endif
     return false;
   }
 
@@ -273,88 +291,105 @@ namespace zsw
     }
   }
 
-    void TetMesh::writeVtk(const std::string &filepath) const
-    {
-      std::ofstream ofs;
-      OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
-      std::vector<zsw::Scalar> pts_data;
-      std::vector<size_t> tets_data;
-      std::cerr << "[INFO] finish clean vertices!" << std::endl;
-      for(const Vertex &v : vertices_) {
-        pts_data.push_back(v.pt_[0]);
-        pts_data.push_back(v.pt_[1]);
-        pts_data.push_back(v.pt_[2]);
-      }
+  void TetMesh::writeVtk(const std::string &filepath) const
+  {
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    std::vector<zsw::Scalar> pts_data;
+    std::vector<size_t> tets_data;
+    std::cerr << "[INFO] finish clean vertices!" << std::endl;
+    for(const Vertex &v : vertices_) {
+      pts_data.push_back(v.pt_[0]);
+      pts_data.push_back(v.pt_[1]);
+      pts_data.push_back(v.pt_[2]);
+    }
 
 #ifdef WRITE_SAMPLE_POINT
-      // add sampling points
-      for(const Point &pt : sample_points_) {
-        pts_data.push_back(pt[0]);
-        pts_data.push_back(pt[1]);
-        pts_data.push_back(pt[2]);
-      }
+    // add sampling points
+    for(const Point &pt : sample_points_) {
+      pts_data.push_back(pt[0]);
+      pts_data.push_back(pt[1]);
+      pts_data.push_back(pt[2]);
+    }
 #endif
-      for(const Tet &tet : tets_) {
-        if(!tet.valid_) { continue; }
-        if(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
-           vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
-           vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_) { continue; } // useless tet the same type
+    for(const Tet &tet : tets_) {
+      if(!tet.valid_) { continue; }
+      if(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
+         vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
+         vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_) { continue; } // useless tet the same type
 
-        tets_data.push_back(tet.vind0_);
-        tets_data.push_back(tet.vind1_);
-        tets_data.push_back(tet.vind2_);
-        tets_data.push_back(tet.vind3_);
-      }
-      size_t n_pts = pts_data.size()/3;
-      size_t n_tets = tets_data.size()/4;
-      std::cout << "[INFO] point size:" << n_pts << std::endl;
-      std::cout << "[INFO] tet size:" << n_tets << std::endl;
-      tet2vtk(ofs, &pts_data[0], n_pts, &tets_data[0], n_tets);
+      tets_data.push_back(tet.vind0_);
+      tets_data.push_back(tet.vind1_);
+      tets_data.push_back(tet.vind2_);
+      tets_data.push_back(tet.vind3_);
     }
+    size_t n_pts = pts_data.size()/3;
+    size_t n_tets = tets_data.size()/4;
+    std::cout << "[INFO] point size:" << n_pts << std::endl;
+    std::cout << "[INFO] tet size:" << n_tets << std::endl;
+    tet2vtk(ofs, &pts_data[0], n_pts, &tets_data[0], n_tets);
+  }
 
-    void TetMesh::cleanVertices()
-    {
-      // set new index
-      const std::vector<Vertex> old_vertices=vertices_;
-      vertices_.clear();
-      std::vector<size_t> index(old_vertices.size(), -1);
-      size_t id = -1;
-      for(size_t i=0; i<old_vertices.size(); ++i) {
-        if(old_vertices[i].father_ == -1) {
-          index[i] = ++id;
-          vertices_.push_back(old_vertices[i]);
-        }
-      }
-
-      std::vector<size_t> id_map(old_vertices.size(), -1);
-      for(size_t i=0; i<old_vertices.size(); ++i) {
-        // size_t tmp=i;
-        // for(; index[tmp]==-1; tmp=old_vertices[tmp].father_);
-        // id_map[i]=index[tmp];
-        size_t tmp = i;
-        while(old_vertices[tmp].father_ != -1) { tmp = old_vertices[tmp].father_ ; }
-        id_map[i] = index[tmp];
-      }
-
-      // using id_map to update edges and tets
-      for(Tet &tet : tets_) {
-        if(!tet.valid_) { continue; }
-        tet.vind0_ = id_map[tet.vind0_];
-        tet.vind1_ = id_map[tet.vind1_];
-        tet.vind2_ = id_map[tet.vind2_];
-        tet.vind3_ = id_map[tet.vind3_];
-      }
-
-      for(Edge &edge : edges_) {
-        edge.vind0_ = id_map[edge.vind0_];
-        edge.vind1_ = id_map[edge.vind1_];
+  void TetMesh::cleanVertices()
+  {
+    // set new index
+    const std::vector<Vertex> old_vertices=vertices_;
+    vertices_.clear();
+    std::vector<size_t> index(old_vertices.size(), -1);
+    size_t id = -1;
+    for(size_t i=0; i<old_vertices.size(); ++i) {
+      if(old_vertices[i].father_ == -1) {
+        index[i] = ++id;
+        vertices_.push_back(old_vertices[i]);
       }
     }
 
-    void TetMesh::writeZeroSetSurface(const std::string &filepath)
-    {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    std::vector<size_t> id_map(old_vertices.size(), -1);
+    for(size_t i=0; i<old_vertices.size(); ++i) {
+      // size_t tmp=i;
+      // for(; index[tmp]==-1; tmp=old_vertices[tmp].father_);
+      // id_map[i]=index[tmp];
+      size_t tmp = i;
+      while(old_vertices[tmp].father_ != -1) { tmp = old_vertices[tmp].father_ ; }
+      id_map[i] = index[tmp];
     }
+
+    // using id_map to update edges and tets
+    for(Tet &tet : tets_) {
+      if(!tet.valid_) { continue; }
+      tet.vind0_ = id_map[tet.vind0_];
+      tet.vind1_ = id_map[tet.vind1_];
+      tet.vind2_ = id_map[tet.vind2_];
+      tet.vind3_ = id_map[tet.vind3_];
+    }
+
+    for(Edge &edge : edges_) {
+      edge.vind0_ = id_map[edge.vind0_];
+      edge.vind1_ = id_map[edge.vind1_];
+    }
+  }
+
+  void TetMesh::writeZeroSetSurface(const std::string &filepath)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  zsw::KernelRegionJudger::KernelRegionJudger()
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+                       const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  bool zsw::KernelRegionJudger::judge(const Point &pt)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    return false;
+  }
 
 #ifdef DEBUG
   bool TetMesh::testCollapseEdge(size_t vind0, size_t vind1)
@@ -370,4 +405,4 @@ namespace zsw
     return false;
   }
 #endif
-  }
+}
