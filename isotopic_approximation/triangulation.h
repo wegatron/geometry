@@ -16,15 +16,13 @@ namespace zsw {
   class KernelRegionJudger
   {
   public:
-    KernelRegionJudger();
+    KernelRegionJudger() {}
     void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr);
     bool judge(const Point &pt);
   private:
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v0;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v1;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v2;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vr;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vn;
   };
 
   class TetMesh

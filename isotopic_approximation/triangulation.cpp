@@ -188,7 +188,7 @@ namespace zsw
 
     // do collapse edge
     collapseEdge(edge, pt);
-Matrix<zsw::Scalar, 3, 1> v0, v1, v2, vr;    return true;
+    return true;
   }
 
   bool TetMesh::findKernelRegionPoint(const Edge &edge, Point &pt) const
@@ -374,21 +374,25 @@ Matrix<zsw::Scalar, 3, 1> v0, v1, v2, vr;    return true;
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
-  zsw::KernelRegionJudger::KernelRegionJudger()
-  {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  }
-
   void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    vec_v0.push_back(v0);
+    Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
+    Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
+    Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
+    if(vn.dot(vr) < 0) { vn=-vn; }
+    vn.normalized();
+    vec_vn.push_back(vn);
   }
 
   bool zsw::KernelRegionJudger::judge(const Point &pt)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    return false;
+    Eigen::Matrix<zsw::Scalar,3,1> ept; ept << pt[0], pt[1], pt[2];
+    for(size_t i=0; i<vec_v0.size(); ++i) {
+      if(vec_vn[i].dot(ept-vec_v0[i]) < 0) { return false; }
+    }
+    return true;
   }
 
 #ifdef DEBUG

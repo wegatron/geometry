@@ -126,4 +126,4 @@ BOOST_AUTO_TEST_CASE(collapse_edge_fkr0)
   tm.writeVtk("/home/wegatron/tmp/tmp_after.vtk");
 }
 
-  BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END()
