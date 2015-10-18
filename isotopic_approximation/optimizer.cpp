@@ -123,13 +123,14 @@ namespace zsw
     if(status == SUCCESS) {
       std::cout << "success!\n x:"  << Eigen::Map<const Eigen::Matrix<Number,1,3>>(x) << std::endl;
       std::cout << "g:" << Eigen::Map<const Eigen::Matrix<Number,1,Eigen::Dynamic>>(g, cn_) << std::endl;
+      copy(x, x+3, res_x_);
     } else {
       std::cerr << "failed!" << std::endl;
     }
   }
 
 #ifdef ZSW_DEBUG
-  bool Optimizer::verify(const Number* x)
+  bool Optimizer::verify() const
   {
     assert(cn_==vec_a_.size());
     assert(cn_==vec_b_.size());
@@ -137,7 +138,7 @@ namespace zsw
     assert(cn_==vec_d_.size());
 
     for(int i=0; i<cn_; ++i) {
-      if(vec_a_[i]*x[0]+vec_b_[i]*x[1]+vec_c_[i]*x[2] < vec_d_[i]) { return false; }
+      if(vec_a_[i]*res_x_[0]+vec_b_[i]*res_x_[1]+vec_c_[i]*res_x_[2] < vec_d_[i]) { return false; }
     }
     return true;
   }

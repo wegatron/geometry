@@ -8,7 +8,7 @@
 
 #include "cgal_common.h"
 
-#define DEBUG
+#define ZSW_DEBUG
 #define FAKE_KERNEL_REGION_POINT
 
 namespace zsw {
@@ -62,7 +62,7 @@ namespace zsw {
     void cleanVertices();
     void writeVtk(const std::string &filepath) const;
     void writeZeroSetSurface(const std::string &filepath);
-#ifdef DEBUG
+#ifdef ZSW_DEBUG
     bool testCollapseEdge(size_t vind0, size_t vind1);
 #endif
     const std::vector<Edge>& getEdges() const { return edges_; }

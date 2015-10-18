@@ -397,7 +397,7 @@ namespace zsw
     return true;
   }
 
-#ifdef DEBUG
+#ifdef ZSW_DEBUG
   bool TetMesh::testCollapseEdge(size_t vind0, size_t vind1)
   {
     for(Edge &edge : edges_) {

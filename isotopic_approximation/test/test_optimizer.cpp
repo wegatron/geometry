@@ -5,12 +5,13 @@
 #include <boost/test/included/unit_test.hpp>
 
 using namespace std;
+using namespace Ipopt;
 
 BOOST_AUTO_TEST_SUITE(Inequality_equations_optimizer)
 
-BOOST_AUTO_TEST_CASE(optimizer_0)
+BOOST_AUTO_TEST_CASE(optimizer_basic)
 {
-  Eigen::Matrix<Number,3,1> cx; cx<<1,1,1;
+  Eigen::Matrix<Ipopt::Number,3,1> cx; cx<<1,1,1;
   SmartPtr<zsw::Optimizer> mynlp = new zsw::Optimizer(cx);
 
   mynlp->addConstraint(1,0,0,0);
@@ -28,7 +29,7 @@ BOOST_AUTO_TEST_CASE(optimizer_0)
   status = app->Initialize();
   if (status != Solve_Succeeded) {
     printf("\n\n*** Error during initialization!\n");
-    return (int) status;
+    return;
   }
 
   // Ask Ipopt to solve the problem
@@ -40,7 +41,7 @@ BOOST_AUTO_TEST_CASE(optimizer_0)
     printf("\n\n*** The problem FAILED!\n");
   }
   BOOST_REQUIRE(status == Solve_Succeeded);
-  BOOST_REQUIRE(mynlp.verify()==true);
+  BOOST_REQUIRE(mynlp->verify()==true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
