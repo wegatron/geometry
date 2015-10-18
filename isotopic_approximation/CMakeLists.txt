@@ -38,7 +38,8 @@ file(GLOB src *.cpp)
 
 add_library(isotropic_approximate SHARED ${headers} ${src})
 
-target_link_libraries(isotropic_approximate zswlib ${OPENMESH_LIBRARIES})
+target_link_libraries(isotropic_approximate zswlib ${OPENMESH_LIBRARIES}
+  ipopt coinhsl coinmumps coinmetis blas lapack dl mpi)
 
 add_subdirectory(test)
 add_subdirectory(app)

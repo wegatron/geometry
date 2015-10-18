@@ -1,5 +1,8 @@
 #include "optimizer.h"
 
+using namespace std;
+using namespace Ipopt;
+
 namespace zsw
 {
   Optimizer::Optimizer(Eigen::Matrix<Number,3,1> cx) : cx_(cx) {
@@ -38,9 +41,9 @@ namespace zsw
   }
 
   bool Optimizer::get_starting_point(Index n, bool init_x, Number* x,
-                          bool init_z, Number* z_L, Number* z_U,
-                          Index m, bool init_lambda,
-                          Number* lambda)
+                                     bool init_z, Number* z_L, Number* z_U,
+                                     Index m, bool init_lambda,
+                                     Number* lambda)
   {
     assert(n==3);
     assert(init_x==true);
@@ -50,7 +53,7 @@ namespace zsw
   }
 
   bool Optimizer::eval_f(Index n, const Number* x, bool new_x,
-              Number& obj_value)
+                         Number& obj_value)
   {
     assert(n==3);
     obj_value = (Eigen::Map<const Eigen::Matrix<Number,3,1>>(x)- cx_).squaredNorm();
@@ -124,4 +127,19 @@ namespace zsw
       std::cerr << "failed!" << std::endl;
     }
   }
+
+#ifdef ZSW_DEBUG
+  bool Optimizer::verify(const Number* x)
+  {
+    assert(cn_==vec_a_.size());
+    assert(cn_==vec_b_.size());
+    assert(cn_==vec_c_.size());
+    assert(cn_==vec_d_.size());
+
+    for(int i=0; i<cn_; ++i) {
+      if(vec_a_[i]*x[0]+vec_b_[i]*x[1]+vec_c_[i]*x[2] < vec_d_[i]) { return false; }
+    }
+    return true;
+  }
+#endif
 }

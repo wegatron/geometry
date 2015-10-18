@@ -15,6 +15,7 @@ namespace zsw
 {
   class Optimizer: public Ipopt::TNLP
   {
+    using namespace Ipopt;
   public:
     Optimizer(Eigen::Matrix<Number,3,1> cx);
 
@@ -54,13 +55,16 @@ namespace zsw
                            Number obj_value,
                            const IpoptData* ip_data,
                            IpoptCalculatedQuantities* ip_cq);
+#ifdef ZSW_DEBUG
+    bool verify(const Number* x);
+#endif
   private:
     Ipopt::Index cn_; // number of constraint
     Eigen::Matrix<Number,3,1> cx_;
-    vector<Number> vec_a_;
-    vector<Number> vec_b_;
-    vector<Number> vec_c_;
-    vector<Number> vec_d_;
+    std::vector<Number> vec_a_;
+    std::vector<Number> vec_b_;
+    std::vector<Number> vec_c_;
+    std::vector<Number> vec_d_;
   };
 
 }
