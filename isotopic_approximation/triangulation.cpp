@@ -197,7 +197,6 @@ namespace zsw
 
   bool TetMesh::findKernelRegionPoint(const Edge &edge, Eigen::Matrix<zsw::Scalar,3,1> &pt) const
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 #ifdef FAKE_KERNEL_REGION_POINT
     std::cerr << "FAKE_KERNEL_REGION_POINT" << std::endl;
     pt= Point((vertices_[edge.vind0_].pt_[0] + vertices_[edge.vind1_].pt_[0])/2,
@@ -219,7 +218,7 @@ namespace zsw
     app->Options()->SetStringValue("mu_strategy", "adaptive");
     app->Options()->SetStringValue("output_file", "ipopt.out");
 
-    if(!app->Initialize()) {
+    if(app->Initialize() != Ipopt::Solve_Succeeded) {
       std::cerr << "Error during initialization!" << std::endl;
       return false;
     }
@@ -230,33 +229,38 @@ namespace zsw
       opt->getResult(pt);
       return true;
     }
+    exit(__LINE__);
 #endif
     return false;
   }
 
   void TetMesh::addOneRingConstraint(const size_t vid, const size_t evid, zsw::Optimizer &opt) const
   {
+    std::cerr << "vid:" << vid << "," << evid << std::endl;
+    std::cerr << "tets size:" << vertices_[vid].tet_ids_.size() << std::endl;
     for(size_t tet_id : vertices_[vid].tet_ids_) {
       if(tets_[tet_id].vind0_ == evid || tets_[tet_id].vind1_ == evid
          || tets_[tet_id].vind2_ == evid || tets_[tet_id].vind3_ == evid) {
         continue;
       }
-      std::tuple<size_t, size_t, size_t> face;
-      size_t *ptr = &get<0>(face);
+      size_t face_vids[3];
+      size_t *ptr = face_vids;
       if(tets_[tet_id].vind0_ != vid) { *ptr=tets_[tet_id].vind0_; ++ptr; }
       if(tets_[tet_id].vind1_ != vid) { *ptr=tets_[tet_id].vind1_; ++ptr; }
       if(tets_[tet_id].vind2_ != vid) { *ptr=tets_[tet_id].vind2_; ++ptr; }
       if(tets_[tet_id].vind3_ != vid) { *ptr=tets_[tet_id].vind3_;}
       Eigen::Matrix<zsw::Scalar,3,1> v0, v1, v2, vr;
       // same side
-      v0 << vertices_[get<0>(face)].pt_[0], vertices_[get<0>(face)].pt_[1], vertices_[get<0>(face)].pt_[2];
-      v1 << vertices_[get<1>(face)].pt_[0], vertices_[get<1>(face)].pt_[1], vertices_[get<1>(face)].pt_[2];
-      v2 << vertices_[get<2>(face)].pt_[0], vertices_[get<2>(face)].pt_[1], vertices_[get<2>(face)].pt_[2];
+      v0 << vertices_[face_vids[0]].pt_[0], vertices_[face_vids[0]].pt_[1], vertices_[face_vids[0]].pt_[2];
+      v1 << vertices_[face_vids[1]].pt_[0], vertices_[face_vids[1]].pt_[1], vertices_[face_vids[1]].pt_[2];
+      v2 << vertices_[face_vids[2]].pt_[0], vertices_[face_vids[2]].pt_[1], vertices_[face_vids[2]].pt_[2];
       vr << vertices_[vid].pt_[0], vertices_[vid].pt_[1], vertices_[vid].pt_[2];
       Eigen::Matrix<zsw::Scalar,3,1> n = (v1-v0).cross(v2-v0);
       Eigen::Matrix<zsw::Scalar,3,1> m = vr-v0;
-      n = n.dot(m) * n;
-      opt.addConstraint(n[0],n[1],n[2],0);
+      zsw::Scalar k=n.dot(m);
+      n = k * n;
+      std::cerr << "!!!!!!!!!" << n.transpose() << std::endl;
+      opt.addConstraint(n[0],n[1],n[2],k*n.dot(v0));
     }
   }
 
@@ -356,6 +360,9 @@ namespace zsw
          vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
          vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_) { continue; } // useless tet the same type
 
+#if 0
+      if(tet.vind0_!=34 && tet.vind1_!=34 && tet.vind2_!=34 && tet.vind3_!=34) { continue; }
+#endif
       tets_data.push_back(tet.vind0_);
       tets_data.push_back(tet.vind1_);
       tets_data.push_back(tet.vind2_);
