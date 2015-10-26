@@ -5,11 +5,11 @@
 #include <memory>
 #include <Eigen/Dense>
 #include <zswlib/mesh/mesh_type.h>
-
 #include "cgal_common.h"
+#include "optimizer.h"
 
 #define ZSW_DEBUG
-#define FAKE_KERNEL_REGION_POINT
+//#define FAKE_KERNEL_REGION_POINT
 
 namespace zsw {
 
@@ -75,7 +75,8 @@ namespace zsw {
 
     bool collapseEdge(Edge &e);
     void collapseEdge(Edge &e, const Point &pt);
-    bool findKernelRegionPoint(const Edge &e, Point &pt) const;
+    bool findKernelRegionPoint(const Edge &e, Eigen::Matrix<zsw::Scalar,3,1> &pt) const;
+    void addOneRingConstraint(const size_t vid, const size_t evid, zsw::Optimizer &opt) const;
 
     zsw::Scalar sample_dense_;
     std::vector<Vertex> vertices_;

@@ -7,6 +7,7 @@
 #include <zswlib/error_ctrl.h>
 #include <zswlib/zsw_clock_c11.h>
 #include <zswlib/zsw_stl_ext.h>
+#include "optimizer.h"
 #include "sampling.h"
 
 using namespace std;
@@ -112,7 +113,8 @@ namespace zsw
       // if(count%100 == 0) {       std::cerr << "cost:" << clock.time() << std::endl;      }
 
       //take sample points
-      if(0) {
+#if 0
+      {
         Eigen::Matrix<zsw::Scalar, 3, 4> sample_tet_points;
         sample_tet_points(0,0) = vertices_[tmp_tet.vind0_].pt_[0];
         sample_tet_points(1,0) = vertices_[tmp_tet.vind0_].pt_[1];
@@ -133,6 +135,7 @@ namespace zsw
         // add sample points into sample_points_
         zsw::sampleTet(sample_dense_, sample_tet_points, sample_points_);
       }
+#endif
       ++tet_id;
     }
   }
@@ -157,7 +160,7 @@ namespace zsw
   {
     /**
      *check if edge satisfy the link condition: the linked points of v0 and v1 is a valid triangle
-     **/
+                      **/
     // linked vids
     set<size_t> vid_set;
     set<size_t> linked_vids;
@@ -183,15 +186,16 @@ namespace zsw
     }
 
     // kernel region sampling point
-    Point pt;
-    if(!findKernelRegionPoint(edge, pt)) { return false; }
+    Eigen::Matrix<zsw::Scalar,3,1> res_pt;
+    if(!findKernelRegionPoint(edge, res_pt)) { return false; }
 
     // do collapse edge
+    Point pt(res_pt[0], res_pt[1], res_pt[2]);
     collapseEdge(edge, pt);
     return true;
   }
 
-  bool TetMesh::findKernelRegionPoint(const Edge &edge, Point &pt) const
+  bool TetMesh::findKernelRegionPoint(const Edge &edge, Eigen::Matrix<zsw::Scalar,3,1> &pt) const
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 #ifdef FAKE_KERNEL_REGION_POINT
@@ -201,25 +205,59 @@ namespace zsw
               (vertices_[edge.vind0_].pt_[2] + vertices_[edge.vind1_].pt_[2])/2);
     return true;
 #else
-    KernelRegionJudger krj;
-    for(size_t tet_id : vertices_[edge.vind0_]) {
-      if(tets_[tet_id].vind0_ == edge.vind1_ || tets_[tet_id].vind1_ == edge.vind1_
-         || tets_[tet_id].vind2_ == edge.vind1_ || tets_[tet_id].vind3_ == edge.vind1_) {
-        continue;
-      }
-      std::triple<size_t, size_t, size_t> face;
-      size_t *ptr = &face.first;
-      if(tets_[tet_id].vind0_ != edge.vind1_) { *ptr=tets_[tet_id].vind0_; ++ptr; }
-      if(tets_[tet_id].vind1_ != edge.vind1_) { *ptr=tets_[tet_id].vind1_; ++ptr; }
-      if(tets_[tet_id].vind2_ != edge.vind1_) { *ptr=tets_[tet_id].vind2_; ++ptr; }
-      if(tets_[tet_id].vind3_ != edge.vind1_) { *ptr=tets_[tet_id].vind3_;}
-      faces.push_back(face);
-      Eigen::Matrix<zsw::Scalar, 3, 1> v0, v1, v2, vr;
-      krj.addConstraint(v0,v1,v2,vr);
+    // find the one ring faces, and add constraint
+    Eigen::Matrix<Ipopt::Number,3,1> cx;
+    cx << (vertices_[edge.vind0_].pt_[0]+vertices_[edge.vind1_].pt_[0])/2.0,
+      (vertices_[edge.vind0_].pt_[1]+vertices_[edge.vind1_].pt_[1])/2.0,
+      (vertices_[edge.vind0_].pt_[2]+vertices_[edge.vind1_].pt_[2])/2.0;
+    Ipopt::SmartPtr<zsw::Optimizer> opt= new zsw::Optimizer(cx);
+    addOneRingConstraint(edge.vind0_, edge.vind1_, *opt);
+    addOneRingConstraint(edge.vind1_, edge.vind0_, *opt);
+
+    Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
+    app->Options()->SetNumericValue("tol", 1e-3);
+    app->Options()->SetStringValue("mu_strategy", "adaptive");
+    app->Options()->SetStringValue("output_file", "ipopt.out");
+
+    if(!app->Initialize()) {
+      std::cerr << "Error during initialization!" << std::endl;
+      return false;
     }
-    // TODO find the sample point using the krj
+
+    // Ask Ipopt to solve the problem
+    if(app->OptimizeTNLP(opt) == Ipopt::Solve_Succeeded) {
+      std::cout << "Solved fine!!!" << std::endl;
+      opt->getResult(pt);
+      return true;
+    }
 #endif
     return false;
+  }
+
+  void TetMesh::addOneRingConstraint(const size_t vid, const size_t evid, zsw::Optimizer &opt) const
+  {
+    for(size_t tet_id : vertices_[vid].tet_ids_) {
+      if(tets_[tet_id].vind0_ == evid || tets_[tet_id].vind1_ == evid
+         || tets_[tet_id].vind2_ == evid || tets_[tet_id].vind3_ == evid) {
+        continue;
+      }
+      std::tuple<size_t, size_t, size_t> face;
+      size_t *ptr = &get<0>(face);
+      if(tets_[tet_id].vind0_ != vid) { *ptr=tets_[tet_id].vind0_; ++ptr; }
+      if(tets_[tet_id].vind1_ != vid) { *ptr=tets_[tet_id].vind1_; ++ptr; }
+      if(tets_[tet_id].vind2_ != vid) { *ptr=tets_[tet_id].vind2_; ++ptr; }
+      if(tets_[tet_id].vind3_ != vid) { *ptr=tets_[tet_id].vind3_;}
+      Eigen::Matrix<zsw::Scalar,3,1> v0, v1, v2, vr;
+      // same side
+      v0 << vertices_[get<0>(face)].pt_[0], vertices_[get<0>(face)].pt_[1], vertices_[get<0>(face)].pt_[2];
+      v1 << vertices_[get<1>(face)].pt_[0], vertices_[get<1>(face)].pt_[1], vertices_[get<1>(face)].pt_[2];
+      v2 << vertices_[get<2>(face)].pt_[0], vertices_[get<2>(face)].pt_[1], vertices_[get<2>(face)].pt_[2];
+      vr << vertices_[vid].pt_[0], vertices_[vid].pt_[1], vertices_[vid].pt_[2];
+      Eigen::Matrix<zsw::Scalar,3,1> n = (v1-v0).cross(v2-v0);
+      Eigen::Matrix<zsw::Scalar,3,1> m = vr-v0;
+      n = n.dot(m) * n;
+      opt.addConstraint(n[0],n[1],n[2],0);
+    }
   }
 
   void TetMesh::collapseEdge(Edge &e, const Point &pt)
@@ -237,8 +275,8 @@ namespace zsw
     }
     for(size_t tet_id : vertices_[e.vind1_].tet_ids_) {
       if(!tets_[tet_id].valid_) { continue; }
-      if(tets_[tet_id].vind0_==e.vind0_ || tets_[tet_id].vind1_==e.vind0_ ||
-         tets_[tet_id].vind2_==e.vind0_ || tets_[tet_id].vind3_==e.vind0_) { tets_[tet_id].valid_=false; continue; }
+      // if(tets_[tet_id].vind0_==e.vind0_ || tets_[tet_id].vind1_==e.vind0_ ||
+      //    tets_[tet_id].vind2_==e.vind0_ || tets_[tet_id].vind3_==e.vind0_) { tets_[tet_id].valid_=false; continue; }
       if(tets_[tet_id].vind0_ == e.vind1_) { tets_[tet_id].vind0_=e.vind0_; }
       else if(tets_[tet_id].vind1_==e.vind1_) { tets_[tet_id].vind1_=e.vind0_; }
       else if(tets_[tet_id].vind2_==e.vind1_) { tets_[tet_id].vind2_=e.vind0_; }
@@ -375,7 +413,7 @@ namespace zsw
   }
 
   void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
-                       const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
+                                              const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
   {
     vec_v0.push_back(v0);
     Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;

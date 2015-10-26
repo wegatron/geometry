@@ -56,6 +56,8 @@ namespace zsw
                            Ipopt::Number obj_value,
                            const Ipopt::IpoptData* ip_data,
                            Ipopt::IpoptCalculatedQuantities* ip_cq);
+    template<typename SCALAR>
+      void getResult(Eigen::Matrix<SCALAR,3,1> &res) { std::copy(res.data(), &res_x_[0], &res_x_[0]+3); }
 #ifdef ZSW_DEBUG
     bool verify() const;
 #endif
