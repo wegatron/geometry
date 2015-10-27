@@ -23,7 +23,7 @@ void test_triangulation(const string &file_path, const string &output_prefix, co
 
 int main(int argc, char *argv[])
 {
-  test_triangulation("/home/wegatron/workspace/geometry/data/sphere.obj",
+  test_triangulation("/home/wegatron/workspace/geometry/data/teaport.obj",
                      "/home/wegatron/tmp/test_triangulation/", 0.01);
   return 0;
 }
