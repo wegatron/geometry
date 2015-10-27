@@ -59,7 +59,7 @@ namespace zsw {
     TetMesh(const std::vector<Point> bz_points, const std::vector<Point> &bo_points, const std::vector<Point> &bi_points,
             const zsw::Scalar sample_dense);
 
-    void simplify();
+    void simplify(const zsw::Scalar tol);
     void cleanVertices();
     void writeVtk(const std::string &filepath) const;
     void writeSurface(const std::string &filepath, const char pt_type) const;
@@ -74,9 +74,9 @@ namespace zsw {
     void addEdges(const Delaunay &ti, const Delaunay &to);
     void updateFv(Edge &e);
 
-    bool collapseEdge(Edge &e);
+    bool collapseEdge(Edge &e, const zsw::Scalar tol);
     void collapseEdge(Edge &e, const Point &pt);
-    bool findKernelRegionPoint(const Edge &e, Eigen::Matrix<zsw::Scalar,3,1> &pt) const;
+    bool findKernelRegionPoint(const Edge &e, Eigen::Matrix<zsw::Scalar,3,1> &pt, const zsw::Scalar tol) const;
     void addOneRingConstraint(const size_t vid, const size_t evid, zsw::Optimizer &opt) const;
 
     zsw::Scalar sample_dense_;

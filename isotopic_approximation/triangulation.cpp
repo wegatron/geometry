@@ -146,7 +146,7 @@ namespace zsw
   }
 
 
-  void TetMesh::simplify()
+  void TetMesh::simplify(const zsw::Scalar tol)
   {
     // collapse ZEdges
     bool collapsable = true;
@@ -157,7 +157,7 @@ namespace zsw
       for(Edge &edge : edges_) {
         if(!edge.valid_) { continue; }
         if(vertices_[edge.vind0_].pt_type_==0 && vertices_[edge.vind1_].pt_type_==0
-           && collapseEdge(edge)) { collapsable=true; ++collapse_cnt; }
+           && collapseEdge(edge, tol)) { collapsable=true; ++collapse_cnt; }
       }
 
       std::cout << "Collapsed times:" << collapse_cnt << std::endl;
@@ -167,7 +167,7 @@ namespace zsw
     }
   }
 
-  bool TetMesh::collapseEdge(Edge &edge)
+  bool TetMesh::collapseEdge(Edge &edge, const zsw::Scalar tol)
   {
     /**
      *check if edge satisfy the link condition: the linked points of v0 and v1 is a valid triangle
@@ -198,7 +198,7 @@ namespace zsw
 
     // kernel region sampling point
     Eigen::Matrix<zsw::Scalar,3,1> res_pt;
-    if(!findKernelRegionPoint(edge, res_pt)) { return false; }
+    if(!findKernelRegionPoint(edge, res_pt, tol)) { return false; }
 
     // do collapse edge
     Point pt(res_pt[0], res_pt[1], res_pt[2]);
@@ -206,7 +206,7 @@ namespace zsw
     return true;
   }
 
-  bool TetMesh::findKernelRegionPoint(const Edge &edge, Eigen::Matrix<zsw::Scalar,3,1> &pt) const
+  bool TetMesh::findKernelRegionPoint(const Edge &edge, Eigen::Matrix<zsw::Scalar,3,1> &pt, const zsw::Scalar tol) const
   {
 #ifdef FAKE_KERNEL_REGION_POINT
     std::cerr << "FAKE_KERNEL_REGION_POINT" << std::endl;
@@ -225,10 +225,10 @@ namespace zsw
     addOneRingConstraint(edge.vind1_, edge.vind0_, *opt);
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
-    app->Options()->SetNumericValue("tol", 1e-3);
-    app->Options()->SetIntegerValue("max_iter", 200);
+    app->Options()->SetNumericValue("tol", tol);
+    app->Options()->SetIntegerValue("max_iter", 100);
     app->Options()->SetIntegerValue("print_level", 1);
-    app->Options()->SetIntegerValue("print_frequency_iter", 200);
+    app->Options()->SetIntegerValue("print_frequency_iter", 100);
     app->Options()->SetStringValue("mu_strategy", "adaptive");
     app->Options()->SetStringValue("output_file", "ipopt.out");
 
@@ -491,7 +491,7 @@ namespace zsw
     for(Edge &edge : edges_) {
       // std::cerr << "edge:" << edge.vind0_ << " : " << edge.vind1_ << std::endl;
       if((edge.vind0_==vind0 && edge.vind1_==vind1) || (edge.vind0_==vind1 && edge.vind1_==vind0)) {
-        collapseEdge(edge);
+        collapseEdge(edge, 1e-3);
         std::cout << "edge: " << edge.vind0_ << ":" << edge.vind1_ << "collapsed fine!!!" << std::endl;
         return true;
       }
