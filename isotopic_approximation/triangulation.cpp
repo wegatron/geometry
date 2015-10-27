@@ -425,32 +425,38 @@ namespace zsw
 
   void TetMesh::writeSurface(const std::string &filepath, const char pt_type) const
   {
-    //std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    std::cerr << "TODO remove the unused points!!!" << std::endl;
-    std::vector<Eigen::Matrix<size_t,3,1>> faces;
-    std::map<size_t,size_t> used_vind_map;
+    std::set<Eigen::Matrix<size_t,3,1>, bool (*)(Eigen::Matrix<size_t,3,1>, Eigen::Matrix<size_t,3,1>)>
+      faces([](Eigen::Matrix<size_t,3,1> a, Eigen::Matrix<size_t,3,1> b){ return a[0]<b[0] || a[1]<b[1] || a[2]<b[2]; });
+    vector<size_t> used_vind_map(vertices_.size(),0);
     size_t used_vid=0;
     for(const Tet &tet : tets_) {
+      if(!tet.valid_) { continue; }
       Eigen::Matrix<size_t,4,1> face;
       size_t i=0;
-      if(vertices_[tet.vind0_].pt_type_==pt_type) { face[i]=tet.vind0_;  ++i; }
-      if(vertices_[tet.vind1_].pt_type_==pt_type) { face[i]=tet.vind1_;  ++i; }
-      if(vertices_[tet.vind2_].pt_type_==pt_type) { face[i]=tet.vind2_;  ++i; }
-      if(vertices_[tet.vind3_].pt_type_==pt_type) { face[i]=tet.vind3_;  ++i; }
-      if(i==4) {
-        sort(face.data(), face.data()+3);  faces.push_back(face.block<3,1>(0,0));
-        if(used_vind_map.find(face[0])==used_vind_map.end()) { used_vind_map.insert(pair<size_t,size_t>(face[0], used_vid++));  }
-        if(used_vind_map.find(face[1])==used_vind_map.end()) { used_vind_map.insert(pair<size_t,size_t>(face[1], used_vid++));  }
-        if(used_vind_map.find(face[2])==used_vind_map.end()) { used_vind_map.insert(pair<size_t,size_t>(face[2], used_vid++));  }
+      if(vertices_[tet.vind0_].pt_type_==pt_type) { face[i++]=tet.vind0_; }
+      if(vertices_[tet.vind1_].pt_type_==pt_type) { face[i++]=tet.vind1_; }
+      if(vertices_[tet.vind2_].pt_type_==pt_type) { face[i++]=tet.vind2_; }
+      if(vertices_[tet.vind3_].pt_type_==pt_type) { face[i++]=tet.vind3_; }
+      if(i==3) {
+        sort(face.data(), face.data()+3);
+        faces.insert(face.block<3,1>(0,0));
+        used_vind_map[face[0]]=-1;
+        used_vind_map[face[1]]=-1;
+        used_vind_map[face[2]]=-1;
       }
     }
     ofstream ofs;
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
-    for(pair<size_t,size_t> vid_pair: used_vind_map) {
-      ofs << "v " << vertices_[vid_pair.first].pt_[0] << " " << vertices_[vid_pair.first].pt_[1]
-          << " " << vertices_[vid_pair.first].pt_[2] << std::endl;
+
+    size_t index=0;
+    for(size_t i=0; i<used_vind_map.size(); ++i) {
+      if(used_vind_map[i] == -1) {
+        ofs << "v " << vertices_[i].pt_[0] << " " << vertices_[i].pt_[1]
+            << " " << vertices_[i].pt_[2] << std::endl;
+        used_vind_map[i] = ++index;
+      }
     }
-    for(Eigen::Matrix<size_t,3,1> &face : faces) {
+    for(const Eigen::Matrix<size_t,3,1> &face : faces) {
       ofs << "f " << used_vind_map[face[0]] << " " << used_vind_map[face[1]] << " " << used_vind_map[face[2]] << std::endl;
     }
     ofs.close();
