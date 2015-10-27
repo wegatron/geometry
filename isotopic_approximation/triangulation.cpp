@@ -221,6 +221,7 @@ namespace zsw
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
     app->Options()->SetNumericValue("tol", 1e-3);
     app->Options()->SetIntegerValue("max_iter", 200);
+    app->Options()->SetIntegerValue("print_level", 1);
     app->Options()->SetStringValue("mu_strategy", "adaptive");
     app->Options()->SetStringValue("output_file", "ipopt.out");
 
@@ -236,7 +237,7 @@ namespace zsw
       return true;
     }
 #endif
-    exit(__LINE__);
+    //exit(__LINE__);
     return false;
   }
 
