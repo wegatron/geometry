@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(collapse_edge_fkr0)
   zsw::SurfaceGenerator sfg;
   vector<zsw::Point> bz_points, bo_points, bi_points;
   sfg.genPoints(0.2, input_mesh, bz_points, bo_points, bi_points);
-  zsw::TetMesh tm(bz_points, bo_points, bi_points, 0.02);
+  zsw::TetMesh tm(bz_points, bo_points, bi_points);
 
   const std::vector<zsw::TetMesh::Vertex> &vertices = tm.getVertices();
   const std::vector<zsw::TetMesh::Tet> &tets = tm.getTets();

@@ -14,10 +14,8 @@ using namespace std;
 
 namespace zsw
 {
-  TetMesh::TetMesh(const vector<Point> bz_points, const vector<Point> &bo_points, const vector<Point> &bi_points,
-                   const zsw::Scalar sample_dense)
+  TetMesh::TetMesh(const vector<Point> bz_points, const vector<Point> &bo_points, const vector<Point> &bi_points)
   {
-    sample_dense_ = sample_dense;
     // add points
     for(const Point &pt : bz_points) { vertices_.push_back({0, pt, -1, {},{}}); }
     for(const Point &pt : bo_points) { vertices_.push_back({1, pt, -1, {},{}}); }
@@ -344,7 +342,7 @@ namespace zsw
     }
   }
 
-  void TetMesh::writeVtk(const std::string &filepath) const
+  void TetMesh::writeVtk(const std::string &filepath, const char filter_pt_type) const
   {
     std::ofstream ofs;
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
@@ -371,6 +369,11 @@ namespace zsw
       assert(!(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
                vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
                vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_));
+
+      if(vertices_[tet.vind0_].pt_type_==filter_pt_type || vertices_[tet.vind1_].pt_type_==filter_pt_type
+         || vertices_[tet.vind2_].pt_type_==filter_pt_type || vertices_[tet.vind3_].pt_type_==filter_pt_type) {
+        continue;
+      }
 
       tets_data.push_back(tet.vind0_);
       tets_data.push_back(tet.vind1_);

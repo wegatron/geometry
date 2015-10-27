@@ -56,12 +56,11 @@ namespace zsw {
       std::vector<size_t> fv_; // the vertex id, that construct a valid face with this edge. the vertex construct a face with this edge must be sorted
     };
 
-    TetMesh(const std::vector<Point> bz_points, const std::vector<Point> &bo_points, const std::vector<Point> &bi_points,
-            const zsw::Scalar sample_dense);
+    TetMesh(const std::vector<Point> bz_points, const std::vector<Point> &bo_points, const std::vector<Point> &bi_points);
 
     void simplify(const zsw::Scalar tol);
     void cleanVertices();
-    void writeVtk(const std::string &filepath) const;
+    void writeVtk(const std::string &filepath, const char filter_pt_type=-2) const;
     void writeSurface(const std::string &filepath, const char pt_type) const;
 #ifdef ZSW_DEBUG
     bool testCollapseEdge(size_t vind0, size_t vind1);
@@ -79,7 +78,6 @@ namespace zsw {
     bool findKernelRegionPoint(const Edge &e, Eigen::Matrix<zsw::Scalar,3,1> &pt, const zsw::Scalar tol) const;
     void addOneRingConstraint(const size_t vid, const size_t evid, zsw::Optimizer &opt) const;
 
-    zsw::Scalar sample_dense_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
     std::vector<Edge> edges_;
