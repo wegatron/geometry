@@ -16,11 +16,12 @@ void test(const std::string &file_path, const zsw::Scalar dis)
   sfg.genPoints(dis, input_mesh, bz_points, bo_points, bi_points);
   zsw::TetMesh tm(bz_points, bo_points, bi_points, 0.02);
   tm.simplify();
-  tm.writeVtk("/home/wegatron/tmp_beam.vtk");
+  tm.writeVtk("/home/wegatron/tmp_sphere.vtk");
 }
 
 int main(int argc, char *argv[])
 {
-  test("/home/wegatron/workspace/geometry/data/beam.stl", 0.1);
+  //test("/home/wegatron/workspace/geometry/data/beam.stl", 0.1);
+  test("/home/wegatron/workspace/geometry/data/sphere.stl", 0.2);
   return 0;
 }

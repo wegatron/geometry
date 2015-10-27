@@ -238,7 +238,6 @@ namespace zsw
 #endif
     exit(__LINE__);
     return false;
-      std::cout << "Solved fine!!!" << std::endl;
   }
 
   void TetMesh::addOneRingConstraint(const size_t vid, const size_t evid, zsw::Optimizer &opt) const
@@ -266,7 +265,7 @@ namespace zsw
       zsw::Scalar k=n.dot(m);
       Eigen::Matrix<zsw::Scalar,3,1> kn = k * n;
       std::cerr << "!!!!!!!!!" << n.transpose() << std::endl;
-      opt.addConstraint(kn[0],kn[1],kn[2], kn.dot(v0));
+      opt.addConstraint(kn[0],kn[1],kn[2], kn.dot(v0)); // bug fix replace k*kn --> kn
     }
   }
 
