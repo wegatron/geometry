@@ -57,9 +57,10 @@ namespace zsw
                            const Ipopt::IpoptData* ip_data,
                            Ipopt::IpoptCalculatedQuantities* ip_cq);
     template<typename SCALAR>
-      void getResult(Eigen::Matrix<SCALAR,3,1> &res) { std::copy(res.data(), &res_x_[0], &res_x_[0]+3); }
+      void getResult(Eigen::Matrix<SCALAR,3,1> &res) const { std::copy(&res_x_[0], &res_x_[0]+3, res.data()); }
 #ifdef ZSW_DEBUG
     bool verify() const;
+    bool verify(const Eigen::Matrix<Ipopt::Number,3,1> &res) const ;
 #endif
   private:
     Ipopt::Index cn_; // number of constraint

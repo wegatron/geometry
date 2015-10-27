@@ -19,9 +19,9 @@ namespace zsw
   {
     sample_dense_ = sample_dense;
     // add points
-    for(const Point &pt : bz_points) { vertices_.push_back({0, pt, -1, {}}); }
-    for(const Point &pt : bo_points) { vertices_.push_back({1, pt, -1, {}}); }
-    for(const Point &pt : bi_points) {  vertices_.push_back({-1, pt, -1, {}}); }
+    for(const Point &pt : bz_points) { vertices_.push_back({0, pt, -1, {},{}}); }
+    for(const Point &pt : bo_points) { vertices_.push_back({1, pt, -1, {},{}}); }
+    for(const Point &pt : bi_points) {  vertices_.push_back({-1, pt, -1, {},{}}); }
 
     // 3d triangulation
     std::vector<pair<Point, size_t>> tmo; // outer tetmesh and inner tetmesh
@@ -100,6 +100,11 @@ namespace zsw
   {
     for(Delaunay::Finite_cells_iterator cit=td.finite_cells_begin();
         cit!=td.finite_cells_end(); ++cit) {
+      if(vertices_[cit->vertex(0)->info()].pt_type_ ==vertices_[cit->vertex(1)->info()].pt_type_ &&
+         vertices_[cit->vertex(1)->info()].pt_type_ ==vertices_[cit->vertex(2)->info()].pt_type_ &&
+         vertices_[cit->vertex(2)->info()].pt_type_ ==vertices_[cit->vertex(3)->info()].pt_type_ )  {
+        continue;
+      }
       Tet tmp_tet = {cit->vertex(0)->info(), cit->vertex(1)->info(), cit->vertex(2)->info(), cit->vertex(3)->info(), true};
       tets_.push_back(tmp_tet);
       vertices_[tmp_tet.vind0_].tet_ids_.push_back(tet_id);
@@ -215,6 +220,7 @@ namespace zsw
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
     app->Options()->SetNumericValue("tol", 1e-3);
+    app->Options()->SetIntegerValue("max_iter", 200);
     app->Options()->SetStringValue("mu_strategy", "adaptive");
     app->Options()->SetStringValue("output_file", "ipopt.out");
 
@@ -229,15 +235,15 @@ namespace zsw
       opt->getResult(pt);
       return true;
     }
-    exit(__LINE__);
 #endif
+    exit(__LINE__);
     return false;
+      std::cout << "Solved fine!!!" << std::endl;
   }
 
   void TetMesh::addOneRingConstraint(const size_t vid, const size_t evid, zsw::Optimizer &opt) const
   {
     std::cerr << "vid:" << vid << "," << evid << std::endl;
-    std::cerr << "tets size:" << vertices_[vid].tet_ids_.size() << std::endl;
     for(size_t tet_id : vertices_[vid].tet_ids_) {
       if(tets_[tet_id].vind0_ == evid || tets_[tet_id].vind1_ == evid
          || tets_[tet_id].vind2_ == evid || tets_[tet_id].vind3_ == evid) {
@@ -258,9 +264,9 @@ namespace zsw
       Eigen::Matrix<zsw::Scalar,3,1> n = (v1-v0).cross(v2-v0);
       Eigen::Matrix<zsw::Scalar,3,1> m = vr-v0;
       zsw::Scalar k=n.dot(m);
-      n = k * n;
+      Eigen::Matrix<zsw::Scalar,3,1> kn = k * n;
       std::cerr << "!!!!!!!!!" << n.transpose() << std::endl;
-      opt.addConstraint(n[0],n[1],n[2],k*n.dot(v0));
+      opt.addConstraint(kn[0],kn[1],kn[2], kn.dot(v0));
     }
   }
 
@@ -339,7 +345,6 @@ namespace zsw
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
     std::vector<zsw::Scalar> pts_data;
     std::vector<size_t> tets_data;
-    std::cerr << "[INFO] finish clean vertices!" << std::endl;
     for(const Vertex &v : vertices_) {
       pts_data.push_back(v.pt_[0]);
       pts_data.push_back(v.pt_[1]);
@@ -356,13 +361,12 @@ namespace zsw
 #endif
     for(const Tet &tet : tets_) {
       if(!tet.valid_) { continue; }
-      if(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
-         vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
-         vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_) { continue; } // useless tet the same type
 
-#if 0
-      if(tet.vind0_!=34 && tet.vind1_!=34 && tet.vind2_!=34 && tet.vind3_!=34) { continue; }
-#endif
+      // useless tet the same type
+      assert(!(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
+               vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
+               vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_));
+
       tets_data.push_back(tet.vind0_);
       tets_data.push_back(tet.vind1_);
       tets_data.push_back(tet.vind2_);

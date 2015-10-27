@@ -137,10 +137,32 @@ namespace zsw
     assert(cn_==vec_c_.size());
     assert(cn_==vec_d_.size());
 
+    const double eps=1e-5;
     for(int i=0; i<cn_; ++i) {
-      if(vec_a_[i]*res_x_[0]+vec_b_[i]*res_x_[1]+vec_c_[i]*res_x_[2] < vec_d_[i]) { return false; }
+      if(vec_a_[i]*res_x_[0]+vec_b_[i]*res_x_[1]+vec_c_[i]*res_x_[2] < vec_d_[i]-eps) {
+        std::cerr << "ERROR : " << vec_a_[i]*res_x_[0]+vec_b_[i]*res_x_[1]+vec_c_[i]*res_x_[2]-vec_d_[i] << std::endl;
+        return false;
+      }
     }
     return true;
   }
+
+  bool Optimizer::verify(const Eigen::Matrix<Ipopt::Number,3,1> &res) const
+  {
+    assert(cn_==vec_a_.size());
+    assert(cn_==vec_b_.size());
+    assert(cn_==vec_c_.size());
+    assert(cn_==vec_d_.size());
+
+    const double eps=1e-5;
+    for(int i=0; i<cn_; ++i) {
+      if(vec_a_[i]*res[0]+vec_b_[i]*res[1]+vec_c_[i]*res[2] < vec_d_[i]-eps) {
+        std::cerr << "ERROR : " << vec_a_[i]*res[0]+vec_b_[i]*res[1]+vec_c_[i]*res[2]-vec_d_[i] << std::endl;
+        return false;
+      }
+    }
+    return true;
+  }
+
 #endif
 }
