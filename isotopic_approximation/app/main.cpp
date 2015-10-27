@@ -15,13 +15,17 @@ void test(const std::string &file_path, const zsw::Scalar dis)
   vector<zsw::Point> bz_points, bo_points, bi_points;
   sfg.genPoints(dis, input_mesh, bz_points, bo_points, bi_points);
   zsw::TetMesh tm(bz_points, bo_points, bi_points, 0.02);
+  tm.writeSurface("/home/wegatron/tmp/ori_bo_sphere.obj", 1);
+  tm.writeSurface("/home/wegatron/tmp/ori_zero_sphere.obj", 0);
+  tm.writeSurface("/home/wegatron/tmp/ori_bi_sphere.obj", -1);
+
   tm.simplify();
-  tm.writeVtk("/home/wegatron/tmp_sphere.vtk");
+  tm.writeSurface("/home/wegatron/tmp/res_sphere.obj", 0);
 }
 
 int main(int argc, char *argv[])
 {
   //test("/home/wegatron/workspace/geometry/data/beam.stl", 0.1);
-  test("/home/wegatron/workspace/geometry/data/sphere.stl", 0.2);
+  test("/home/wegatron/workspace/geometry/data/sphere.stl", 0.07);
   return 0;
 }

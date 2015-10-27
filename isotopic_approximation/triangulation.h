@@ -10,6 +10,7 @@
 
 #define ZSW_DEBUG
 //#define FAKE_KERNEL_REGION_POINT
+//#define COLLAPSE_ONCE
 
 namespace zsw {
 
@@ -61,7 +62,7 @@ namespace zsw {
     void simplify();
     void cleanVertices();
     void writeVtk(const std::string &filepath) const;
-    void writeZeroSetSurface(const std::string &filepath);
+    void writeSurface(const std::string &filepath, const char pt_type) const;
 #ifdef ZSW_DEBUG
     bool testCollapseEdge(size_t vind0, size_t vind1);
 #endif

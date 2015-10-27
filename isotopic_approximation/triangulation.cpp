@@ -150,14 +150,20 @@ namespace zsw
   {
     // collapse ZEdges
     bool collapsable = true;
+    size_t collapse_cnt=0;
     while(collapsable) {
       collapsable = false;
       // here the edges_'s vector size should not change
       for(Edge &edge : edges_) {
         if(!edge.valid_) { continue; }
         if(vertices_[edge.vind0_].pt_type_==0 && vertices_[edge.vind1_].pt_type_==0
-           && collapseEdge(edge)) { collapsable=true; }
+           && collapseEdge(edge)) { collapsable=true; ++collapse_cnt; }
       }
+
+      std::cout << "Collapsed times:" << collapse_cnt << std::endl;
+#ifdef COLLAPSE_ONCE
+      collapsable=false;
+#endif
     }
   }
 
@@ -222,6 +228,7 @@ namespace zsw
     app->Options()->SetNumericValue("tol", 1e-3);
     app->Options()->SetIntegerValue("max_iter", 200);
     app->Options()->SetIntegerValue("print_level", 1);
+    app->Options()->SetIntegerValue("print_frequency_iter", 200);
     app->Options()->SetStringValue("mu_strategy", "adaptive");
     app->Options()->SetStringValue("output_file", "ipopt.out");
 
@@ -243,7 +250,6 @@ namespace zsw
 
   void TetMesh::addOneRingConstraint(const size_t vid, const size_t evid, zsw::Optimizer &opt) const
   {
-    std::cerr << "vid:" << vid << "," << evid << std::endl;
     for(size_t tet_id : vertices_[vid].tet_ids_) {
       if(tets_[tet_id].vind0_ == evid || tets_[tet_id].vind1_ == evid
          || tets_[tet_id].vind2_ == evid || tets_[tet_id].vind3_ == evid) {
@@ -265,7 +271,6 @@ namespace zsw
       Eigen::Matrix<zsw::Scalar,3,1> m = vr-v0;
       zsw::Scalar k=n.dot(m);
       Eigen::Matrix<zsw::Scalar,3,1> kn = k * n;
-      std::cerr << "!!!!!!!!!" << n.transpose() << std::endl;
       opt.addConstraint(kn[0],kn[1],kn[2], kn.dot(v0)); // bug fix replace k*kn --> kn
     }
   }
@@ -418,9 +423,37 @@ namespace zsw
     }
   }
 
-  void TetMesh::writeZeroSetSurface(const std::string &filepath)
+  void TetMesh::writeSurface(const std::string &filepath, const char pt_type) const
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    //std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    std::cerr << "TODO remove the unused points!!!" << std::endl;
+    std::vector<Eigen::Matrix<size_t,3,1>> faces;
+    std::map<size_t,size_t> used_vind_map;
+    size_t used_vid=0;
+    for(const Tet &tet : tets_) {
+      Eigen::Matrix<size_t,4,1> face;
+      size_t i=0;
+      if(vertices_[tet.vind0_].pt_type_==pt_type) { face[i]=tet.vind0_;  ++i; }
+      if(vertices_[tet.vind1_].pt_type_==pt_type) { face[i]=tet.vind1_;  ++i; }
+      if(vertices_[tet.vind2_].pt_type_==pt_type) { face[i]=tet.vind2_;  ++i; }
+      if(vertices_[tet.vind3_].pt_type_==pt_type) { face[i]=tet.vind3_;  ++i; }
+      if(i==4) {
+        sort(face.data(), face.data()+3);  faces.push_back(face.block<3,1>(0,0));
+        if(used_vind_map.find(face[0])==used_vind_map.end()) { used_vind_map.insert(pair<size_t,size_t>(face[0], used_vid++));  }
+        if(used_vind_map.find(face[1])==used_vind_map.end()) { used_vind_map.insert(pair<size_t,size_t>(face[1], used_vid++));  }
+        if(used_vind_map.find(face[2])==used_vind_map.end()) { used_vind_map.insert(pair<size_t,size_t>(face[2], used_vid++));  }
+      }
+    }
+    ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    for(pair<size_t,size_t> vid_pair: used_vind_map) {
+      ofs << "v " << vertices_[vid_pair.first].pt_[0] << " " << vertices_[vid_pair.first].pt_[1]
+          << " " << vertices_[vid_pair.first].pt_[2] << std::endl;
+    }
+    for(Eigen::Matrix<size_t,3,1> &face : faces) {
+      ofs << "f " << used_vind_map[face[0]] << " " << used_vind_map[face[1]] << " " << used_vind_map[face[2]] << std::endl;
+    }
+    ofs.close();
   }
 
   void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,

@@ -121,11 +121,9 @@ namespace zsw
                                     IpoptCalculatedQuantities* ip_cq)
   {
     if(status == SUCCESS) {
-      std::cout << "success!\n x:"  << Eigen::Map<const Eigen::Matrix<Number,1,3>>(x) << std::endl;
-      std::cout << "g:" << Eigen::Map<const Eigen::Matrix<Number,1,Eigen::Dynamic>>(g, cn_) << std::endl;
+      // std::cout << "success!\n x:"  << Eigen::Map<const Eigen::Matrix<Number,1,3>>(x) << std::endl;
+      // std::cout << "g:" << Eigen::Map<const Eigen::Matrix<Number,1,Eigen::Dynamic>>(g, cn_) << std::endl;
       copy(x, x+3, res_x_);
-    } else {
-      std::cerr << "failed!" << std::endl;
     }
   }
 
