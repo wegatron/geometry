@@ -109,36 +109,6 @@ namespace zsw
       vertices_[tmp_tet.vind1_].tet_ids_.push_back(tet_id);
       vertices_[tmp_tet.vind2_].tet_ids_.push_back(tet_id);
       vertices_[tmp_tet.vind3_].tet_ids_.push_back(tet_id);
-
-      // static zsw::common::ClockC11 clock;
-      // static int count = 0;
-      // count++;
-      // if(count%100 == 0) {       std::cerr << "cost:" << clock.time() << std::endl;      }
-
-      //take sample points
-#if 0
-      {
-        Eigen::Matrix<zsw::Scalar, 3, 4> sample_tet_points;
-        sample_tet_points(0,0) = vertices_[tmp_tet.vind0_].pt_[0];
-        sample_tet_points(1,0) = vertices_[tmp_tet.vind0_].pt_[1];
-        sample_tet_points(2,0) = vertices_[tmp_tet.vind0_].pt_[2];
-
-        sample_tet_points(0,1) = vertices_[tmp_tet.vind1_].pt_[0];
-        sample_tet_points(1,1) = vertices_[tmp_tet.vind1_].pt_[1];
-        sample_tet_points(2,1) = vertices_[tmp_tet.vind1_].pt_[2];
-
-        sample_tet_points(0,2) = vertices_[tmp_tet.vind2_].pt_[0];
-        sample_tet_points(1,2) = vertices_[tmp_tet.vind2_].pt_[1];
-        sample_tet_points(2,2) = vertices_[tmp_tet.vind2_].pt_[2];
-
-        sample_tet_points(0,3) = vertices_[tmp_tet.vind3_].pt_[0];
-        sample_tet_points(1,3) = vertices_[tmp_tet.vind3_].pt_[1];
-        sample_tet_points(2,3) = vertices_[tmp_tet.vind3_].pt_[2];
-
-        // add sample points into sample_points_
-        zsw::sampleTet(sample_dense_, sample_tet_points, sample_points_);
-      }
-#endif
       ++tet_id;
     }
   }
@@ -242,7 +212,6 @@ namespace zsw
       return true;
     }
 #endif
-    //exit(__LINE__);
     return false;
   }
 
@@ -354,21 +323,13 @@ namespace zsw
       pts_data.push_back(v.pt_[2]);
     }
 
-#ifdef WRITE_SAMPLE_POINT
-    // add sampling points
-    for(const Point &pt : sample_points_) {
-      pts_data.push_back(pt[0]);
-      pts_data.push_back(pt[1]);
-      pts_data.push_back(pt[2]);
-    }
-#endif
     for(const Tet &tet : tets_) {
       if(!tet.valid_) { continue; }
-
       // useless tet the same type
-      assert(!(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
-               vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
-               vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_));
+
+      // assert(!(vertices_[tet.vind0_].pt_type_==vertices_[tet.vind1_].pt_type_ &&
+      //          vertices_[tet.vind1_].pt_type_==vertices_[tet.vind2_].pt_type_ &&
+      //          vertices_[tet.vind2_].pt_type_==vertices_[tet.vind3_].pt_type_));
 
       if(vertices_[tet.vind0_].pt_type_==filter_pt_type || vertices_[tet.vind1_].pt_type_==filter_pt_type
          || vertices_[tet.vind2_].pt_type_==filter_pt_type || vertices_[tet.vind3_].pt_type_==filter_pt_type) {
