@@ -8,7 +8,8 @@
 
 % AMS packages:
 \usepackage{amsmath, amsthm, amsfonts}
-\usepackage{algorithm}
+%%\usepackage{algorithm}
+\usepackage[]{algorithm2e}
 \usepackage[hyperref, UTF8]{ctex}
 \usepackage[noend]{algpseudocode}
 \usepackage{graphicx}
@@ -52,8 +53,8 @@
 \DeclareMathOperator{\Jac}{Jac}
 
 %-----------------------------------------------------------------
-\title{Report of paper (Isotopic Approximation within a Tolerance Volume)}
-\author{张胜威\\
+\title{Isotopic Approximation within a Tolerance Volume}
+\author{wegatron\\
   %% \small Dept. Templates and Editors\\
   %% \small E12345\\
   %% \small Spain
@@ -75,7 +76,7 @@
     \end{subfigure}
   \end{figure}
 
-  \begin{figure}
+  \begin{figure}[h]
     \begin{subfigure}[b]{0.4\textwidth}
       \includegraphics[width=\textwidth]{bad_inner_space0.png}
       \caption[现象]{bo+zero\_surface的四面体化}
@@ -85,6 +86,59 @@
       \caption[原因]{bad inner space：teaport不连续,有洞}
     \end{subfigure}
   \end{figure}
-  理想情况下是：根据原模型(zero\_surface)做生成内外壳，并在保存内外壳的三角化的情况下做一个delaunay triangulation.
-  我原来的做法是：(外壳+zero\_surface) + (内壳+zero\_surface)．
+
+  \section{Old Implementation}
+  %% 理想情况下是：根据原模型(zero\_surface)做生成内外壳，并在保存内外壳的三角化的情况下做一个delaunay triangulation.
+  %% 我原来的做法是：
+  \begin{itemize}
+  \item (bo+zero\_surface) + (bi+zero\_surface) 3D delaunay triangulation.
+  \item Do edge collapse in zero\_surface.
+  \end{itemize}
+  problem: small number of edge collapsable number. Very large space to simlify.
+  \section{Implementation steps}
+  \begin{itemize}
+    \item Do 3D delaunay triangulation with $p_{bi}+p_{bo}$, as the result of papers Refinement.
+    \item Simplicial Tolerance:do edge collapse with bi-bi edges or bo-bo edges.
+    \item Zero-set edge collapse.
+    \item All edge edge collapse and then do Zero-set edge collapse again, if possible.
+  \end{itemize}
+  \subsection{Simplicial Tolerance}
+  \begin{figure}[h]
+    \includegraphics[width=\textwidth]{simplicial_tolerance.png}
+    \caption{Do edge collapse with bi-bi edges or bo-bo edges, using the sample point as candicate.}
+  \end{figure}
+  The merge point choice by three condition:
+  \begin{itemize}
+    \item lay in the kernel region.
+    \item do not leading to errors in the classification of S.
+    \item the point with maximum error.
+  \end{itemize}
+
+  \begin{figure}[h]
+      \begin{subfigure}[b]{0.5\textwidth}
+        \includegraphics[width=\textwidth]{keep_classification0}
+        \caption[a]{keep classification of S}
+      \end{subfigure}
+      \begin{subfigure}[b]{0.5\textwidth}
+        \includegraphics[width=\textwidth]{keep_classification1}
+        \caption[b]{keep classification of S}
+      \end{subfigure}
+  \end{figure}
+
+  \begin{algorithm}[H]
+    \KwData{Tet mesh with sample point on bi and bo}
+    \For{e $\in$ bo} {
+      get all the sample points in its one-ring tets. all\_sp\_;\\
+      get the points in kernel region. candi\_sp\_;\\
+      \KwData{merge\_point, max\_error=-1}
+      \For{each sample point $p \in candi\_sp\_$} {
+        calculate all the sample point's error if edge collapse to p.\\
+        \If{keep classification of S and error(p) $>$ max\_error} {
+          merge\_point=p\\
+          max\_error=error(p)
+        }
+      }
+    }
+   \caption{Simplicial tolerance}
+\end{algorithm}
 \end{document}
