@@ -31,7 +31,7 @@ namespace zsw {
   public:
     struct Vertex
     {
-      char pt_type_; // outer_boundary 1, zero_set 0, inner_boundary -1
+      char pt_type_; // bounding box 2, outer_boundary 1, zero_set 0, inner_boundary -1
       Point pt_;
       size_t father_;
       std::vector<size_t> tet_ids_;
@@ -45,6 +45,9 @@ namespace zsw {
       size_t vind2_;
       size_t vind3_;
       bool valid_;
+      /* std::vector<> bi_samples_; */
+      /* std::vector<> bo_samples_; */
+      /* std::vector<> inner_samples_; */
     };
 
     struct Edge
