@@ -34,8 +34,6 @@ namespace zsw
     void projectToLine(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1, Eigen::Matrix<zsw::Scalar,3,1> &sample_point);
   };
 
-  void sampleTet(const zsw::Scalar dense, const Eigen::Matrix<zsw::Scalar, 3, 4> &tet_points, std::vector<Point> &sample_points);
-
   template<typename SCALAR, size_t DIMENSION, size_t N>
     void calcBbox(const Eigen::Matrix<SCALAR, DIMENSION, N> &points, Eigen::Matrix<SCALAR, DIMENSION, 2> &bbox)
   {

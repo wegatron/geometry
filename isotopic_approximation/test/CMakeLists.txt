@@ -31,7 +31,7 @@ find_package(CGAL REQUIRED)
 include_directories(${CGAL_INCLUDE_DIRS})
 
 
-add_executable(test_sampling test_sampling.cpp)
+#add_executable(test_sampling test_sampling.cpp)
 add_executable(test_sampling2 test_sampling2.cpp)
 
 #add_executable(test_gen_surf test_surf_genator.cpp)
@@ -41,7 +41,7 @@ add_executable(test_kernelRegionJudge test_KernelRegionJudge.cpp)
 add_executable(test_optimizer test_optimizer.cpp)
 add_executable(test_tetmesh test_tetmesh.cpp)
 
-target_link_libraries(test_sampling isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
+#target_link_libraries(test_sampling isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 target_link_libraries(test_sampling2 isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 
 #target_link_libraries(test_gen_surf isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
