@@ -229,20 +229,20 @@ void zsw::sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> &tet_points, const zsw:
   bool sn_flg=true;
   for(zsw::Scalar sn=0; sn_flg; sn+=step_n) {
     if(sn>1) { sn=1; sn_flg=false; }
-    const Eigen::Matrix<zsw::Scalar,3,1> tmp_n=sn*n;
+    const Eigen::Matrix<zsw::Scalar,3,1> cur_n=v0+sn*n;
+    const zsw::Scalar max_sm=1-sn-zsw::const_val::eps;
 
     bool sm_flg=true;
-    const zsw::Scalar max_sm=1-sn-zsw::const_val::eps;
     for(zsw::Scalar sm=0; sm_flg; sm+=step_m) {
       if(sm>max_sm) { sm=max_sm; sm_flg=false; }
-      const Eigen::Matrix<zsw::Scalar,3,1> tmp_m=tmp_n+sm*m;
+      const Eigen::Matrix<zsw::Scalar,3,1> cur_m=cur_n+sm*m;
+      const zsw::Scalar max_sp=max_sm-sm;
 
       bool sp_flg=true;
-      const zsw::Scalar max_sp=max_sm-sm-zsw::const_val::eps;
       for(zsw::Scalar sp=0; sp_flg; sp+=step_p) {
         if(sp>max_sp) { sp=max_sp; sp_flg=false; }
-        Eigen::Matrix<zsw::Scalar,3,1> tmp_rp=v0+tmp_m+sp*p;
-        samples.push_back(Point(tmp_rp[0], tmp_rp[1], tmp_rp[2]));
+        Eigen::Matrix<zsw::Scalar,3,1> cur_p=cur_m+sp*p;
+        samples.push_back(Point(cur_p[0], cur_p[1], cur_p[2]));
       }
     }
   }
