@@ -34,9 +34,8 @@ BOOST_AUTO_TEST_CASE(collapse_edge_fkr0)
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     BOOST_FAIL("[ERROR] can't read mesh!");
   }
-  zsw::SurfaceGenerator sfg;
   vector<zsw::Point> bz_points, bo_points, bi_points;
-  sfg.genPoints(0.2, input_mesh, bz_points, bo_points, bi_points);
+  zsw::genPoints(0.2, input_mesh, bz_points, bo_points, bi_points);
   zsw::TetMesh tm(bz_points, bo_points, bi_points);
 
   const std::vector<zsw::TetMesh::Vertex> &vertices = tm.getVertices();

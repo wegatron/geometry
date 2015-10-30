@@ -7,10 +7,10 @@
 
 namespace zsw
 {
-  void sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> tri_points, const zsw::Scalar r,
+  void sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &tri_points, const zsw::Scalar r,
                       std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);
 
-  void sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> tet_points, const zsw::Scalar r,
+  void sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> &tet_points, const zsw::Scalar r,
                  std::vector<Point> &samples);
 
   class Sampler  final
@@ -18,7 +18,7 @@ namespace zsw
   public:
     Sampler() {}
     void sampleSigmaDense(const zsw::mesh::TriMesh &tm, const zsw::Scalar sigma, std::vector<Eigen::Matrix<zsw::Scalar, 3, 1>> &samples);
-#ifdef NDEBUG
+#ifdef ZSW_NDEBUG
   private:
 #endif
     void sampleTriangle(Eigen::Matrix<zsw::Scalar, 3, 3> tri_points, const zsw::Scalar sigma, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);

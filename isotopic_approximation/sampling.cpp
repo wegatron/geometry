@@ -187,7 +187,7 @@ bool zsw::sameSide3D(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matr
   return (value[0]>=0 && value[1]>=0) || (value[0]<=0 && value[1]<=0);
 }
 
-void zsw::sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> tri_points, const zsw::Scalar r,
+void zsw::sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &tri_points, const zsw::Scalar r,
                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples)
 {
   Eigen::Matrix<zsw::Scalar,3,1> v0=tri_points.block<3,1>(0,0);
@@ -196,16 +196,17 @@ void zsw::sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> tri_points, cons
   Eigen::Matrix<zsw::Scalar,3,1> n=v1-v0;
   Eigen::Matrix<zsw::Scalar,3,1> m=v2-v0;
   zsw::Scalar step_n=r/n.norm();
-  zsw::Scalar sten_m=r/m.norm();
+  zsw::Scalar step_m=r/m.norm();
   for(zsw::Scalar sn=0; sn<1; sn+=step_n) {
     Eigen::Matrix<zsw::Scalar,3,1> tmp_n=sn*n;
     for(zsw::Scalar sm=0; sm+sn<1; sm+=step_m) {
       samples.push_back(v0+tmp_n+sm*m);
     }
-    samples.push_back(v0+tmp_n+(1-n)*m);
+    samples.push_back(v0+tmp_n+(1-sn)*m);
   }
 }
 
-void zsw::sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> tet_points, const zsw::Scalar r)
+void zsw::sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> &tet_points, const zsw::Scalar r,
+                    std::vector<Point> &samples)
 {
 }
