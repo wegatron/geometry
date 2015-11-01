@@ -47,6 +47,8 @@ namespace zsw
     void mutualTessellation();
     void writeTetMesh(const std::string &filepath, size_t mask) const;
     void writeSurface(const std::string &filepath, PointType pt_tyte) const;
+    const std::vector<Tet>& getTets() const { return tets_; }
+    const std::vector<Edge>& getEdges() const { return edges_; }
   private:
 
     /// \brief init the triangulation's tets from 3d delaunay triangulation.

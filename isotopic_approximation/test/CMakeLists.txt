@@ -40,6 +40,7 @@ add_executable(test_cgal_triangulation test_triangle.cpp)
 add_executable(test_kernelRegionJudge test_KernelRegionJudge.cpp)
 add_executable(test_optimizer test_optimizer.cpp)
 # add_executable(test_tetmesh test_tetmesh.cpp)
+add_executable(test_triangulation test_triangulation.cpp)
 
 #target_link_libraries(test_sampling isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 target_link_libraries(test_sampling2 isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
@@ -56,3 +57,4 @@ target_link_libraries(test_optimizer ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
   ipopt coinhsl coinmumps coinmetis blas lapack dl mpi)
 
 #target_link_libraries(test_tetmesh isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
+target_link_libraries(test_triangulation isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
