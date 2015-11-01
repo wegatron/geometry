@@ -4,11 +4,12 @@
 #include <vector>
 #include <zswlib/mesh/mesh_type.h>
 #include "cgal_common.h"
+#include "basic_data_structure.h"
 
 namespace zsw
 {
   void sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &tri_points, const zsw::Scalar r,
-                      std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);
+                      const zsw::Scalar val_exp, std::list<zsw::JudgePoint> &samples);
 
   void sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> &tet_points, const zsw::Scalar r,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);

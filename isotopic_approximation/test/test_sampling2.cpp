@@ -12,16 +12,16 @@ void test_sampleTriangle()
   tri_points<< 1,0,0,
     0,1,0,
     0,0,1;
-  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> samples;
-  zsw::sampleTriangle(tri_points, 0.1, samples);
+  std::list<zsw::JudgePoint> samples;
+  zsw::sampleTriangle(tri_points, 0.1, 1, samples);
   // write obj file
   std::ofstream ofs("/home/wegatron/tmp.obj", std::ofstream::out);
   ofs << "f 1 2 3" << std::endl;
   for(int i=0; i<3; ++i) {
     ofs << "v " << tri_points.block<3,1>(0,i).transpose() << std::endl;
   }
-  for(Eigen::Matrix<zsw::Scalar,3,1> &tmp_sample : samples) {
-    ofs << "v " << tmp_sample.transpose() << std::endl;
+  for(zsw::JudgePoint &tmp_sample : samples) {
+    ofs << "v " << tmp_sample.pt_.transpose() << std::endl;
   }
   ofs.close();
 }

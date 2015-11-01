@@ -1,6 +1,8 @@
 #include "triangulation2.h"
 #include <unordered_set>
 
+#include "sampling.h"
+
 void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
 {
@@ -49,84 +51,116 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
   }
 
   Delaunay delaunay(tet_points.begin(), tet_points.end());
-  initTets(delaunay);
+  init(r, delaunay);
 }
 
-void zsw::Triangulation::initTets(Delaunay &delaunay)
+void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-}
-
-void zsw::Triangulation::simpTolerance()
-{
-  for(Edge e : edges_) {
-    // if is bi and bo edge
-    if(vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
-       (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) ) {
-      continue; }
-
-    std::unordered_set<size_t> tet_ids;
-    for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.insert(tid); }
-    for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.insert(tid); }
-
-    KernelRegionJudger krj;
-    std::list<JudgePoint> all_jpts;
-    for(size_t tid : tet_ids) {
-      all_jpts.splice(all_jpts.begin(), tets_[tid].jpts_);
-
-      // add kernel region constraint
-      Eigen::Matrix<zsw::Scalar,3,1> tmp_v[4];
-      size_t vcnt=0;
-      for(size_t tvid : tets_[tid].vid_) {
-        if(tvid == e.vid_[0] || tvid==e.vid_[1]) { tmp_v[3]<<vertices_[tvid].pt_[0], vertices_[tvid].pt_[1], vertices_[tvid].pt_[2]; }
-        else { tmp_v[vcnt++] << vertices_[tvid].pt_[0], vertices_[tvid].pt_[1], vertices_[tvid].pt_[2]; }
-      }
-      if(vcnt==3) { krj.addConstraint(tmp_v[0], tmp_v[1], tmp_v[2], tmp_v[3]); }
-    }
-
-    // find the candicate points
-    std::list<JudgePoint> candicate_pts;
-    for(const JudgePoint &jpt : all_jpts) {
-      // judge if jpt in kernel region
-      if(krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
-    }
-
-    // find the best point in the candicate_pts
-    zsw::Scalar max_error=-1;
-    const JudgePoint *merge_point_ptr=nullptr;
-    for(const JudgePoint &jpt : candicate_pts) {
-      zsw::Scalar cur_error=fabs(jpt.val_cur_-jpt.val_exp_);
-      if(cur_error>max_error && testCollapse(e, jpt.pt_, all_jpts)) {
-        max_error=cur_error;
-        merge_point_ptr=&jpt;
+  size_t t_id=0;
+  for(Delaunay::Finite_cells_iterator cit=delaunay.finite_cells_begin();
+      cit!=delaunay.finite_cells_end(); ++cit) {
+    tets_.push_back({{cit->vertex(0)->info(), cit->vertex(1)->info(),
+            cit->vertex(2)->info(), cit->vertex(3)->info()}, {}});
+    // judge points in tets
+    size_t bo_cnt=0, bi_cnt=0;
+    Eigen::Matrix<zsw::Scalar,3,4> bo_points;
+    Eigen::Matrix<zsw::Scalar,3,4> bi_points;
+    Tet &tmp_tet=tets_.back();
+    for(size_t tvid : tmp_tet.vid_) {
+      if(vertices_[tvid].pt_type_==OUTER_POINT) {
+        bo_points.block<3,1>(0,bo_cnt++)=vertices_[tvid].pt_;
+      } else if(vertices_[tvid].pt_type_==INNER_POINT) {
+        bi_points.block<3,1>(0,bi_cnt++)=vertices_[tvid].pt_;
       }
     }
-    edgeCollapse(e, merge_point_ptr->pt_, all_jpts);
+    if(bo_cnt==3) { sampleTriangle(bo_points.block<3,3>(0,0), r, 1, tmp_tet.jpts_); }
+    else if(bi_cnt==3) { sampleTriangle(bi_points.block<3,3>(0,0), r, -1, tmp_tet.jpts_); }
+    // vertex info
+    vertices_[tmp_tet.vid_[0]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[1]].tet_ids_.push_back(t_id);
+    vertices_[tmp_tet.vid_[2]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[3]].tet_ids_.push_back(t_id++);
+  }
+
+  // edge info
+  size_t e_id=0;
+  for(Delaunay::Finite_edges_iterator eit=delaunay.finite_edges_begin();
+      eit!=delaunay.finite_edges_end(); ++eit) {
+    edges_.push_back({eit->first->vertex(eit->second)->info(), eit->first->vertex(eit->third)->info()});
+    Edge &tmp_edge=edges_.back();
+    vertices_[tmp_edge.vid_[0]].edge_ids_.push_back(e_id);
+    vertices_[tmp_edge.vid_[1]].edge_ids_.push_back(e_id++);
   }
 }
 
-void zsw::Triangulation::mutualTessellation()
-{
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-}
+  void zsw::Triangulation::simpTolerance()
+  {
+    for(Edge e : edges_) {
+      // if is bi and bo edge
+      if(vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
+         (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) ) {
+        continue; }
 
-void zsw::Triangulation::writeTetMesh(const std::string &filepath, size_t mask) const
-{
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-}
+      std::unordered_set<size_t> tet_ids;
+      for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.insert(tid); }
+      for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.insert(tid); }
 
-void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_tyte) const
-{
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-}
+      KernelRegionJudger krj;
+      std::list<JudgePoint> all_jpts;
+      for(size_t tid : tet_ids) {
+        all_jpts.splice(all_jpts.begin(), tets_[tid].jpts_);
 
-bool zsw::Triangulation::testCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts) const
-{
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  return false;
-}
+        // add kernel region constraint
+        Eigen::Matrix<zsw::Scalar,3,1> tmp_v[4];
+        size_t vcnt=0;
+        for(size_t tvid : tets_[tid].vid_) {
+          if(tvid == e.vid_[0] || tvid==e.vid_[1]) { tmp_v[3]<<vertices_[tvid].pt_[0], vertices_[tvid].pt_[1], vertices_[tvid].pt_[2]; }
+          else { tmp_v[vcnt++] << vertices_[tvid].pt_[0], vertices_[tvid].pt_[1], vertices_[tvid].pt_[2]; }
+        }
+        if(vcnt==3) { krj.addConstraint(tmp_v[0], tmp_v[1], tmp_v[2], tmp_v[3]); }
+      }
 
-void zsw::Triangulation::edgeCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts)
-{
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-}
+      // find the candicate points
+      std::list<JudgePoint> candicate_pts;
+      for(const JudgePoint &jpt : all_jpts) {
+        // judge if jpt in kernel region
+        if(krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
+      }
+
+      // find the best point in the candicate_pts
+      zsw::Scalar max_error=-1;
+      const JudgePoint *merge_point_ptr=nullptr;
+      for(const JudgePoint &jpt : candicate_pts) {
+        zsw::Scalar cur_error=fabs(jpt.val_cur_-jpt.val_exp_);
+        if(cur_error>max_error && testCollapse(e, jpt.pt_, all_jpts)) {
+          max_error=cur_error;
+          merge_point_ptr=&jpt;
+        }
+      }
+      edgeCollapse(e, merge_point_ptr->pt_, all_jpts);
+    }
+  }
+
+  void zsw::Triangulation::mutualTessellation()
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  void zsw::Triangulation::writeTetMesh(const std::string &filepath, size_t mask) const
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_tyte) const
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  bool zsw::Triangulation::testCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts) const
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    return false;
+  }
+
+  void zsw::Triangulation::edgeCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }

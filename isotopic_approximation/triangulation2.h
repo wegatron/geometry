@@ -16,6 +16,7 @@
 #include <Eigen/Dense>
 #include <zswlib/config.h>
 #include "cgal_common.h"
+#include "basic_data_structure.h"
 
 namespace zsw
 {
@@ -39,40 +40,6 @@ namespace zsw
   class Triangulation final
   {
   public:
-    enum PointType
-    {
-      BBOX_POINT=1,
-      ZERO_POINT=2,
-      OUTER_POINT=4,
-      INNER_POINT=8
-    };
-
-    struct JudgePoint
-    {
-      const Eigen::Matrix<zsw::Scalar,3,1> pt_;
-      const zsw::Scalar val_exp_;
-      zsw::Scalar val_cur_;
-    };
-
-    struct Vertex
-    {
-      const PointType pt_type_;
-      Eigen::Matrix<zsw::Scalar,3,1> pt_;
-      std::vector<size_t> tet_ids_;
-      std::vector<size_t> edge_ids_;
-    };
-
-    struct Edge
-    {
-      size_t vid_[2];
-    };
-
-    struct Tet
-    {
-      size_t vid_[4];
-      std::list<JudgePoint> jpts_;
-    };
-
     Triangulation(const zsw::Scalar r,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
@@ -81,8 +48,28 @@ namespace zsw
     void writeTetMesh(const std::string &filepath, size_t mask) const;
     void writeSurface(const std::string &filepath, PointType pt_tyte) const;
   private:
-    void initTets(Delaunay &delaunay);
+
+    /// \brief init the triangulation's tets from 3d delaunay triangulation.
+    ///
+    /// including fill the basic tets data, and bi, bo's surface sampling
+    /// and point sampling in the tets which is for zero point set edge collapse.
+    ///
+    /// \param r the sample radius in bi and bo surface
+    /// \param Delaunay cgal's delaunay triangulation
+    void init(const zsw::Scalar r, Delaunay &delaunay);
+
+
+    /// \brief test if the edge can collapse to this point
+    ///
+    /// check if the judge points' error is satisfied,
+    /// in other words check whether the classifcation of S is keeped.
+    ///
+    /// \param e input edge
+    /// \param pt the point this edge collapse to
+    /// \param jpts the judge points
+    /// \return true if S is keeped or false otherwise
     bool testCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts) const;
+
     void edgeCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts);
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;

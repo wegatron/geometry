@@ -190,7 +190,7 @@ bool zsw::sameSide3D(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matr
 }
 
 void zsw::sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &tri_points, const zsw::Scalar r,
-                         std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples)
+                         const zsw::Scalar val_exp, std::list<zsw::JudgePoint> &samples)
 {
   Eigen::Matrix<zsw::Scalar,3,1> v0=tri_points.block<3,1>(0,0);
   Eigen::Matrix<zsw::Scalar,3,1> v1=tri_points.block<3,1>(0,1);
@@ -207,7 +207,7 @@ void zsw::sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &tri_points, con
     bool sm_flg=true;
     for(zsw::Scalar sm=0; sm_flg; sm+=step_m) {
       if(sm>max_sm) { sm=max_sm; sm_flg=false; }
-      samples.push_back(v0+tmp_n+sm*m);
+      samples.push_back({v0+tmp_n+sm*m, val_exp, val_exp});
     }
   }
 }

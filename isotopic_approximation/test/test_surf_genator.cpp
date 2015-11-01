@@ -9,14 +9,13 @@ void test_genSurface()
 {
   zsw::mesh::TriMesh tm;
   if(!OpenMesh::IO::read_mesh(tm, "/home/wegatron/workspace/geometry/data/sphere.obj")) {
-    std::cerr << "[ERROR] can't read mesh: /home/wegatron/workspace/geometry/data/dragon.obj"<< std::endl;
+    std::cerr << "[ERROR] can't read mesh: /home/wegatron/workspace/geometry/data/sphere.obj"<< std::endl;
     return;
   }
-  zsw::SurfaceGenerator surf_gen;
-  zsw::mesh::TriMesh bo_mesh, bi_mesh;
-  surf_gen.genSurface((zsw::Scalar)0.01, tm, bo_mesh, bi_mesh);
-  OpenMesh::IO::write_mesh(bo_mesh, "/home/wegatron/tmp_bo.obj");
-  OpenMesh::IO::write_mesh(bi_mesh, "/home/wegatron/tmp_bi.obj");
+
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bo_points;
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
+  zsw::genPoints(0.01, tm, bo_points, bi_points);
 }
 
 int main(int argc, char *argv[])
