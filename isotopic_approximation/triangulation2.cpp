@@ -1,5 +1,17 @@
 #include "triangulation2.h"
 
+void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+                       const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+}
+
+bool zsw::KernelRegionJudger::judge(const Point &pt)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  return false;
+}
+
 zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Point> &bo_points, std::vector<Point> &bi_points)
 {
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
@@ -44,12 +56,12 @@ void zsw::Triangulation::simpTolerance()
     JudgePoint merge_point;
     for(const JudgePoint &jpt : candicate_pts) {
       zsw::Scalar cur_error=fabs(jpt.val_cur_-jpt.val_exp_);
-      if(cur_error>max_error && canMerge(e, jpt, all_jpts)) {
+      if(cur_error>max_error && testCollapse(e, jpt.pt_, all_jpts)) {
         max_error=cur_error;
         merge_point=jpt;
       }
     }
-    edgeCollapse(e, jpt.pt_, all_jpts);
+    edgeCollapse(e, merge_point.pt_, all_jpts);
   }
 }
 
@@ -58,17 +70,23 @@ void zsw::Triangulation::mutualTessellation()
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }
 
-void zsw::Triangulation::writeTetMesh(const string &filepath, size_t mask)
+void zsw::Triangulation::writeTetMesh(const string &filepath, size_t mask) const
 {
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }
 
-void zsw::Triangulation::writeSurface(const string &filepath, PointType pt_tyte)
+void zsw::Triangulation::writeSurface(const string &filepath, PointType pt_tyte) const
 {
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }
 
-void zsw::Triangulation::edgeCollapse(size_t eid, const Point &pt)
+bool zsw::Triangulation::testCollapse(Edge &e, const Point &pt, std::list<JudgePoint> jpts) const
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  return false;
+}
+
+void zsw::Triangulation::edgeCollapse(Edge &e, const Point &pt, std::list<JudgePoint> jpts)
 {
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }

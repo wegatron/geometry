@@ -12,6 +12,10 @@
 #ifndef TRIANGULATION2_H
 #define TRIANGULATION2_H
 
+#include <vector>
+#include <Eigen/Dense>
+#include "cgal_common.h"
+
 namespace zsw
 {
 
@@ -41,12 +45,14 @@ namespace zsw
       OUTER_POINT=4,
       INNER_POINT=8
     };
+
     struct JudgePoint
     {
       const Eigen::Matrix<zsw::Scalar,3,1> pt_;
       const zsw::Scalar val_exp_;
       const zsw::Scalar val_cur_;
     };
+
     struct Vertex
     {
       const PointType pt_type_;
@@ -54,22 +60,26 @@ namespace zsw
       std::vector<size_t> tet_ids_;
       std::vector<size_t> edge_ids_;
     };
+
     struct Edge
     {
       size_t vid_[2];
     };
+
     struct Tet
     {
       size_t vid_[4];
       std::list<JudgePoint> jpts_;
     };
+
     Triangulation(const zsw::Scalar r, std::vector<Point> &bo_points, std::vector<Point> &bi_points);
     void simpTolerance();
     void mutualTessellation();
-    void writeTetMesh(const string &filepath, size_t mask);
-    void writeSurface(const string &filepath, PointType pt_tyte);
+    void writeTetMesh(const string &filepath, size_t mask) const;
+    void writeSurface(const string &filepath, PointType pt_tyte) const;
   private:
-    void edgeCollapse(size_t eid, const Point &pt);
+    bool testCollapse(Edge &e, const Point &pt, std::list<JudgePoint> jpts) const;
+    void edgeCollapse(Edge &e, const Point &pt, std::list<JudgePoint> jpts);
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
