@@ -213,7 +213,7 @@ void zsw::sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &tri_points, con
 }
 
 void zsw::sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> &tet_points, const zsw::Scalar r,
-                    std::vector<Point> &samples)
+                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples)
 {
   Eigen::Matrix<zsw::Scalar,3,1> v0=tet_points.block<3,1>(0,0);
   Eigen::Matrix<zsw::Scalar,3,1> v1=tet_points.block<3,1>(0,1);
@@ -241,8 +241,7 @@ void zsw::sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> &tet_points, const zsw:
       bool sp_flg=true;
       for(zsw::Scalar sp=0; sp_flg; sp+=step_p) {
         if(sp>max_sp) { sp=max_sp; sp_flg=false; }
-        Eigen::Matrix<zsw::Scalar,3,1> cur_p=cur_m+sp*p;
-        samples.push_back(Point(cur_p[0], cur_p[1], cur_p[2]));
+        samples.push_back(cur_m+sp*p);
       }
     }
   }

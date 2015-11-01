@@ -58,7 +58,7 @@ namespace zsw
     struct Vertex
     {
       const PointType pt_type_;
-      Point pt_;
+      Eigen::Matrix<zsw::Scalar,3,1> pt_;
       std::vector<size_t> tet_ids_;
       std::vector<size_t> edge_ids_;
     };
@@ -74,7 +74,9 @@ namespace zsw
       std::list<JudgePoint> jpts_;
     };
 
-    Triangulation(const zsw::Scalar r, std::vector<Point> &bo_points, std::vector<Point> &bi_points);
+    Triangulation(const zsw::Scalar r,
+                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
+                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
     void simpTolerance();
     void mutualTessellation();
     void writeTetMesh(const std::string &filepath, size_t mask) const;

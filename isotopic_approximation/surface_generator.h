@@ -3,13 +3,12 @@
 
 #include <vector>
 #include <zswlib/mesh/mesh_type.h>
-#include "cgal_common.h"
 
 namespace zsw
 {
-    void genPoints(const zsw::Scalar dis, zsw::mesh::TriMesh &tm, std::vector<Point> &bz_points,
-                   std::vector<Delaunay::Point> &bo_points,
-                   std::vector<Delaunay::Point> &bi_points);
+    void genPoints(const zsw::Scalar dis, zsw::mesh::TriMesh &tm,
+                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
+                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
 
   /* class SurfaceGenerator */
   /* { */

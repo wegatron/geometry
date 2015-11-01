@@ -19,11 +19,9 @@
 //   }
 // }
 
-void zsw::genPoints(const zsw::Scalar dis,
-                    zsw::mesh::TriMesh &tm,
-                    std::vector<Delaunay::Point> &bz_points,
-                    std::vector<Delaunay::Point> &bo_points,
-                    std::vector<Delaunay::Point> &bi_points)
+void zsw::genPoints(const zsw::Scalar dis, zsw::mesh::TriMesh &tm,
+                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
+                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points)
 {
   if(!tm.has_vertex_normals()) {
     tm.request_face_normals();
@@ -37,16 +35,12 @@ void zsw::genPoints(const zsw::Scalar dis,
   for(zsw::mesh::TriMesh::ConstVertexIter vit=tm.vertices_begin(); vit!=tm.vertices_end(); ++vit) {
     Eigen::Matrix<zsw::Scalar, 3, 1> ep = tm.point(*vit);
     Eigen::Matrix<zsw::Scalar, 3, 1> offset = tm.normal(*vit) * dis;
-    Delaunay::Point bz_p(ep[0], ep[1], ep[2]);
-    Delaunay::Point bo_p(ep[0]+offset[0], ep[1]+offset[1], ep[2]+offset[2]);
-    Delaunay::Point bi_p(ep[0]-offset[0], ep[1]-offset[1], ep[2]-offset[2]);
 #ifdef ZSW_DEBUG
     tmi.set_point(zsw::mesh::TriMesh::VertexHandle(vit->idx()), ep-offset);
     tmo.set_point(zsw::mesh::TriMesh::VertexHandle(vit->idx()), ep+offset);
 #endif
-    bz_points.push_back(bz_p);
-    bo_points.push_back(bo_p);
-    bi_points.push_back(bi_p);
+    bo_points.push_back(ep+offset);
+    bi_points.push_back(ep-offset);
   }
 
 #ifdef ZSW_DEBUG

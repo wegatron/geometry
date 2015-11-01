@@ -32,13 +32,13 @@ void test_sample_tet()
   tet_points << 2,0,0,1,
                           0,4,-1,1,
                           0,0,0,4;
-  std::vector<zsw::Point> sample_points;
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> sample_points;
   zsw::sampleTet(tet_points, 0.4, sample_points);
   std::ofstream ofs;
   OPEN_STREAM("/home/wegatron/test_sample_tet.vtk", ofs, std::ofstream::out, return);
   vector<zsw::Scalar> pt_data(12, 0);
   copy(tet_points.data(), tet_points.data()+12, &pt_data[0]);
-  for(const zsw::Point &pt : sample_points) {
+  for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : sample_points) {
     pt_data.push_back(pt[0]);
     pt_data.push_back(pt[1]);
     pt_data.push_back(pt[2]);

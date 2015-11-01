@@ -14,7 +14,8 @@ bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
   return false;
 }
 
-zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Point> &bo_points, std::vector<Point> &bi_points)
+zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_pts,
+                                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_pts)
 {
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }

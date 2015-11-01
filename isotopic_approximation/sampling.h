@@ -11,7 +11,7 @@ namespace zsw
                       std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);
 
   void sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> &tet_points, const zsw::Scalar r,
-                 std::vector<Point> &samples);
+                 std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);
 
   class Sampler  final
   {
