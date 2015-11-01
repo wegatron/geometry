@@ -14,7 +14,9 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include <zswlib/config.h>
 #include "cgal_common.h"
+
 
 namespace zsw
 {
@@ -29,7 +31,7 @@ namespace zsw
     KernelRegionJudger() {}
     void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr);
-    bool judge(const Point &pt);
+    bool judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt);
   private:
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v0;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vn;
@@ -50,7 +52,7 @@ namespace zsw
     {
       const Eigen::Matrix<zsw::Scalar,3,1> pt_;
       const zsw::Scalar val_exp_;
-      const zsw::Scalar val_cur_;
+      zsw::Scalar val_cur_;
     };
 
     struct Vertex
@@ -75,11 +77,11 @@ namespace zsw
     Triangulation(const zsw::Scalar r, std::vector<Point> &bo_points, std::vector<Point> &bi_points);
     void simpTolerance();
     void mutualTessellation();
-    void writeTetMesh(const string &filepath, size_t mask) const;
-    void writeSurface(const string &filepath, PointType pt_tyte) const;
+    void writeTetMesh(const std::string &filepath, size_t mask) const;
+    void writeSurface(const std::string &filepath, PointType pt_tyte) const;
   private:
-    bool testCollapse(Edge &e, const Point &pt, std::list<JudgePoint> jpts) const;
-    void edgeCollapse(Edge &e, const Point &pt, std::list<JudgePoint> jpts);
+    bool testCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts) const;
+    void edgeCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts);
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
