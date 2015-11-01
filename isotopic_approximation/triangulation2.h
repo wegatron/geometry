@@ -17,7 +17,6 @@
 #include <zswlib/config.h>
 #include "cgal_common.h"
 
-
 namespace zsw
 {
 
@@ -25,7 +24,7 @@ namespace zsw
   ///
   ///  judge wether the point is in kernel region.
   ///
-  class KernelRegionJudger
+  class KernelRegionJudger final
   {
   public:
     KernelRegionJudger() {}
@@ -42,7 +41,7 @@ namespace zsw
   public:
     enum PointType
     {
-      BBOX=1,
+      BBOX_POINT=1,
       ZERO_POINT=2,
       OUTER_POINT=4,
       INNER_POINT=8
@@ -82,6 +81,7 @@ namespace zsw
     void writeTetMesh(const std::string &filepath, size_t mask) const;
     void writeSurface(const std::string &filepath, PointType pt_tyte) const;
   private:
+    void initTets(Delaunay &delaunay);
     bool testCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts) const;
     void edgeCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts);
     std::vector<Edge> edges_;

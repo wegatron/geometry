@@ -1,5 +1,4 @@
 #include "triangulation2.h"
-
 #include <unordered_set>
 
 void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
@@ -16,6 +15,44 @@ bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 
 zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_pts,
                                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_pts)
+{
+  assert(bo_pts.size()!=0 && bi_pts.size()!=0);
+
+  Eigen::Matrix<zsw::Scalar,3,2> bbox;
+  bbox.block<3,1>(0,0)=bo_pts[0];
+  bbox.block<3,1>(0,1)=bo_pts[0];
+
+  size_t pt_id=0;
+  std::vector<std::pair<Point, size_t>> tet_points;
+  for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bo_pts) {
+    tet_points.push_back({Point(tmp[0],tmp[1],tmp[2]), pt_id++});
+    vertices_.push_back({OUTER_POINT, tmp, {}, {}});
+    for(size_t c_i=0; c_i<3; ++c_i) {
+      if(tmp[c_i]<bbox(c_i,0)) { bbox(c_i,0)=tmp[c_i];}
+      else if(tmp[c_i]>bbox(c_i,1)) { bbox(c_i,1)=tmp[c_i]; }
+    }
+  }
+  for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bi_pts) {
+    tet_points.push_back({Point(tmp[0],tmp[1],tmp[2]), pt_id++});
+    vertices_.push_back({INNER_POINT, tmp, {}, {}});
+  }
+
+  // add 8 bbox points
+  for(size_t i=0; i<2; ++i) {
+    for(size_t j=0; j<2; ++j) {
+      for(size_t k=0; k<2; ++k) {
+        tet_points.push_back({Point(bbox(0,i), bbox(1,j), bbox(2,k)), pt_id++});
+        Eigen::Matrix<zsw::Scalar,3,1> tmp; tmp<<bbox(0,i), bbox(1,j), bbox(2,k);
+        vertices_.push_back({BBOX_POINT, tmp, {}, {}});
+      }
+    }
+  }
+
+  Delaunay delaunay(tet_points.begin(), tet_points.end());
+  initTets(delaunay);
+}
+
+void zsw::Triangulation::initTets(Delaunay &delaunay)
 {
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }
