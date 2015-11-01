@@ -1,8 +1,24 @@
+/// \file triangulation2.h
+/// \brief 3d triangulation structure.
+///
+/// we build this 3d triangulation from bi and bo points,
+/// simplify it then we get the result.
+///
+/// \author wegatron
+/// \email wegatron@hotmail.com
+/// \version 1.0
+/// \date 2015-11-01
+
 #ifndef TRIANGULATION2_H
 #define TRIANGULATION2_H
 
 namespace zsw
 {
+
+  /// \brief kernel region judger.
+  ///
+  ///  judge wether the point is in kernel region.
+  ///
   class KernelRegionJudger
   {
   public:
@@ -29,6 +45,7 @@ namespace zsw
     {
       const Eigen::Matrix<zsw::Scalar,3,1> pt_;
       const zsw::Scalar val_exp_;
+      const zsw::Scalar val_cur_;
     };
     struct Vertex
     {
