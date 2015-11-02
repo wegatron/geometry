@@ -102,6 +102,20 @@
     \item Zero-set edge collapse.
     \item All edge edge collapse and then do Zero-set edge collapse again, if possible.
   \end{itemize}
+  \subsection{Initial Triangulation}
+  Do 3D delaunay triangulation with $p_{bi}+p_{bo}$, as the result of papers Refinement.
+  And do sampling on the new surface of bi and bo, as the judge points. This result may not as good as the paper here.
+  \begin{figure}[h]
+    \begin{subfigure}[b]{0.5\textwidth}
+        \includegraphics[width=\textwidth]{init_judge_points_0.png}
+        \caption[a]{3d triangulation has no bo surface}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.5\textwidth}
+        \includegraphics[width=\textwidth]{init_judge_points_1.png}
+        \caption[a]{after subdivision.}
+    \end{subfigure}
+    \caption{The best way may be constrained delaunay triangulation.}
+  \end{figure}
   \subsection{Simplicial Tolerance}
   \begin{figure}[h]
     \includegraphics[width=\textwidth]{simplicial_tolerance.png}

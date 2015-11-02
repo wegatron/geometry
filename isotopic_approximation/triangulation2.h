@@ -47,6 +47,7 @@ namespace zsw
     void mutualTessellation();
     void writeTetMesh(const std::string &filepath, size_t mask) const;
     void writeSurface(const std::string &filepath, PointType pt_tyte) const;
+    const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<Tet>& getTets() const { return tets_; }
     const std::vector<Edge>& getEdges() const { return edges_; }
   private:
