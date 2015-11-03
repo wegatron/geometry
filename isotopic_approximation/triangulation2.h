@@ -74,6 +74,13 @@ namespace zsw
     bool testCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts) const;
 
     void edgeCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts);
+
+    void tessllelation3v1(const size_t vo_0, const size_t vo_1, const size_t vo_2, const size_t vi_0, Tet &tet);
+
+    void tessllelation2v2(const size_t vo_0, const size_t vo_1, const size_t vi_0, const size_t vi_1, Tet &tet);
+
+    void tessllelation1v3(const size_t vo_0, const size_t vi_0, const size_t vi_1, const size_t vi_2, Tet &tet);
+
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;

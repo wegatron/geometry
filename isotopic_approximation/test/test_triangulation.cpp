@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void test0()
+void test_init1()
 {
   // input obj mesh
   const string file_path="/home/wegatron/workspace/geometry/data/cube.obj";
@@ -23,9 +23,9 @@ void test0()
   // init triangulation
   zsw::Triangulation triangulation(0.1, bo_points, bi_points);
   // output triangulation
-  triangulation.writeTetMesh("/home/wegatron/tmp/cube1.vtk", 0);
+  triangulation.writeTetMesh("/home/wegatron/tmp/cube1_bbox.vtk", zsw::BBOX_POINT);
   // output judge points
-  const string jp_file="/home/wegatron/tmp/cube_jp.obj";
+  const string jp_file="/home/wegatron/tmp/cube1_jp.obj";
   ofstream ofs(jp_file, std::ofstream::out) ;
   const vector<zsw::Tet>& tets = triangulation.getTets();
   for(const zsw::Tet& tet : tets) {
@@ -40,7 +40,7 @@ void test0()
   }
 }
 
-void test01()
+void test_init2()
 {
   // input obj mesh
   const string file_path="/home/wegatron/workspace/geometry/data/cube_2.obj";
@@ -56,9 +56,9 @@ void test01()
   // init triangulation
   zsw::Triangulation triangulation(0.1, bo_points, bi_points);
   // output triangulation
-  triangulation.writeTetMesh("/home/wegatron/tmp/cube01.vtk", zsw::BBOX_POINT);
+  triangulation.writeTetMesh("/home/wegatron/tmp/cube2_bbox.vtk", zsw::BBOX_POINT);
   // output judge points
-  const string jp_file="/home/wegatron/tmp/cube_jp01.obj";
+  const string jp_file="/home/wegatron/tmp/cube2_jp.obj";
   ofstream ofs(jp_file, std::ofstream::out) ;
   const vector<zsw::Tet>& tets = triangulation.getTets();
   for(const zsw::Tet& tet : tets) {
@@ -73,10 +73,10 @@ void test01()
   }
 }
 
-void test1()
+void test_mutualTessellation()
 {
   // input obj mesh
-  const string file_path="/home/wegatron/workspace/geometry/data/cube.obj";
+  const string file_path="/home/wegatron/workspace/geometry/data/cube_2.obj";
   zsw::mesh::TriMesh input_mesh;
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     std::cerr << "[ERROR] can't read mesh!" << std::endl;
@@ -88,15 +88,15 @@ void test1()
   zsw::genPoints(0.5, input_mesh, bo_points, bi_points);
   // init triangulation
   zsw::Triangulation triangulation(0.1, bo_points, bi_points);
+  triangulation.mutualTessellation();
   // output triangulation
-  triangulation.writeTetMesh("/home/wegatron/tmp/cube_bbox.vtk", zsw::BBOX_POINT);
+  triangulation.writeTetMesh("/home/wegatron/tmp/cube_mutual.vtk", zsw::BBOX_POINT|zsw::OUTER_POINT);
 }
-
 
 int main(int argc, char *argv[])
 {
-  test0();
-  test1();
-  test01();
+  // test_init1();
+  test_init2();
+  test_mutualTessellation();
   return 0;
 }

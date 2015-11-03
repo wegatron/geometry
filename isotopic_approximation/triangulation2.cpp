@@ -62,7 +62,7 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
   size_t t_id=0;
   for(Delaunay::Finite_cells_iterator cit=delaunay.finite_cells_begin();
       cit!=delaunay.finite_cells_end(); ++cit) {
-    tets_.push_back({{cit->vertex(0)->info(), cit->vertex(1)->info(),
+    tets_.push_back({true, {cit->vertex(0)->info(), cit->vertex(1)->info(),
             cit->vertex(2)->info(), cit->vertex(3)->info()}, {}});
     // judge points in tets
     size_t bo_cnt=0, bi_cnt=0;
@@ -144,7 +144,114 @@ void zsw::Triangulation::simpTolerance()
 
 void zsw::Triangulation::mutualTessellation()
 {
+  for(Tet &tet : tets_) {
+    size_t vo_cnt=0, vi_cnt=0;
+    size_t vo[4], vi[4];
+    for(size_t vid : tet.vid_) {
+      if(vertices_[vid].pt_type_ == OUTER_POINT) { vo[vo_cnt++]=vid; }
+      else { vi[vi_cnt++]=vid; }
+    }
+    // bo : bi = 3 : 1
+    if(vo_cnt==3 && vi_cnt==1) {
+      tessllelation3v1(vo[0],vo[1],vo[2],vi[0],tet);
+    }
+    // bo : bi = 2 : 2
+    else if(vo_cnt==2 && vo_cnt==vi_cnt) {
+      tessllelation2v2(vo[0],vo[1],vi[0],vi[1],tet);
+    }
+    // bo : bi = 1 : 3
+    else if(vo_cnt==1 && vi_cnt==3) {
+      tessllelation1v3(vo[0],vi[0],vi[1],vi[2],tet);
+    }
+  }
+}
+
+void zsw::Triangulation::tessllelation3v1(const size_t vo_0, const size_t vo_1,
+                                          const size_t vo_2, const size_t vi_0,
+                                          Tet &tet)
+{
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  tet.valid_=false;
+  size_t nv0=vertices_.size();
+  size_t nv1=nv0+1;
+  size_t nv2=nv1+1;
+  vertices_.push_back({ZERO_POINT,(vertices_[vo_0].pt_+vertices_[vi_0].pt_)/2.0,{},{}}); //nv0
+  vertices_.push_back({ZERO_POINT,(vertices_[vo_1].pt_+vertices_[vi_0].pt_)/2.0,{},{}}); //nv1
+  vertices_.push_back({ZERO_POINT,(vertices_[vo_2].pt_+vertices_[vi_0].pt_)/2.0,{},{}}); //nv2
+
+  // add tet
+  tets_.push_back({true, {vi_0,nv0,nv1,nv2}});
+  tets_.push_back({true, {nv0,vo_0,vo_2,vo_1}});
+  tets_.push_back({true, {nv1,nv0,vo_2,vo_1}});
+  tets_.push_back({true, {nv2,nv1,nv0,vo_2}});
+  // add edge
+  std::cerr << "Haven't add edge!!!" << std::endl;
+  // add additional info of vertex
+  std::cerr << "Haven't add additional info of vertex!!!'" << std::endl;
+}
+
+void zsw::Triangulation::tessllelation2v2(const size_t vo_0, const size_t vo_1,
+                                          const size_t vi_0, const size_t vi_1,
+                                          Tet &tet)
+{
+  tet.valid_=false;
+  std::cerr << " invalid the old tet's edge!!!" << std::endl;
+  size_t nv0=vertices_.size();
+  size_t nv1=nv0+1;
+  size_t nv2=nv1+1;
+  size_t nv3=nv2+1;
+  vertices_.push_back({ZERO_POINT, (vertices_[vo_0].pt_+vertices_[vi_0].pt_)/2.0, {}, {}}); // nv0
+  vertices_.push_back({ZERO_POINT, (vertices_[vo_0].pt_+vertices_[vi_1].pt_)/2.0, {}, {}}); // nv1
+  vertices_.push_back({ZERO_POINT, (vertices_[vo_1].pt_+vertices_[vi_0].pt_)/2.0, {}, {}}); // nv2
+  vertices_.push_back({ZERO_POINT, (vertices_[vo_1].pt_+vertices_[vi_1].pt_)/2.0, {}, {}}); // nv3
+
+  // add tet
+  tets_.push_back({true,{nv0,nv1,nv2,vo_0},{}}); //0
+  tets_.push_back({true,{nv0,nv1,nv2,vi_0},{}}); //1
+  tets_.push_back({true,{nv1,nv2,vi_0,vi_1},{}}); //2
+  tets_.push_back({true,{nv1,nv2,nv3,vi_1},{}}); //3
+  tets_.push_back({true,{nv2,nv1,vo_0,vo_1},{}}); //4
+  tets_.push_back({true,{nv2,nv1,nv3,vo_1},{}}); //5
+  // add edge
+  edges_.push_back({nv0, vo_0});  edges_.push_back({nv0, nv1});
+  edges_.push_back({nv0, nv2});  edges_.push_back({nv0, vi_0});
+
+  edges_.push_back({nv1, vo_0});  edges_.push_back({nv1, vi_0});
+  edges_.push_back({nv1, vi_1});  edges_.push_back({nv1, vo_1});
+  edges_.push_back({nv1, nv2});  edges_.push_back({nv1, nv3});
+
+  edges_.push_back({nv2, vo_0});  edges_.push_back({nv2, vo_1});
+  edges_.push_back({nv2, vi_0});  edges_.push_back({nv2, vi_1});
+  edges_.push_back({nv2, nv3});
+
+  edges_.push_back({nv3, vo_1});  edges_.push_back({nv3, vi_1});
+  // other vertex info-egde and tet
+  std::cerr << "other vertex info-egde and tet missing!!!! " << std::endl;
+}
+
+void zsw::Triangulation::tessllelation1v3(const size_t vo_0, const size_t vi_0,
+                                          const size_t vi_1, const size_t vi_2,
+                                          Tet &tet)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  tet.valid_=false;
+  size_t nv0=vertices_.size();
+  size_t nv1=nv0+1;
+  size_t nv2=nv1+1;
+  vertices_.push_back({ZERO_POINT,(vertices_[vo_0].pt_+vertices_[vi_0].pt_)/2.0,{},{}}); //nv0
+  vertices_.push_back({ZERO_POINT,(vertices_[vo_0].pt_+vertices_[vi_1].pt_)/2.0,{},{}}); //nv1
+  vertices_.push_back({ZERO_POINT,(vertices_[vo_0].pt_+vertices_[vi_2].pt_)/2.0,{},{}}); //nv2
+
+  // add tets
+  tets_.push_back({true, {vo_0,nv0,nv1,nv2},{}});
+  tets_.push_back({true, {nv0,vi_0,vi_1,vi_2},{}});
+  tets_.push_back({true, {nv1,nv0,vi_1,vi_2},{}});
+  tets_.push_back({true, {nv2,nv0,nv1,vi_2},{}});
+
+  // add edge
+  std::cerr << "Haven't add edge!!!" << std::endl;
+  // add additional vertex info
+  std::cerr << "Haven't add  additional vertex info!!!" << std::endl;
 }
 
 void zsw::Triangulation::writeTetMesh(const std::string &filepath, size_t mask) const
@@ -160,6 +267,7 @@ void zsw::Triangulation::writeTetMesh(const std::string &filepath, size_t mask) 
   }
 
   for(const Tet &tet : tets_) {
+    if(!tet.valid_) { continue; }
     bool ignore=false;
     for(size_t i=0; i<4;++i) {
       if(vertices_[tet.vid_[i]].pt_type_ & mask) { ignore=true; break; }
