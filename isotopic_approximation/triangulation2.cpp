@@ -113,7 +113,7 @@ bool zsw::Triangulation::linkCondition(const Edge &e) const
   for(size_t tid : vertices_[e.vid_[0]].tet_ids_) {
     bool isfv=false;
     for(size_t vid : tets_[tid].vid_) {
-      if(vid == e.vid_[0]) { isfv=true; }
+      if(vid == e.vid_[1]) { isfv=true; }
       adj_v0.insert(vid);
     }
     if(isfv) {    for(size_t vid : tets_[tid].vid_) {      fv.insert(vid);    }    }
@@ -132,13 +132,14 @@ bool zsw::Triangulation::linkCondition(const Edge &e) const
     std::set<size_t>::iterator it0=adj_v0.begin();
     std::set<size_t>::iterator it1=adj_v1.begin();
     while(it0!=adj_v0.end() && it1!=adj_v1.end()) {
-      if(*it0 == *it1) { ++cv_cnt; }
+      if(*it0 == *it1) { ++cv_cnt; ++it0; ++it1; }
       else if(*it0>*it1) { ++it1; }
       else { ++it0; }
     }
     if(adj_v0.find(e.vid_[0])!=adj_v0.end() && adj_v1.find(e.vid_[0])!=adj_v1.end()) { --cv_cnt; }
     if(adj_v0.find(e.vid_[1])!=adj_v0.end() && adj_v1.find(e.vid_[1])!=adj_v1.end()) { --cv_cnt; }
   }
+  assert(cv_cnt >=fv_cnt);
   return cv_cnt==fv_cnt;
 }
 
@@ -350,4 +351,17 @@ bool zsw::Triangulation::testCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3
 void zsw::Triangulation::edgeCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts)
 {
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+}
+
+void zsw::Triangulation::writeTet(const std::string &filepath, const size_t tet_id) const
+{
+  size_t tets_data[4] = {0,1,2,3};
+  Eigen::Matrix<zsw::Scalar,3,4> pts_data;
+  pts_data.block<3,1>(0,0)=vertices_[tets_[tet_id].vid_[0]].pt_;
+  pts_data.block<3,1>(0,1)=vertices_[tets_[tet_id].vid_[1]].pt_;
+  pts_data.block<3,1>(0,2)=vertices_[tets_[tet_id].vid_[2]].pt_;
+  pts_data.block<3,1>(0,3)=vertices_[tets_[tet_id].vid_[3]].pt_;
+  std::ofstream ofs;
+  OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+  tet2vtk(ofs, pts_data.data(), 4, tets_data, 1);
 }

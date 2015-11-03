@@ -18,6 +18,8 @@
 #include "cgal_common.h"
 #include "basic_data_structure.h"
 
+#define ZSW_DEBUG
+
 namespace zsw
 {
 
@@ -40,6 +42,13 @@ namespace zsw
   class Triangulation final
   {
   public:
+#ifdef ZSW_DEBUG
+    Triangulation() {}
+    std::vector<Vertex>& getVertices() { return vertices_; }
+    std::vector<Tet>& getTets()  { return tets_; }
+    std::vector<Edge>& getEdges() { return edges_; }
+    bool testLinkCondition(const Edge &e) const { return linkCondition(e); }
+#endif
     Triangulation(const zsw::Scalar r,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
@@ -47,6 +56,16 @@ namespace zsw
     void mutualTessellation();
     void writeTetMesh(const std::string &filepath, size_t mask) const;
     void writeSurface(const std::string &filepath, PointType pt_tyte) const;
+
+
+    /// \brief a funtion for debug or check.
+    ///
+    /// write the single tet in the triangulation.
+    ///
+    ///
+    /// \param
+    void writeTet(const std::string &filepath, const size_t tet_id) const;
+
     const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<Tet>& getTets() const { return tets_; }
     const std::vector<Edge>& getEdges() const { return edges_; }
