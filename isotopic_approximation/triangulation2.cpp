@@ -3,19 +3,30 @@
 
 #include <zswlib/mesh/vtk.h>
 #include <zswlib/error_ctrl.h>
+#include <zswlib/const_val.h>
 
 #include "sampling.h"
 
 void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    vec_v0.push_back(v0);
+    Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
+    Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
+    Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
+    vn.normalized();
+    if(vn.dot(vr-v0) < 0) { vn=-vn; }
+    vec_vn.push_back(vn);
 }
 
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  return false;
+  for(size_t i=0; i<vec_v0.size(); ++i) {
+    if(vec_vn[i].dot(pt-vec_v0[i]) < -zsw::const_val::eps) {
+      return false;
+    }
+  }
+  return true;
 }
 
 zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_pts,
@@ -94,6 +105,43 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
   }
 }
 
+bool zsw::Triangulation::linkCondition(const Edge &e) const
+{
+  std::unordered_set<size_t> fv; // vertex construct a face with edge e
+  std::set<size_t> adj_v0; // vertex link e.vid_[0]
+  std::set<size_t> adj_v1; // vertex link e.vid_[1]
+  for(size_t tid : vertices_[e.vid_[0]].tet_ids_) {
+    bool isfv=false;
+    for(size_t vid : tets_[tid].vid_) {
+      if(vid == e.vid_[0]) { isfv=true; }
+      adj_v0.insert(vid);
+    }
+    if(isfv) {    for(size_t vid : tets_[tid].vid_) {      fv.insert(vid);    }    }
+  }
+  for(size_t tid : vertices_[e.vid_[1]].tet_ids_) {
+    for(size_t vid : tets_[tid].vid_) {
+      adj_v1.insert(vid);
+    }
+  }
+  size_t fv_cnt=fv.size();
+  if(fv.find(e.vid_[0]) != fv.end()) { --fv_cnt; }
+  if(fv.find(e.vid_[1]) != fv.end()) { --fv_cnt; }
+
+  size_t cv_cnt=0;
+  {
+    std::set<size_t>::iterator it0=adj_v0.begin();
+    std::set<size_t>::iterator it1=adj_v1.begin();
+    while(it0!=adj_v0.end() && it1!=adj_v1.end()) {
+      if(*it0 == *it1) { ++cv_cnt; }
+      else if(*it0>*it1) { ++it1; }
+      else { ++it0; }
+    }
+    if(adj_v0.find(e.vid_[0])!=adj_v0.end() && adj_v1.find(e.vid_[0])!=adj_v1.end()) { --cv_cnt; }
+    if(adj_v0.find(e.vid_[1])!=adj_v0.end() && adj_v1.find(e.vid_[1])!=adj_v1.end()) { --cv_cnt; }
+  }
+  return cv_cnt==fv_cnt;
+}
+
 void zsw::Triangulation::simpTolerance()
 {
   for(Edge e : edges_) {
@@ -101,6 +149,9 @@ void zsw::Triangulation::simpTolerance()
     if(vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
        (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) ) {
       continue; }
+
+    // link condition
+    if(!linkCondition(e)) { continue; }
 
     std::unordered_set<size_t> tet_ids;
     for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.insert(tid); }

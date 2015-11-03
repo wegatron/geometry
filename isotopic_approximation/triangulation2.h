@@ -62,6 +62,8 @@ namespace zsw
     void init(const zsw::Scalar r, Delaunay &delaunay);
 
 
+    bool linkCondition(const Edge &e) const;
+
     /// \brief test if the edge can collapse to this point
     ///
     /// check if the judge points' error is satisfied,
