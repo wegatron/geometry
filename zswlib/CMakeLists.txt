@@ -34,8 +34,8 @@ endif(EIGEN3_FOUND)
 #for openmesh
 # include_directories(E:/usr/Windows/64/vc2010)
 # set(OPENMESH_LIBRARIES E:/usr/Windows/64/vc2010/OpenMesh/Core/bin/OpenMeshCore.lib)
-find_package(OpenMesh REQUIRED)
-include_directories($OPENMESH_INCLUDE_DIRS$)
+#find_package(OpenMesh REQUIRED)
+#include_directories($OPENMESH_INCLUDE_DIRS$)
 
 # add_subdirectory(mesh)
 
@@ -44,7 +44,7 @@ file(GLOB mesh_headers mesh/*.h io/*.h)
 file(GLOB mesh_src mesh/*.cpp)
 
 add_library(zswlib SHARED ${mesh_src} log/zsw_log.cpp)
-target_link_libraries(zswlib ${OPENMESH_LIBRARIES})
+#target_link_libraries(zswlib ${OPENMESH_LIBRARIES})
 
 # aux_source_directory_with_headers(. sources headers)
 

@@ -33,10 +33,14 @@ include_directories(${BOOST_INCLUDE_DIRES})
 
 # add_subdirectory(src)
 
-file(GLOB headers *.h)
-file(GLOB src *.cpp)
+#file(GLOB headers *.h)
+#file(GLOB src *.cpp)
 
-add_library(isotropic_approximate SHARED ${headers} ${src})
+#add_library(isotropic_approximate SHARED ${headers} ${src})
+
+add_library(isotropic_approximate SHARED surface_generator.h surface_generator.cpp
+  optimizer.h optimizer.cpp sampling.h sampling.cpp )
+#triangulation2.h triangulation2.cpp)
 
 target_link_libraries(isotropic_approximate zswlib ${OPENMESH_LIBRARIES}
   ipopt coinhsl coinmumps coinmetis blas lapack dl mpi)

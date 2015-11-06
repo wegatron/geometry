@@ -23,6 +23,7 @@ namespace zsw{
 
   struct Vertex
   {
+    bool valid_;
     const PointType pt_type_;
     Eigen::Matrix<zsw::Scalar,3,1> pt_;
     std::vector<size_t> tet_ids_;
@@ -31,6 +32,7 @@ namespace zsw{
 
   struct Edge
   {
+    bool valid_;
     size_t vid_[2];
   };
 
