@@ -24,6 +24,23 @@
     edges_.push_back({true, {v0, v1}});                                 \
   }while(0)
 
+#define CHECK_ADD_EDGE(v0, v1, isnew0, isnew1) do{      \
+    if(isnew0 || isnew1) {                              \
+      ADD_EDGE(v0, v1);                                 \
+    }                                                   \
+  }while(0)
+
+#define CHECK_AND_ADD_ZERO_POINT(va, vb, nv, ev_map, isnew) do{         \
+    std::pair<size_t, size_t> e= (va<vb) ? std::make_pair(va, vb) : std::make_pair(vb, va); \
+    auto itr=ev_map.find(e);                                            \
+    if(itr==ev_map.end()) {                                             \
+      nv=vertices_.size();                                              \
+      ADD_VERTEX(ZERO_POINT, (vertices_[va].pt_+vertices_[vb].pt_)/2.0); \
+      ev_map[e]=nv;                                                     \
+      isnew=true;                                                       \
+    } else { isnew=false; nv=itr->second; }                             \
+  }while(0)
+
 void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
 {
@@ -270,7 +287,7 @@ void zsw::Triangulation::tessllelation3v1(const size_t vo_0, const size_t vo_1,
   // add vertex
   size_t nv0, nv1, nv2;
   bool isnew0=false, isnew1=false, isnew2=false; // if nv* is new vertex
-  std::pair<size_t, size_t> e= (vi_0<vo_0) ? std::make_pair(vo_i, vo_0)
+  std::pair<size_t, size_t> e= (vi_0<vo_0) ? std::make_pair(vi_0, vo_0)
     : std::make_pair(vo_0, vi_0);
   auto itr=ev_map.find(e);
   if(itr==ev_map.end()) {
@@ -342,14 +359,12 @@ void zsw::Triangulation::tessllelation2v2(const size_t vo_0, const size_t vo_1,
   }
 
   // add vertices
-  size_t nv0=vertices_.size();
-  size_t nv1=nv0+1;
-  size_t nv2=nv1+1;
-  size_t nv3=nv2+1;
-  ADD_VERTEX(ZERO_POINT, (vertices_[vo_0].pt_+vertices_[vi_0].pt_)/2.0); // nv0
-  ADD_VERTEX(ZERO_POINT, (vertices_[vo_0].pt_+vertices_[vi_1].pt_)/2.0); // nv1
-  ADD_VERTEX(ZERO_POINT, (vertices_[vo_1].pt_+vertices_[vi_0].pt_)/2.0); // nv2
-  ADD_VERTEX(ZERO_POINT, (vertices_[vo_1].pt_+vertices_[vi_1].pt_)/2.0); // nv3
+  size_t nv0, nv1, nv2, nv3;
+  bool isnew0=false, isnew1=false, isnew2=false, isnew3=false;
+  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map, isnew0);
+  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_1, nv1, ev_map, isnew1);
+  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_0, nv2, ev_map, isnew2);
+  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_1, nv3, ev_map, isnew3);
 
   // add tet
   ADD_TET(nv0, nv1, nv2, vo_0);  ADD_TET(nv0, nv1, nv2, vi_0);
@@ -357,18 +372,18 @@ void zsw::Triangulation::tessllelation2v2(const size_t vo_0, const size_t vo_1,
   ADD_TET(nv2, nv1, vo_0, vo_1);  ADD_TET(nv2, nv1, nv3, vo_1);
 
   // add edge
-  ADD_EDGE(nv0, vo_0); ADD_EDGE(nv0, nv1);
-  ADD_EDGE(nv0, nv2); ADD_EDGE(nv0, vi_0);
+  CHECK_ADD_EDGE(nv0, vo_0, isnew0, false); CHECK_ADD_EDGE(nv0, nv1, isnew0, isnew1);
+  CHECK_ADD_EDGE(nv0, nv2, isnew0, isnew2); CHECK_ADD_EDGE(nv0, vi_0, isnew0, false);
 
-  ADD_EDGE(nv1, vo_0); ADD_EDGE(nv1, vi_0);
-  ADD_EDGE(nv1, vi_1); ADD_EDGE(nv1, vo_1);
-  ADD_EDGE(nv1, nv2); ADD_EDGE(nv1, nv3);
+  CHECK_ADD_EDGE(nv1, vo_0, isnew1, false); CHECK_ADD_EDGE(nv1, vi_0, isnew1, false);
+  CHECK_ADD_EDGE(nv1, vi_1, isnew1, false); CHECK_ADD_EDGE(nv1, vo_1, isnew1, false);
+  CHECK_ADD_EDGE(nv1, nv2, isnew1, isnew2); CHECK_ADD_EDGE(nv1, nv3, isnew1, isnew3);
 
-  ADD_EDGE(nv2, vo_0); ADD_EDGE(nv2, vo_1);
-  ADD_EDGE(nv2, vi_0); ADD_EDGE(nv2, vi_1);
-  ADD_EDGE(nv2, nv3);
+  CHECK_ADD_EDGE(nv2, vo_0, isnew2, false); CHECK_ADD_EDGE(nv2, vo_1, isnew2, false);
+  CHECK_ADD_EDGE(nv2, vi_0, isnew2, false); CHECK_ADD_EDGE(nv2, vi_1, isnew2, false);
+  CHECK_ADD_EDGE(nv2, nv3, isnew2, isnew3);
 
-  ADD_EDGE(nv3, vo_1); ADD_EDGE(nv3, vi_1);
+  CHECK_ADD_EDGE(nv3, vo_1, isnew3, false); CHECK_ADD_EDGE(nv3, vi_1, isnew3, false);
 }
 
 void zsw::Triangulation::tessllelation1v3(const size_t vo_0, const size_t vi_0,
