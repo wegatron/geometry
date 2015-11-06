@@ -268,15 +268,32 @@ void zsw::Triangulation::tessllelation3v1(const size_t vo_0, const size_t vo_1,
   }
 
   // add vertex
-  std::pair<size_t, size_t> e= (vi_0>vo_0) ? std::make_pair(vo_0, vi_0)
-    : std::make_pair(vi_0, vo_0);
+  size_t nv0, nv1, nv2;
+  bool isnew0=false, isnew1=false, isnew2=false; // if nv* is new vertex
+  std::pair<size_t, size_t> e= (vi_0<vo_0) ? std::make_pair(vo_i, vo_0)
+    : std::make_pair(vo_0, vi_0);
+  auto itr=ev_map.find(e);
+  if(itr==ev_map.end()) {
+    nv0=vertices_.size();
+    ADD_VERTEX(ZERO_POINT, (vertices_[vo_0].pt_+vertices_[vi_0].pt_)/2.0);
+    ev_map[e]= nv0; isnew0=true;
+  } else { nv0=itr->second; }
 
-  size_t nv0=vertices_.size();
-  size_t nv1=nv0+1;
-  size_t nv2=nv1+1;
-  ADD_VERTEX(ZERO_POINT, (vertices_[vo_0].pt_+vertices_[vi_0].pt_)/2.0);
-  ADD_VERTEX(ZERO_POINT, (vertices_[vo_1].pt_+vertices_[vi_0].pt_)/2.0);
-  ADD_VERTEX(ZERO_POINT, (vertices_[vo_2].pt_+vertices_[vi_0].pt_)/2.0);
+  e=(vi_0<vo_1) ? std::make_pair(vi_0,vo_1) : std::make_pair(vo_1, vi_0);
+  itr=ev_map.find(e);
+  if(itr==ev_map.end()) {
+    nv1=vertices_.size();
+    ADD_VERTEX(ZERO_POINT, (vertices_[vo_1].pt_+vertices_[vi_0].pt_)/2.0);
+    ev_map[e]=nv1; isnew1=true;
+  } else { nv1=itr->second; }
+
+  e=(vi_0<vo_2) ? std::make_pair(vi_0,vo_2) : std::make_pair(vo_2, vi_0);
+  itr=ev_map.find(e);
+  if(itr==ev_map.end()) {
+    nv2=vertices_.size();
+    ADD_VERTEX(ZERO_POINT, (vertices_[vo_2].pt_+vertices_[vi_0].pt_)/2.0);
+    ev_map[e]=nv2; isnew2=true;
+  } else { nv2=itr->second; }
 
   // add tet
   ADD_TET(vi_0, nv0, nv1, nv2);
@@ -285,14 +302,23 @@ void zsw::Triangulation::tessllelation3v1(const size_t vo_0, const size_t vo_1,
   ADD_TET(nv2, nv1, nv0, vo_2);
 
   // add edge
-  ADD_EDGE(nv0, vi_0);  ADD_EDGE(nv0, nv1);
-  ADD_EDGE(nv0, nv2);  ADD_EDGE(nv0, vo_0);
-  ADD_EDGE(nv0, vo_1);  ADD_EDGE(nv0, vo_2);
+  if(isnew0) {
+    ADD_EDGE(nv0, vi_0);  ADD_EDGE(nv0, nv1);
+    ADD_EDGE(nv0, nv2);  ADD_EDGE(nv0, vo_0);
+    ADD_EDGE(nv0, vo_1);  ADD_EDGE(nv0, vo_2);
+  }
 
-  ADD_EDGE(nv1, nv2);  ADD_EDGE(nv1, vi_0);
-  ADD_EDGE(nv1, vo_1);  ADD_EDGE(nv1, vo_2);
+  if(isnew1) {
+    if(!isnew0) { ADD_EDGE(nv0, nv1); }
+    ADD_EDGE(nv1, nv2);  ADD_EDGE(nv1, vi_0);
+    ADD_EDGE(nv1, vo_1);  ADD_EDGE(nv1, vo_2);
+  }
 
-  ADD_EDGE(nv2, vi_0);  ADD_EDGE(nv2, vo_2);
+  if(isnew2) {
+    if(!isnew0) { ADD_EDGE(nv0, nv2); }
+    if(!isnew1) { ADD_EDGE(nv1, nv2); }
+    ADD_EDGE(nv2, vi_0);  ADD_EDGE(nv2, vo_2);
+  }
 }
 
 void zsw::Triangulation::tessllelation2v2(const size_t vo_0, const size_t vo_1,
