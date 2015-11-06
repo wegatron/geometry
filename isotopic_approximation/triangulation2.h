@@ -13,6 +13,7 @@
 #define TRIANGULATION2_H
 
 #include <vector>
+#include <map>
 #include <Eigen/Dense>
 #include <zswlib/config.h>
 #include "cgal_common.h"
@@ -38,6 +39,8 @@ namespace zsw
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v0;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vn;
   };
+
+  typedef bool(*PairCompFunc)(const std::pair<size_t,size_t>&a, const std::pair<size_t,size_t>&b);
 
   class Triangulation final
   {
@@ -96,11 +99,19 @@ namespace zsw
 
     void edgeCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts);
 
-    void tessllelation3v1(const size_t vo_0, const size_t vo_1, const size_t vo_2, const size_t vi_0, Tet &tet);
+    void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
 
-    void tessllelation2v2(const size_t vo_0, const size_t vo_1, const size_t vi_0, const size_t vi_1, Tet &tet);
+    void tessllelation3v1(const size_t vo_0, const size_t vo_1, const size_t vo_2, const size_t vi_0,
+                          Tet &tet, std::map<std::pair<size_t,size_t>,
+                          size_t, PairCompFunc> &ev_map);
 
-    void tessllelation1v3(const size_t vo_0, const size_t vi_0, const size_t vi_1, const size_t vi_2, Tet &tet);
+    void tessllelation2v2(const size_t vo_0, const size_t vo_1, const size_t vi_0, const size_t vi_1,
+                          Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
+                          PairCompFunc> &ev_map );
+
+    void tessllelation1v3(const size_t vo_0, const size_t vi_0, const size_t vi_1, const size_t vi_2,
+                          Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
+                          PairCompFunc> &ev_map);
 
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;

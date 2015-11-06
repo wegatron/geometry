@@ -212,8 +212,21 @@ void zsw::Triangulation::simpTolerance()
   }
 }
 
+void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+}
+
+bool pairComp(const std::pair<size_t, size_t> &a, const std::pair<size_t, size_t> &b)
+{
+  return a.first<b.first || a.second<b.second;
+}
+
 void zsw::Triangulation::mutualTessellation()
 {
+  // add zero point with edge
+  std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> ev_map(pairComp); // bi bo edge to vertex index map
+  addZeroPoints(ev_map);
   size_t tet_size=tets_.size();
   for(size_t t_id=0; t_id<tet_size; ++t_id) {
     Tet &tet=tets_[t_id];
@@ -221,28 +234,28 @@ void zsw::Triangulation::mutualTessellation()
     size_t vo_cnt=0, vi_cnt=0;
     size_t vo[4], vi[4];
     for(size_t vid : tet.vid_) {
-      std::cerr << vid << std::endl;
       if(vertices_[vid].pt_type_ == OUTER_POINT) { vo[vo_cnt++]=vid; }
       else { vi[vi_cnt++]=vid; }
     }
     // bo : bi = 3 : 1
     if(vo_cnt==3 && vi_cnt==1) {
-      tessllelation3v1(vo[0],vo[1],vo[2],vi[0],tet);
+      tessllelation3v1(vo[0],vo[1],vo[2],vi[0],tet,ev_map);
     }
     // bo : bi = 2 : 2
     else if(vo_cnt==2 && vo_cnt==vi_cnt) {
-      tessllelation2v2(vo[0],vo[1],vi[0],vi[1],tet);
+      tessllelation2v2(vo[0],vo[1],vi[0],vi[1],tet, ev_map);
     }
     // bo : bi = 1 : 3
     else if(vo_cnt==1 && vi_cnt==3) {
-      tessllelation1v3(vo[0],vi[0],vi[1],vi[2],tet);
+      tessllelation1v3(vo[0],vi[0],vi[1],vi[2],tet, ev_map);
     }
   }
 }
 
 void zsw::Triangulation::tessllelation3v1(const size_t vo_0, const size_t vo_1,
                                           const size_t vo_2, const size_t vi_0,
-                                          Tet &tet)
+                                          Tet &tet,
+                                          std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
   // invalid old tet and edges
   tet.valid_=false;
@@ -255,6 +268,9 @@ void zsw::Triangulation::tessllelation3v1(const size_t vo_0, const size_t vo_1,
   }
 
   // add vertex
+  std::pair<size_t, size_t> e= (vi_0>vo_0) ? std::make_pair(vo_0, vi_0)
+    : std::make_pair(vi_0, vo_0);
+
   size_t nv0=vertices_.size();
   size_t nv1=nv0+1;
   size_t nv2=nv1+1;
@@ -281,7 +297,8 @@ void zsw::Triangulation::tessllelation3v1(const size_t vo_0, const size_t vo_1,
 
 void zsw::Triangulation::tessllelation2v2(const size_t vo_0, const size_t vo_1,
                                           const size_t vi_0, const size_t vi_1,
-                                          Tet &tet)
+                                          Tet &tet,
+                                          std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
   // invalid old tet and edges
   tet.valid_=false;
@@ -330,7 +347,8 @@ void zsw::Triangulation::tessllelation2v2(const size_t vo_0, const size_t vo_1,
 
 void zsw::Triangulation::tessllelation1v3(const size_t vo_0, const size_t vi_0,
                                           const size_t vi_1, const size_t vi_2,
-                                          Tet &tet)
+                                          Tet &tet,
+                                          std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
   // invalid old tet and edges
   tet.valid_=false;
