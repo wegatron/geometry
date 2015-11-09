@@ -99,7 +99,7 @@ void test_mutualTessellation()
 int main(int argc, char *argv[])
 {
   // test_init1();
-  test_init2();
+  // test_init2();
   test_mutualTessellation();
   return 0;
 }

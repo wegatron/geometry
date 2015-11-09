@@ -20,11 +20,12 @@
 
 #define ADD_EDGE(v0, v1) do{                                            \
     size_t e_id=edges_.size();                                          \
+    assert(e_id<600000);                                                \
     vertices_[v0].edge_ids_.push_back(e_id); vertices_[v1].edge_ids_.push_back(e_id); \
     edges_.push_back({true, {v0, v1}});                                 \
   }while(0)
 
-#define REUSE_VERTEX(pt, v_id) do{              \
+#define REUSE_VERTEX(pt, pt_type, v_id) do{      \
     vertices_[v_id].pt_=pt;                     \
     vertices_[v_id].pt_type_=pt_type;           \
     vertices_[v_id].tet_ids_.clear();           \
@@ -32,10 +33,11 @@
   }while(0)
 
 #define REUSE_EDGE(v0, v1, e_id) do{                    \
-  vertices_[v0].edge_ids_.push_back(e_id);              \
-  vertices_[v1].edge_ids_.push_back(e_id);              \
-  edges_[e_id].valid_=true;                             \
-  edges_[e_id].vid_[0]=v0; edges_[e_id].vid_[1]=v1;   \
+    assert(e_id<600000);                                \
+    vertices_[v0].edge_ids_.push_back(e_id);            \
+    vertices_[v1].edge_ids_.push_back(e_id);            \
+    edges_[e_id].valid_=true;                           \
+    edges_[e_id].vid_[0]=v0; edges_[e_id].vid_[1]=v1;   \
   }while(0)
 
 #define REUSE_TET(v0, v1, v2, v3, t_id) do {                            \
@@ -163,6 +165,7 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
       eit!=delaunay.finite_edges_end(); ++eit) {
     edges_.push_back({true, {eit->first->vertex(eit->second)->info(), eit->first->vertex(eit->third)->info()}});
     Edge &tmp_edge=edges_.back();
+    assert(e_id<600000);
     vertices_[tmp_edge.vid_[0]].edge_ids_.push_back(e_id);
     vertices_[tmp_edge.vid_[1]].edge_ids_.push_back(e_id++);
   }
@@ -275,6 +278,9 @@ bool pairComp(const std::pair<size_t, size_t> &a, const std::pair<size_t, size_t
 
 void zsw::Triangulation::mutualTessellation()
 {
+#if 1
+
+#endif
   // add zero point with edge
   std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> ev_map(pairComp); // bi bo edge to vertex index map
   //addZeroPoints(ev_map);
@@ -286,7 +292,7 @@ void zsw::Triangulation::mutualTessellation()
     size_t vo[4], vi[4];
     for(size_t vid : tet.vid_) {
       if(vertices_[vid].pt_type_ == OUTER_POINT) { vo[vo_cnt++]=vid; }
-      else { vi[vi_cnt++]=vid; }
+      else if(vertices_[vid].pt_type_ == INNER_POINT){ vi[vi_cnt++]=vid; }
     }
     // bo : bi = 3 : 1
     if(vo_cnt==3 && vi_cnt==1) {
@@ -535,7 +541,7 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   for(size_t eid : vertices_[e.vid_[1]].edge_ids_) { inv_edge_ids.insert(eid); invalidEdge(eid); }
 
   // add new vertex
-  REUSE_VERTEX(pt, e.vid_[0]);
+  REUSE_VERTEX(pt, pt_type, e.vid_[0]);
 
   // add new tets
   assert(inv_tet_ids.size()>=bound_tris.size());
