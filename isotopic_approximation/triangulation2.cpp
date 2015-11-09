@@ -278,14 +278,23 @@ bool pairComp(const std::pair<size_t, size_t> &a, const std::pair<size_t, size_t
 
 void zsw::Triangulation::mutualTessellation()
 {
-#if 1
-
-#endif
   // add zero point with edge
   std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> ev_map(pairComp); // bi bo edge to vertex index map
   //addZeroPoints(ev_map);
   size_t tet_size=tets_.size();
   for(size_t t_id=0; t_id<tet_size; ++t_id) {
+
+#if 0
+    std::cerr << "t_id:" << t_id << std::endl;
+    for(const Vertex &v : vertices_) {
+      for(size_t e_id : v.edge_ids_) {
+        if(e_id>600000) {
+          std::cerr << "check failed!!!" << std::endl;
+        }
+      }
+    }
+#endif
+
     Tet &tet=tets_[t_id];
     if(!tet.valid_) { continue; }
     size_t vo_cnt=0, vi_cnt=0;
@@ -310,19 +319,25 @@ void zsw::Triangulation::mutualTessellation()
 }
 
 void zsw::Triangulation::tessellation3v1(const size_t vo_0, const size_t vo_1,
-                                          const size_t vo_2, const size_t vi_0,
-                                          Tet &tet,
-                                          std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
+                                         const size_t vo_2, const size_t vi_0,
+                                         Tet &tet,
+                                         std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
   // invalid old tet and edges
   invalidTet(tet);
+
+  size_t inv_cnt=0;
+  size_t inv_e_ids[3]={-1, -1, -1};
   for(size_t e_id : vertices_[vi_0].edge_ids_) {
     if(edges_[e_id].vid_[0]==vo_0 || edges_[e_id].vid_[0]==vo_1 || edges_[e_id].vid_[0]==vo_2
        || edges_[e_id].vid_[1]==vo_0 || edges_[e_id].vid_[1]==vo_1 || edges_[e_id].vid_[1]==vo_2)
       {
-        invalidEdge(e_id);
+        inv_e_ids[inv_cnt]=e_id;
+        if(++inv_cnt==3) { break; }
       }
   }
+  assert(inv_cnt<=3);
+  for(size_t ei=0; ei<inv_cnt; ++ei) {    invalidEdge(inv_e_ids[ei]);  }
 
   // add vertices
   size_t nv0, nv1, nv2;
@@ -349,26 +364,32 @@ void zsw::Triangulation::tessellation3v1(const size_t vo_0, const size_t vo_1,
 }
 
 void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
-                                          const size_t vi_0, const size_t vi_1,
-                                          Tet &tet,
-                                          std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
+                                         const size_t vi_0, const size_t vi_1,
+                                         Tet &tet,
+                                         std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
   // invalid old tet and edges
   invalidTet(tet);
   tet.valid_=false;
+  size_t inv_e_ids[4]={-1,-1,-1,-1};
+  size_t inv_cnt=0;
   for(size_t e_id : vertices_[vo_0].edge_ids_) {
     if(edges_[e_id].vid_[0]==vi_0 || edges_[e_id].vid_[0]==vi_1
        || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_1) {
-      invalidEdge(e_id);
+      inv_e_ids[inv_cnt]=e_id;
+      if(++inv_cnt==2) { break; }
     }
   }
   for(size_t e_id : vertices_[vo_1].edge_ids_) {
     if(edges_[e_id].vid_[0]==vi_0 || edges_[e_id].vid_[0]==vi_1
        || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_1) {
-      invalidEdge(e_id);
+      inv_e_ids[inv_cnt]=e_id;
+      if(++inv_cnt==4) { break; }
     }
   }
 
+  assert(inv_cnt<=4);
+  for(size_t ei=0; ei<inv_cnt; ++ei) {    invalidEdge(inv_e_ids[ei]);  }
   // add vertices
   size_t nv0, nv1, nv2, nv3;
   bool isnew0=false, isnew1=false, isnew2=false, isnew3=false;
@@ -398,18 +419,24 @@ void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
 }
 
 void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
-                                          const size_t vi_1, const size_t vi_2,
-                                          Tet &tet,
-                                          std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
+                                         const size_t vi_1, const size_t vi_2,
+                                         Tet &tet,
+                                         std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
   // invalid old tet and edges
   invalidTet(tet);
+  size_t inv_e_ids[3]={-1,-1,-1};
+  size_t inv_cnt=0;
   for(size_t e_id : vertices_[vo_0].edge_ids_) {
     if(edges_[e_id].vid_[0]==vi_0 || edges_[e_id].vid_[0]==vi_1 || edges_[e_id].vid_[0]==vi_2
        || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_0) {
-      invalidEdge(e_id);
+      inv_e_ids[inv_cnt]=e_id;
+      if(++inv_cnt==3) { break; }
     }
   }
+
+  assert(inv_cnt<=3);
+  for(size_t ei=0; ei<inv_cnt; ++ei) { invalidEdge(inv_e_ids[ei]); }
 
   // add vertices
   size_t nv0, nv1, nv2;
@@ -535,10 +562,13 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   std::set<size_t> inv_edge_ids;
   vertices_[e.vid_[0]].valid_=false;
   vertices_[e.vid_[1]].valid_=false;
-  for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { inv_tet_ids.insert(tid); invalidTet(tets_[tid]); }
-  for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { inv_tet_ids.insert(tid); invalidTet(tets_[tid]); }
-  for(size_t eid : vertices_[e.vid_[0]].edge_ids_) { inv_edge_ids.insert(eid); invalidEdge(eid); }
-  for(size_t eid : vertices_[e.vid_[1]].edge_ids_) { inv_edge_ids.insert(eid); invalidEdge(eid); }
+  for(size_t t_id : vertices_[e.vid_[0]].tet_ids_) { inv_tet_ids.insert(t_id); }
+  for(size_t t_id : vertices_[e.vid_[1]].tet_ids_) { inv_tet_ids.insert(t_id); }
+  for(size_t e_id : vertices_[e.vid_[0]].edge_ids_) { inv_edge_ids.insert(e_id); }
+  for(size_t e_id : vertices_[e.vid_[1]].edge_ids_) { inv_edge_ids.insert(e_id); }
+
+  for(size_t t_id : inv_tet_ids) { invalidTet(tets_[t_id]); }
+  for(size_t e_id : inv_edge_ids) { invalidEdge(e_id); }
 
   // add new vertex
   REUSE_VERTEX(pt, pt_type, e.vid_[0]);
