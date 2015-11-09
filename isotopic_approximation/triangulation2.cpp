@@ -25,7 +25,8 @@
     edges_.push_back({true, {v0, v1}});                                 \
   }while(0)
 
-#define REUSE_VERTEX(pt, pt_type, v_id) do{      \
+#define REUSE_VERTEX(pt, pt_type, v_id) do{     \
+    vertices_[v_id].valid_=true;                \
     vertices_[v_id].pt_=pt;                     \
     vertices_[v_id].pt_type_=pt_type;           \
     vertices_[v_id].tet_ids_.clear();           \
@@ -252,6 +253,7 @@ void zsw::Triangulation::simpTolerance()
       if(krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
     }
 
+    std::cerr << "candicate size:" << candicate_pts.size() << std::endl;
     // find the best point in the candicate_pts
     zsw::Scalar max_error=-1;
     const JudgePoint *merge_point_ptr=nullptr;
@@ -262,7 +264,10 @@ void zsw::Triangulation::simpTolerance()
         merge_point_ptr=&jpt;
       }
     }
-    edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts);
+    if(merge_point_ptr != nullptr) {
+      std::cerr << "collapse edge!!!" << std::endl;
+      edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts);
+    }
   }
 }
 
@@ -532,6 +537,8 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
     A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
     A.block<3,1>(0,1) = vertices_[b_tr[1]].pt_-pt;
     A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
+    // on the same plane of one bound_tri
+    if(A.determinant()<zsw::const_val::eps) { return false; }
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
     pplu.compute(A);
 
@@ -545,6 +552,7 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
       //check if jpt in the tet and if jpt's error is in tolerance
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
       if(ans.squaredNorm()>1 || ans[0]<0 || ans[1]<0 || ans[2]<0) { continue; } // not in tet
+      assert((A*ans-(jpt.pt_-pt)).squaredNorm()<zsw::const_val::eps);
       zsw::Scalar cur_val=pt_val+ans.dot(nv);
       if(fabs(cur_val-jpt.val_exp_) > 1.0) { return false; }
     }
@@ -558,10 +566,8 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
                                       std::list<JudgePoint> &jpts)
 {
   // invalid old tets and edges and vertex
-  std::set<size_t> inv_tet_ids;
-  std::set<size_t> inv_edge_ids;
-  vertices_[e.vid_[0]].valid_=false;
-  vertices_[e.vid_[1]].valid_=false;
+  std::set<size_t> inv_tet_ids, inv_edge_ids;
+  vertices_[e.vid_[0]].valid_=false;  vertices_[e.vid_[1]].valid_=false;
   for(size_t t_id : vertices_[e.vid_[0]].tet_ids_) { inv_tet_ids.insert(t_id); }
   for(size_t t_id : vertices_[e.vid_[1]].tet_ids_) { inv_tet_ids.insert(t_id); }
   for(size_t e_id : vertices_[e.vid_[0]].edge_ids_) { inv_edge_ids.insert(e_id); }
@@ -571,28 +577,60 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   for(size_t e_id : inv_edge_ids) { invalidEdge(e_id); }
 
   // add new vertex
+  std::cerr << pt.transpose() << std::endl;
   REUSE_VERTEX(pt, pt_type, e.vid_[0]);
 
   // add new tets
+  zsw::Scalar pt_val=0.0;
+  if(pt_type==zsw::INNER_POINT) { pt_val=-1.0; }
+  else if(pt_type==zsw::ZERO_POINT) { pt_val=0.0; }
+  else { pt_val=1.0; }
   assert(inv_tet_ids.size()>=bound_tris.size());
   auto tet_itr = inv_tet_ids.begin();
   for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
     REUSE_TET(e.vid_[0], b_tr[0], b_tr[1], b_tr[2], *tet_itr);
     // check if jpt in tet
-    KernelRegionJudger int_judge;
-    INTET_CONSTRAINT(int_judge, e.vid_[0], b_tr[0], b_tr[1], b_tr[2]);
+    Eigen::Matrix<zsw::Scalar,3,3> A;
+    A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
+    A.block<3,1>(0,1) = vertices_[b_tr[1]].pt_-pt;
+    A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
+    Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
+    pplu.compute(A);
+    Eigen::Matrix<zsw::Scalar,3,1> nv;
+    for(size_t i=0; i<3; ++i) {
+      if(vertices_[b_tr[i]].pt_type_==zsw::INNER_POINT) { nv[i]=-1.0-pt_val; }
+      else if(vertices_[b_tr[i]].pt_type_==zsw::ZERO_POINT) { nv[i]=0.0-pt_val; }
+      else { nv[i]=1.0-pt_val; }
+    }
+
     // adjust jpts
-    for(const JudgePoint &jpt : jpts) { if(int_judge.judge(jpt.pt_)) { tets_[*tet_itr].jpts_.push_back(jpt); } }
+    for(JudgePoint &jpt : jpts) {
+      //check if jpt in the tet and if jpt's error is in tolerance
+      Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
+      if(!((A*ans-(jpt.pt_-pt)).squaredNorm()<zsw::const_val::eps)) {
+        std::cerr << A << std::endl;
+        std::cerr << ans.transpose() << std::endl;
+        std::cerr << (jpt.pt_-pt).transpose() << std::endl;
+        exit(__LINE__);
+      }
+
+      if(ans.squaredNorm()>1 || ans[0]<0 || ans[1]<0 || ans[2]<0) { continue; } // not in tet
+      jpt.val_cur_=pt_val+ans.dot(nv);
+      tets_[*tet_itr].jpts_.push_back(jpt);
+    }
     ++tet_itr;
   }
 
   // add new edges
-  assert(inv_edge_ids.size() > bound_tris.size());
-  auto e_itr=inv_edge_ids.begin();
+  std::set<size_t> arround_v;
   for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
-    REUSE_EDGE(e.vid_[0], b_tr[0], *e_itr); ++e_itr;
-    REUSE_EDGE(e.vid_[0], b_tr[1], *e_itr); ++e_itr;
-    REUSE_EDGE(e.vid_[0], b_tr[2], *e_itr); ++e_itr;
+    arround_v.insert(b_tr[0]); arround_v.insert(b_tr[1]);
+    arround_v.insert(b_tr[2]);
+  }
+  assert(inv_edge_ids.size() > arround_v.size());
+  auto e_itr=inv_edge_ids.begin();
+  for(const size_t v_id : arround_v) {
+    REUSE_EDGE(e.vid_[0], v_id, *e_itr); ++e_itr;
   }
 }
 
