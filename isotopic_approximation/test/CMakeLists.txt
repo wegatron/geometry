@@ -42,7 +42,7 @@ add_executable(test_triangulation test_triangulation.cpp)
 # target_link_libraries(test_cgal_triangulation ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 # target_link_libraries(test_kernelRegionJudge isotropic_approximate ${CGAL_LIBRARY} ${GMP_LIBRARIES}
 #   ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
-target_link_libraries(test_triangulation ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES} zswlib)
+target_link_libraries(test_triangulation isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES} zswlib)
 # target_link_libraries(test_linkcondition isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES}
 # ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 

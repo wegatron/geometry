@@ -24,10 +24,10 @@ namespace zsw{
   struct Vertex
   {
     bool valid_;
-    const PointType pt_type_;
+    PointType pt_type_;
     Eigen::Matrix<zsw::Scalar,3,1> pt_;
-    std::vector<size_t> tet_ids_;
-    std::vector<size_t> edge_ids_;
+    std::list<size_t> tet_ids_;
+    std::list<size_t> edge_ids_;
   };
 
   struct Edge

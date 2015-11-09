@@ -95,23 +95,27 @@ namespace zsw
     /// \param pt the point this edge collapse to
     /// \param jpts the judge points
     /// \return true if S is keeped or false otherwise
-    bool testCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts) const;
+    bool testCollapse(const Edge &e, const PointType pt_type, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
+                      const std::list<JudgePoint> &jpts) const;
 
-    void edgeCollapse(Edge &e, const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts);
+    void edgeCollapse(Edge &e, const PointType pt_type,
+                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
+                      const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts);
 
     void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
 
-    void tessllelation3v1(const size_t vo_0, const size_t vo_1, const size_t vo_2, const size_t vi_0,
-                          Tet &tet, std::map<std::pair<size_t,size_t>,
-                          size_t, PairCompFunc> &ev_map);
+    void tessellation3v1(const size_t vo_0, const size_t vo_1, const size_t vo_2, const size_t vi_0,
+                         Tet &tet, std::map<std::pair<size_t,size_t>,
+                         size_t, PairCompFunc> &ev_map);
 
-    void tessllelation2v2(const size_t vo_0, const size_t vo_1, const size_t vi_0, const size_t vi_1,
-                          Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
-                          PairCompFunc> &ev_map );
+    void tessellation2v2(const size_t vo_0, const size_t vo_1, const size_t vi_0, const size_t vi_1,
+                         Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
+                         PairCompFunc> &ev_map );
 
-    void tessllelation1v3(const size_t vo_0, const size_t vi_0, const size_t vi_1, const size_t vi_2,
-                          Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
-                          PairCompFunc> &ev_map);
+    void tessellation1v3(const size_t vo_0, const size_t vi_0, const size_t vi_1, const size_t vi_2,
+                         Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
+                         PairCompFunc> &ev_map);
 
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
