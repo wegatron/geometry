@@ -314,7 +314,7 @@ void zsw::Triangulation::tessellation3v1(const size_t vo_0, const size_t vo_1,
     if(edges_[e_id].vid_[0]==vo_0 || edges_[e_id].vid_[0]==vo_1 || edges_[e_id].vid_[0]==vo_2
        || edges_[e_id].vid_[1]==vo_0 || edges_[e_id].vid_[1]==vo_1 || edges_[e_id].vid_[1]==vo_2)
       {
-        invalidEdge(edges_[e_id]);
+        invalidEdge(e_id);
       }
   }
 
@@ -353,13 +353,13 @@ void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
   for(size_t e_id : vertices_[vo_0].edge_ids_) {
     if(edges_[e_id].vid_[0]==vi_0 || edges_[e_id].vid_[0]==vi_1
        || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_1) {
-      invalidEdge(edges_[e_id]);
+      invalidEdge(e_id);
     }
   }
   for(size_t e_id : vertices_[vo_1].edge_ids_) {
     if(edges_[e_id].vid_[0]==vi_0 || edges_[e_id].vid_[0]==vi_1
        || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_1) {
-      invalidEdge(edges_[e_id]);
+      invalidEdge(e_id);
     }
   }
 
@@ -401,7 +401,7 @@ void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
   for(size_t e_id : vertices_[vo_0].edge_ids_) {
     if(edges_[e_id].vid_[0]==vi_0 || edges_[e_id].vid_[0]==vi_1 || edges_[e_id].vid_[0]==vi_2
        || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_0) {
-      invalidEdge(edges_[e_id]);
+      invalidEdge(e_id);
     }
   }
 
@@ -427,14 +427,25 @@ void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
   CHECK_ADD_EDGE(nv2, vo_0, isnew2, false); CHECK_ADD_EDGE(nv2, vi_2, isnew2, false);
 }
 
-void zsw::Triangulation::invalidEdge(Edge &e)
+void zsw::Triangulation::invalidEdge(const size_t e_id)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  Edge &e=edges_[e_id];
+  e.valid_=false;
+  if(vertices_[e.vid_[0]].valid_) {
+    vertices_[e.vid_[0]].edge_ids_.remove_if([e_id](const size_t &val){ return val==e_id; });
+  }
+  if(vertices_[e.vid_[1]].valid_) {
+    vertices_[e.vid_[1]].edge_ids_.remove_if([e_id](const size_t &val){ return val==e_id; });
+  }
 }
 
 void zsw::Triangulation::invalidTet(Tet &tet)
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  for(size_t v_id : tet.vid_) {
+    if(vertices_[v_id].valid_) {
+      vertices_[v_id].tet_ids_.remove_if([&tet, this](const size_t &t_id){ return &tet==&(this->tets_[t_id]); });
+    }
+  }
 }
 
 void zsw::Triangulation::writeTetMesh(const std::string &filepath, size_t mask) const
@@ -481,8 +492,8 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
   assert(pt_type!=zsw::BBOX_POINT);
   zsw::Scalar pt_val=0.0;
   if(pt_type==zsw::INNER_POINT) { pt_val=-1.0; }
-  else if(pt_type==zsw::OUTER_POINT) { pt_val=1.0; }
-  else { pt_val=0.0; }
+  else if(pt_type==zsw::ZERO_POINT) { pt_val=0.0; }
+  else { pt_val=1.0; }
   for(const Eigen::Matrix<size_t,3,1> &b_tr  : bound_tris) {
     Eigen::Matrix<zsw::Scalar,3,3> A;
     A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
@@ -494,8 +505,8 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
     Eigen::Matrix<zsw::Scalar,3,1> nv;
     for(size_t i=0; i<3; ++i) {
       if(vertices_[b_tr[i]].pt_type_==zsw::INNER_POINT) { nv[i]=-1.0-pt_val; }
-      else if(vertices_[b_tr[i]].pt_type_==zsw::OUTER_POINT) { nv[i]=1.0-pt_val; }
-      else { nv[i]=0.0-pt_val; }
+      else if(vertices_[b_tr[i]].pt_type_==zsw::ZERO_POINT) { nv[i]=0.0-pt_val; }
+      else { nv[i]=1.0-pt_val; }
     }
     for(const JudgePoint &jpt : jpts) {
       //check if jpt in the tet and if jpt's error is in tolerance
@@ -511,16 +522,17 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
 void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
                                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                                      std::list<JudgePoint> jpts)
+                                      std::list<JudgePoint> &jpts)
 {
   // invalid old tets and edges and vertex
   std::set<size_t> inv_tet_ids;
   std::set<size_t> inv_edge_ids;
+  vertices_[e.vid_[0]].valid_=false;
+  vertices_[e.vid_[1]].valid_=false;
   for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { inv_tet_ids.insert(tid); invalidTet(tets_[tid]); }
   for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { inv_tet_ids.insert(tid); invalidTet(tets_[tid]); }
-  for(size_t eid : vertices_[e.vid_[0]].edge_ids_) { inv_edge_ids.insert(eid); invalidEdge(edges_[eid]); }
-  for(size_t eid : vertices_[e.vid_[1]].edge_ids_) { inv_edge_ids.insert(eid); invalidEdge(edges_[eid]); }
-  vertices_[e.vid_[1]].valid_=false;
+  for(size_t eid : vertices_[e.vid_[0]].edge_ids_) { inv_edge_ids.insert(eid); invalidEdge(eid); }
+  for(size_t eid : vertices_[e.vid_[1]].edge_ids_) { inv_edge_ids.insert(eid); invalidEdge(eid); }
 
   // add new vertex
   REUSE_VERTEX(pt, e.vid_[0]);

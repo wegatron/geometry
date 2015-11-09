@@ -101,7 +101,7 @@ namespace zsw
 
     void edgeCollapse(Edge &e, const PointType pt_type,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
-                      const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> jpts);
+                      const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> &jpts);
 
     void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
 
@@ -117,7 +117,7 @@ namespace zsw
                          Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
                          PairCompFunc> &ev_map);
 
-    void invalidEdge(Edge &e);
+    void invalidEdge(const size_t e_id);
 
     void invalidTet(Tet &tet);
 
