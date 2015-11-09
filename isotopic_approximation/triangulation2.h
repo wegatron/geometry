@@ -52,9 +52,20 @@ namespace zsw
     std::vector<Edge>& getEdges() { return edges_; }
     bool testLinkCondition(const Edge &e) const { return linkCondition(e); }
 #endif
+
+
+    /// \brief Triangulation
+    ///
+    /// A construct a triangulation with bo and bi points, and sample
+    /// with r radius to get the judge points, The S in paper.
+    ///
+    /// \param r, sample triangle with r, as judge points. the S in paper.
+    /// \param bo_points points in outer boundary
+    /// \param bi_points points in inner boundary
     Triangulation(const zsw::Scalar r,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
+
     void simpTolerance();
     void mutualTessellation();
     void writeTetMesh(const std::string &filepath, size_t mask) const;
