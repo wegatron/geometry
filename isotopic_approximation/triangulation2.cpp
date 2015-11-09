@@ -24,6 +24,13 @@
     edges_.push_back({true, {v0, v1}});                                 \
   }while(0)
 
+#define REUSE_VERTEX(pt, v_id) do{              \
+    vertices_[v_id].pt_=pt;                     \
+    vertices_[v_id].pt_type_=pt_type;           \
+    vertices_[v_id].tet_ids_.clear();           \
+    vertices_[v_id].edge_ids_.clear();          \
+  }while(0)
+
 #define REUSE_EDGE(v0, v1, e_id) do{                    \
   vertices_[v0].edge_ids_.push_back(e_id);              \
   vertices_[v1].edge_ids_.push_back(e_id);              \
@@ -54,6 +61,13 @@
       ev_map[e]=nv;                                                     \
       isnew=true;                                                       \
     } else { isnew=false; nv=itr->second; }                             \
+  }while(0)
+
+#define INTET_CONSTRAINT(int_judge, v0, v1, v2, v3) do{                 \
+    int_judge.addConstraint(vertices_[v1].pt_, vertices_[v2].pt_, vertices_[v3].pt_, vertices_[v0].pt_); \
+    int_judge.addConstraint(vertices_[v0].pt_, vertices_[v2].pt_, vertices_[v3].pt_, vertices_[v1].pt_); \
+    int_judge.addConstraint(vertices_[v0].pt_, vertices_[v1].pt_, vertices_[v3].pt_, vertices_[v2].pt_); \
+    int_judge.addConstraint(vertices_[v0].pt_, vertices_[v1].pt_, vertices_[v2].pt_, vertices_[v3].pt_); \
   }while(0)
 
 void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
@@ -486,7 +500,7 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
     for(const JudgePoint &jpt : jpts) {
       //check if jpt in the tet and if jpt's error is in tolerance
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
-      if(ans.norm()>1 || ans[0]<0 || ans[1]<0 || ans[2]<0) { continue; } // not in tet
+      if(ans.squaredNorm()>1 || ans[0]<0 || ans[1]<0 || ans[2]<0) { continue; } // not in tet
       zsw::Scalar cur_val=pt_val+ans.dot(nv);
       if(fabs(cur_val-jpt.val_exp_) > 1.0) { return false; }
     }
@@ -509,28 +523,16 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   vertices_[e.vid_[1]].valid_=false;
 
   // add new vertex
-  vertices_[e.vid_[0]].pt_=pt;
-  vertices_[e.vid_[0]].pt_type_=pt_type;
-  vertices_[e.vid_[0]].tet_ids_.clear();
-  vertices_[e.vid_[0]].edge_ids_.clear();
+  REUSE_VERTEX(pt, e.vid_[0]);
 
   // add new tets
   assert(inv_tet_ids.size()>=bound_tris.size());
   auto tet_itr = inv_tet_ids.begin();
   for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
-
     REUSE_TET(e.vid_[0], b_tr[0], b_tr[1], b_tr[2], *tet_itr);
-
     // check if jpt in tet
     KernelRegionJudger int_judge;
-    int_judge.addConstraint(vertices_[b_tr[2]].pt_, vertices_[b_tr[0]].pt_,
-                            vertices_[b_tr[1]].pt_, vertices_[e.vid_[0]].pt_);
-    int_judge.addConstraint(vertices_[e.vid_[0]].pt_, vertices_[b_tr[2]].pt_,
-                            vertices_[b_tr[1]].pt_, vertices_[b_tr[0]].pt_);
-    int_judge.addConstraint(vertices_[e.vid_[0]].pt_, vertices_[b_tr[0]].pt_,
-                            vertices_[b_tr[2]].pt_, vertices_[b_tr[1]].pt_);
-    int_judge.addConstraint(vertices_[e.vid_[0]].pt_, vertices_[b_tr[0]].pt_,
-                            vertices_[b_tr[1]].pt_, vertices_[b_tr[2]].pt_);
+    INTET_CONSTRAINT(int_judge, e.vid_[0], b_tr[0], b_tr[1], b_tr[2]);
     // adjust jpts
     for(const JudgePoint &jpt : jpts) { if(int_judge.judge(jpt.pt_)) { tets_[*tet_itr].jpts_.push_back(jpt); } }
     ++tet_itr;
