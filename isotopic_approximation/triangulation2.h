@@ -117,6 +117,10 @@ namespace zsw
                          Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
                          PairCompFunc> &ev_map);
 
+    void invalidEdge(Edge &e);
+
+    void invalidTet(Tet &tet);
+
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
