@@ -21,7 +21,6 @@
 
 #define ADD_EDGE(v0, v1) do{                                            \
     size_t e_id=edges_.size();                                          \
-    assert(e_id<600000);                                                \
     vertices_[v0].edge_ids_.push_back(e_id); vertices_[v1].edge_ids_.push_back(e_id); \
     edges_.push_back({true, {v0, v1}});                                 \
   }while(0)
@@ -35,7 +34,6 @@
   }while(0)
 
 #define REUSE_EDGE(v0, v1, e_id) do{                    \
-    assert(e_id<600000);                                \
     vertices_[v0].edge_ids_.push_back(e_id);            \
     vertices_[v1].edge_ids_.push_back(e_id);            \
     edges_[e_id].valid_=true;                           \
@@ -46,7 +44,7 @@
     vertices_[v0].tet_ids_.push_back(t_id);   vertices_[v1].tet_ids_.push_back(t_id); \
     vertices_[v2].tet_ids_.push_back(t_id);   vertices_[v3].tet_ids_.push_back(t_id); \
     tets_[t_id].valid_=true;                                            \
-    tets_[t_id].vid_[0]=v0; tets_[t_id].vid_[0]=v0; tets_[t_id].vid_[0]=v0; tets_[t_id].vid_[0]=v0; \
+    tets_[t_id].vid_[0]=v0; tets_[t_id].vid_[1]=v0; tets_[t_id].vid_[2]=v0; tets_[t_id].vid_[3]=v0; \
     tets_[t_id].jpts_.clear();                                          \
   } while(0)
 
@@ -230,7 +228,7 @@ void zsw::Triangulation::simpTolerance()
     KernelRegionJudger krj;
     std::list<JudgePoint> all_jpts;
     std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
-    // std::list<size_t> debug_tet_ids;
+    std::list<size_t> debug_tet_ids;
     for(size_t tid : tet_ids) {
       all_jpts.splice(all_jpts.begin(), tets_[tid].jpts_);
 
@@ -242,7 +240,7 @@ void zsw::Triangulation::simpTolerance()
         else {          tmp_bound_tri[vcnt++]=tvid;        }
       }
       if(vcnt==3) {
-        // debug_tet_ids.push_back(tid);
+        debug_tet_ids.push_back(tid);
         krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
                           vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
         bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
@@ -258,8 +256,12 @@ void zsw::Triangulation::simpTolerance()
 
     std::cout << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
     std::cout << "candicate_pts:" << candicate_pts.size() << std::endl;
-    // writeJudgePoints("/home/wegatron/tmp/simp_tol/judgepts.obj", candicate_pts);
-    // for(size_t dtid : debug_tet_ids) {      writeTet("/home/wegatron/tmp/simp_tol/dbt"+std::to_string(dtid)+".vtk", dtid);    }
+    static int debug_cnt=0;
+    if(++debug_cnt == 2) {
+      writeJudgePoints("/home/wegatron/tmp/simp_tol/judgepts.obj", candicate_pts);
+      for(size_t dtid : debug_tet_ids) {      writeTet("/home/wegatron/tmp/simp_tol/dbt"+std::to_string(dtid)+".vtk", dtid);    }
+      return;
+    }
 
     // find the best point in the candicate_pts
     std::sort(candicate_pts.begin(), candicate_pts.end(),
@@ -268,11 +270,11 @@ void zsw::Triangulation::simpTolerance()
     for(const JudgePoint &jpt : candicate_pts) {
       if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) { merge_point_ptr=&jpt; break; }
     }
+
     if(merge_point_ptr != nullptr) {
-      static int times=0;
-      if(++times==4) { return; }
       std::cout << "collapse edge!!!" << std::endl;
       edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts);
+    }
   }
 }
 
@@ -293,18 +295,6 @@ void zsw::Triangulation::mutualTessellation()
   //addZeroPoints(ev_map);
   size_t tet_size=tets_.size();
   for(size_t t_id=0; t_id<tet_size; ++t_id) {
-
-#if 0
-    std::cerr << "t_id:" << t_id << std::endl;
-    for(const Vertex &v : vertices_) {
-      for(size_t e_id : v.edge_ids_) {
-        if(e_id>600000) {
-          std::cerr << "check failed!!!" << std::endl;
-        }
-      }
-    }
-#endif
-
     Tet &tet=tets_[t_id];
     if(!tet.valid_) { continue; }
     size_t vo_cnt=0, vi_cnt=0;
@@ -484,6 +474,7 @@ void zsw::Triangulation::invalidEdge(const size_t e_id)
 
 void zsw::Triangulation::invalidTet(Tet &tet)
 {
+  tet.valid_=false;
   for(size_t v_id : tet.vid_) {
     if(vertices_[v_id].valid_) {
       vertices_[v_id].tet_ids_.remove_if([&tet, this](const size_t &t_id){ return &tet==&(this->tets_[t_id]); });
@@ -583,6 +574,17 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   for(size_t t_id : inv_tet_ids) { invalidTet(tets_[t_id]); }
   for(size_t e_id : inv_edge_ids) { invalidEdge(e_id); }
 
+#if 1
+  for(size_t ti=0; ti<tets_.size(); ++ti) {
+    if(!tets_[ti].valid_) { continue; }
+    for(size_t vi=0; vi<4; ++vi) {
+      if(tets_[ti].vid_[vi]==e.vid_[0] || tets_[ti].vid_[vi]==e.vid_[1]) {
+        std::cerr << "invalid tet failed!" << std::endl;
+      }
+    }
+  }
+#endif
+
   // add new vertex
   REUSE_VERTEX(pt, pt_type, e.vid_[0]);
 
@@ -633,6 +635,18 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   for(const size_t v_id : arround_v) {
     REUSE_EDGE(e.vid_[0], v_id, *e_itr); ++e_itr;
   }
+
+#if 1
+  for(size_t ti=0; ti<tets_.size(); ++ti) {
+    if(!tets_[ti].valid_) { continue; }
+    for(size_t vi=0; vi<4; ++vi) {
+      if(tets_[ti].vid_[vi]==e.vid_[1]) {
+        std::cerr << "invalid tet failed2!" << std::endl;
+      }
+    }
+  }
+#endif
+
 }
 
 void zsw::Triangulation::writeTet(const std::string &filepath, const size_t tet_id) const
