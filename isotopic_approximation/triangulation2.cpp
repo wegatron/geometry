@@ -44,7 +44,7 @@
     vertices_[v0].tet_ids_.push_back(t_id);   vertices_[v1].tet_ids_.push_back(t_id); \
     vertices_[v2].tet_ids_.push_back(t_id);   vertices_[v3].tet_ids_.push_back(t_id); \
     tets_[t_id].valid_=true;                                            \
-    tets_[t_id].vid_[0]=v0; tets_[t_id].vid_[1]=v0; tets_[t_id].vid_[2]=v0; tets_[t_id].vid_[3]=v0; \
+    tets_[t_id].vid_[0]=v0; tets_[t_id].vid_[1]=v1; tets_[t_id].vid_[2]=v2; tets_[t_id].vid_[3]=v3; \
     tets_[t_id].jpts_.clear();                                          \
   } while(0)
 
@@ -494,13 +494,16 @@ void zsw::Triangulation::writeTetMesh(const std::string &filepath, size_t mask) 
     pts_data.push_back(v.pt_[2]);
   }
 
+  int ti=-1;
   for(const Tet &tet : tets_) {
+    ++ti;
     if(!tet.valid_) { continue; }
     bool ignore=false;
     for(size_t i=0; i<4;++i) {
       if(vertices_[tet.vid_[i]].pt_type_ & mask) { ignore=true; break; }
     }
     if(ignore) { continue; }
+    std::cerr << "ti:" << ti << std::endl;
     tets_data.push_back(tet.vid_[0]);
     tets_data.push_back(tet.vid_[1]);
     tets_data.push_back(tet.vid_[2]);
@@ -574,7 +577,7 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   for(size_t t_id : inv_tet_ids) { invalidTet(tets_[t_id]); }
   for(size_t e_id : inv_edge_ids) { invalidEdge(e_id); }
 
-#if 1
+#if 0
   for(size_t ti=0; ti<tets_.size(); ++ti) {
     if(!tets_[ti].valid_) { continue; }
     for(size_t vi=0; vi<4; ++vi) {
@@ -586,6 +589,7 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
 #endif
 
   // add new vertex
+  std::cerr << "pt_type:" << pt_type << std::endl;
   REUSE_VERTEX(pt, pt_type, e.vid_[0]);
 
   // add new tets
@@ -640,8 +644,10 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   for(size_t ti=0; ti<tets_.size(); ++ti) {
     if(!tets_[ti].valid_) { continue; }
     for(size_t vi=0; vi<4; ++vi) {
-      if(tets_[ti].vid_[vi]==e.vid_[1]) {
-        std::cerr << "invalid tet failed2!" << std::endl;
+      if(tets_[ti].vid_[vi]==e.vid_[0]) {
+        std::cerr << "having e.vid[0] with :" << ti << std::endl;
+        std::cerr << tets_[ti].vid_[0] << " " << tets_[ti].vid_[1]
+                  << " " << tets_[ti].vid_[2] << " " << tets_[ti].vid_[3] << std::endl;
       }
     }
   }
