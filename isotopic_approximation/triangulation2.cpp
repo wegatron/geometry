@@ -256,7 +256,8 @@ void zsw::Triangulation::simpTolerance()
       if(krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
     }
 
-    // std::cerr << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
+    std::cout << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
+    std::cout << "candicate_pts:" << candicate_pts.size() << std::endl;
     // writeJudgePoints("/home/wegatron/tmp/simp_tol/judgepts.obj", candicate_pts);
     // for(size_t dtid : debug_tet_ids) {      writeTet("/home/wegatron/tmp/simp_tol/dbt"+std::to_string(dtid)+".vtk", dtid);    }
 
@@ -265,12 +266,13 @@ void zsw::Triangulation::simpTolerance()
               [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
     const JudgePoint *merge_point_ptr=nullptr;
     for(const JudgePoint &jpt : candicate_pts) {
-      if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) {        merge_point_ptr=&jpt;      }
+      if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) { merge_point_ptr=&jpt; break; }
     }
     if(merge_point_ptr != nullptr) {
-      std::cerr << "collapse edge!!!" << std::endl;
+      static int times=0;
+      if(++times==4) { return; }
+      std::cout << "collapse edge!!!" << std::endl;
       edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts);
-    }
   }
 }
 
@@ -541,12 +543,7 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
     A.block<3,1>(0,1) = vertices_[b_tr[1]].pt_-pt;
     A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
     // on the same plane of one bound_tri
-    if(fabs(A.determinant())<zsw::const_val::eps) {
-      std::cerr << A << std::endl;
-      std::cerr << b_tr.transpose() << std::endl;
-      // std::cerr << __FILE__ << __LINE__ << std::endl;
-      return false;
-    }
+    if(fabs(A.determinant())<zsw::const_val::eps) { return false; }
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
     pplu.compute(A);
 
@@ -563,7 +560,6 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
       assert((A*ans-(jpt.pt_-pt)).squaredNorm()<zsw::const_val::eps);
       zsw::Scalar cur_val=pt_val+ans.dot(nv);
       if(fabs(cur_val-jpt.val_exp_) > 1.0) {
-        std::cout << __FILE__ << __LINE__ << std::endl;
         return false;
       }
     }
@@ -588,7 +584,6 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   for(size_t e_id : inv_edge_ids) { invalidEdge(e_id); }
 
   // add new vertex
-  std::cerr << pt.transpose() << std::endl;
   REUSE_VERTEX(pt, pt_type, e.vid_[0]);
 
   // add new tets
@@ -618,12 +613,7 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     for(JudgePoint &jpt : jpts) {
       //check if jpt in the tet and if jpt's error is in tolerance
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
-      if(!((A*ans-(jpt.pt_-pt)).squaredNorm()<zsw::const_val::eps)) {
-        std::cerr << A << std::endl;
-        std::cerr << ans.transpose() << std::endl;
-        std::cerr << (jpt.pt_-pt).transpose() << std::endl;
-        exit(__LINE__);
-      }
+      assert(((A*ans-(jpt.pt_-pt)).squaredNorm()<zsw::const_val::eps));
 
       if(ans.squaredNorm()>1 || ans[0]<0 || ans[1]<0 || ans[2]<0) { continue; } // not in tet
       jpt.val_cur_=pt_val+ans.dot(nv);
