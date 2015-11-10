@@ -16,7 +16,7 @@
     size_t t_id=tets_.size();                                           \
     vertices_[v0].tet_ids_.push_back(t_id);   vertices_[v1].tet_ids_.push_back(t_id); \
     vertices_[v2].tet_ids_.push_back(t_id);   vertices_[v3].tet_ids_.push_back(t_id); \
-    tets_.push_back({true, {v0, v1, v2, v3}});                          \
+    tets_.push_back({true, {v0, v1, v2, v3}});                      \
   }while(0)
 
 #define ADD_EDGE(v0, v1) do{                                            \
@@ -43,9 +43,7 @@
 #define REUSE_TET(v0, v1, v2, v3, t_id) do {                            \
     vertices_[v0].tet_ids_.push_back(t_id);   vertices_[v1].tet_ids_.push_back(t_id); \
     vertices_[v2].tet_ids_.push_back(t_id);   vertices_[v3].tet_ids_.push_back(t_id); \
-    tets_[t_id].valid_=true;                                            \
-    tets_[t_id].vid_[0]=v0; tets_[t_id].vid_[1]=v1; tets_[t_id].vid_[2]=v2; tets_[t_id].vid_[3]=v3; \
-    tets_[t_id].jpts_.clear();                                          \
+    tets_[t_id] = {true, v0, v1, v2, v3, {}};                          \
   } while(0)
 
 #define CHECK_ADD_EDGE(v0, v1, isnew0, isnew1) do{      \
@@ -258,7 +256,7 @@ void zsw::Triangulation::simpTolerance()
     std::cout << "candicate_pts:" << candicate_pts.size() << std::endl;
     static int debug_cnt=0;
     if(++debug_cnt == 2) {
-      writeJudgePoints("/home/wegatron/tmp/simp_tol/judgepts.obj", candicate_pts);
+      writeJudgePoints("/home/wegatron/tmp/simp_tol/judgepts.obj", all_jpts);
       for(size_t dtid : debug_tet_ids) {      writeTet("/home/wegatron/tmp/simp_tol/dbt"+std::to_string(dtid)+".vtk", dtid);    }
       return;
     }
@@ -268,13 +266,14 @@ void zsw::Triangulation::simpTolerance()
               [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
     const JudgePoint *merge_point_ptr=nullptr;
     for(const JudgePoint &jpt : candicate_pts) {
+      std::cout << __FILE__ << __LINE__ << std::endl;
       if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) { merge_point_ptr=&jpt; break; }
     }
 
     if(merge_point_ptr != nullptr) {
       std::cout << "collapse edge!!!" << std::endl;
       edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts);
-    }
+    } else { std::cout << "no poper merge point!"<< std::endl;    }
   }
 }
 
