@@ -4,6 +4,7 @@
 #include <list>
 #include <vector>
 #include <Eigen/Dense>
+#include <zswlib/config.h>
 
 namespace zsw{
   enum PointType
@@ -16,8 +17,8 @@ namespace zsw{
 
   struct JudgePoint
   {
-    const Eigen::Matrix<zsw::Scalar,3,1> pt_;
-    const zsw::Scalar val_exp_;
+    Eigen::Matrix<zsw::Scalar,3,1> pt_;
+    zsw::Scalar val_exp_;
     zsw::Scalar val_cur_;
   };
 

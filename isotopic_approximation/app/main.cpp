@@ -18,6 +18,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
 
   // judge points is 10 times dense as the basic mesh points
   zsw::Triangulation tr(thick_dis/10, bo_points, bi_points);
+  tr.writeTetMesh(output_prefix+"_ori.vtk", zsw::BBOX_POINT);
   tr.simpTolerance();
   tr.mutualTessellation();
   tr.writeTetMesh(output_prefix+"_simp_tol.vtk", zsw::BBOX_POINT | zsw::OUTER_POINT);
