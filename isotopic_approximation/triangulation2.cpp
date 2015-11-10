@@ -494,16 +494,13 @@ void zsw::Triangulation::writeTetMesh(const std::string &filepath, size_t mask) 
     pts_data.push_back(v.pt_[2]);
   }
 
-  int ti=-1;
   for(const Tet &tet : tets_) {
-    ++ti;
     if(!tet.valid_) { continue; }
     bool ignore=false;
     for(size_t i=0; i<4;++i) {
       if(vertices_[tet.vid_[i]].pt_type_ & mask) { ignore=true; break; }
     }
     if(ignore) { continue; }
-    std::cerr << "ti:" << ti << std::endl;
     tets_data.push_back(tet.vid_[0]);
     tets_data.push_back(tet.vid_[1]);
     tets_data.push_back(tet.vid_[2]);
@@ -640,7 +637,7 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     REUSE_EDGE(e.vid_[0], v_id, *e_itr); ++e_itr;
   }
 
-#if 1
+#if 0
   for(size_t ti=0; ti<tets_.size(); ++ti) {
     if(!tets_[ti].valid_) { continue; }
     for(size_t vi=0; vi<4; ++vi) {
