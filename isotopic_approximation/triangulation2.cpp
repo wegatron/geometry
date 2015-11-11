@@ -6,6 +6,7 @@
 #include <zswlib/const_val.h>
 
 #include "sampling.h"
+#include "basic_op.h"
 #include "debug.h"
 
 #define ADD_VERTEX(pt_type, pt) do{                     \
@@ -98,19 +99,15 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
   assert(bo_pts.size()!=0 && bi_pts.size()!=0);
 
   Eigen::Matrix<zsw::Scalar,3,2> bbox;
-  bbox.block<3,1>(0,0)=bo_pts[0];
-  bbox.block<3,1>(0,1)=bo_pts[0];
+  calcBBOX(bo_pts, bbox);
 
   size_t pt_id=0;
   std::vector<std::pair<Point, size_t>> tet_points;
   for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bo_pts) {
     tet_points.push_back({Point(tmp[0], tmp[1], tmp[2]), pt_id++});
     vertices_.push_back({true, OUTER_POINT, tmp, {}, {}});
-    for(size_t c_i=0; c_i<3; ++c_i) {
-      if(tmp[c_i]<bbox(c_i,0)) { bbox(c_i,0)=tmp[c_i];}
-      else if(tmp[c_i]>bbox(c_i,1)) { bbox(c_i,1)=tmp[c_i]; }
-    }
   }
+
   for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bi_pts) {
     tet_points.push_back({Point(tmp[0],tmp[1],tmp[2]), pt_id++});
     vertices_.push_back({true, INNER_POINT, tmp, {}, {}});
@@ -256,7 +253,10 @@ void zsw::Triangulation::simpTolerance()
     std::cout << "candicate_pts:" << candicate_pts.size() << std::endl;
     static int debug_cnt=0;
     if(++debug_cnt == 2) {
-      writeJudgePoints("/home/wegatron/tmp/simp_tol/judgepts.obj", all_jpts);
+      for(size_t dt_id : vertices_[28].tet_ids_) {
+        writeTet("/home/wegatron/tmp/simp_tol/dt_id"+std::to_string(dt_id)+".vtk", dt_id);
+      }
+      writeJudgePoints("/home/wegatron/tmp/simp_tol/judgepts", all_jpts);
       for(size_t dtid : debug_tet_ids) {      writeTet("/home/wegatron/tmp/simp_tol/dbt"+std::to_string(dtid)+".vtk", dtid);    }
       return;
     }
@@ -596,6 +596,7 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   assert(inv_tet_ids.size()>=bound_tris.size());
   auto tet_itr = inv_tet_ids.begin();
   for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
+    std::cerr << "reuse tet:" << b_tr.transpose() << std::endl;
     REUSE_TET(e.vid_[0], b_tr[0], b_tr[1], b_tr[2], *tet_itr);
     // check if jpt in tet
     Eigen::Matrix<zsw::Scalar,3,3> A;
@@ -612,15 +613,19 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     }
 
     // adjust jpts
+    size_t judge_pts_cnt=0;
     for(JudgePoint &jpt : jpts) {
       //check if jpt in the tet and if jpt's error is in tolerance
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
       assert(((A*ans-(jpt.pt_-pt)).squaredNorm()<zsw::const_val::eps));
 
-      if(ans.squaredNorm()>1 || ans[0]<0 || ans[1]<0 || ans[2]<0) { continue; } // not in tet
+      if(ans.squaredNorm()>1+zsw::const_val::eps || ans[0]<-zsw::const_val::eps
+         || ans[1]<-zsw::const_val::eps || ans[2]<-zsw::const_val::eps) { continue; } // not in tet
       jpt.val_cur_=pt_val+ans.dot(nv);
       tets_[*tet_itr].jpts_.push_back(jpt);
+      ++judge_pts_cnt;
     }
+    assert(judge_pts_cnt>=jpts.size());
     ++tet_itr;
   }
 
