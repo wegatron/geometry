@@ -185,10 +185,6 @@ bool zsw::Triangulation::linkCondition(const Edge &e) const
     assert(tets_[tid].valid_);
     for(size_t vid : tets_[tid].vid_) { adj_v1.insert(vid); }
   }
-  size_t fv_cnt=fv.size();
-  if(fv.find(e.vid_[0]) != fv.end()) { --fv_cnt; }
-  if(fv.find(e.vid_[1]) != fv.end()) { --fv_cnt; }
-
   size_t cv_cnt=0;
   {
     std::set<size_t>::iterator it0=adj_v0.begin();
@@ -201,9 +197,13 @@ bool zsw::Triangulation::linkCondition(const Edge &e) const
     if(adj_v0.find(e.vid_[0])!=adj_v0.end() && adj_v1.find(e.vid_[0])!=adj_v1.end()) { --cv_cnt; }
     if(adj_v0.find(e.vid_[1])!=adj_v0.end() && adj_v1.find(e.vid_[1])!=adj_v1.end()) { --cv_cnt; }
   }
+
+  size_t fv_cnt=fv.size();
+  if(fv.find(e.vid_[0]) != fv.end()) { --fv_cnt; }
+  if(fv.find(e.vid_[1]) != fv.end()) { --fv_cnt; }
+
   assert(cv_cnt >=fv_cnt);
   return cv_cnt==fv_cnt;
-  return false;
 }
 
 void zsw::Triangulation::simpTolerance()
