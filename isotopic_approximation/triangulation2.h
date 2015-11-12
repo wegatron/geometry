@@ -68,7 +68,8 @@ namespace zsw
 
     void simpTolerance();
     void mutualTessellation();
-    void writeTetMesh(const std::string &filepath, size_t mask) const;
+    void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;
+    /* void writeTetMesh(const std::string &filepath, size_t mask) const; */
     void writeSurface(const std::string &filepath, PointType pt_tyte) const;
 
 
@@ -79,6 +80,10 @@ namespace zsw
     ///
     /// \param
     void writeTet(const std::string &filepath, const size_t tet_id) const;
+
+    bool ignoreWithPtType(const Tet &tet, PointType pt_type);
+
+    bool ignoreOnlyWithPtType(const Tet &tet, PointType pt_type);
 
     const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<Tet>& getTets() const { return tets_; }
@@ -136,6 +141,7 @@ namespace zsw
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
   };
+
 }
 
 #endif /* TRIANGULATION2_H */

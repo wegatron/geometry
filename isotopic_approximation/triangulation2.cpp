@@ -262,7 +262,7 @@ void zsw::Triangulation::simpTolerance()
     std::sort(candicate_pts.begin(), candicate_pts.end(),
               [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
     const JudgePoint *merge_point_ptr=nullptr;
-    static int step_info=0;
+    int step_info=0;
     for(const JudgePoint &jpt : candicate_pts) {
       if((++step_info)%10==0) std::cerr << step_info << " - ";
       if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) { merge_point_ptr=&jpt; break; }
@@ -480,7 +480,8 @@ void zsw::Triangulation::invalidTet(Tet &tet)
   }
 }
 
-void zsw::Triangulation::writeTetMesh(const std::string &filepath, size_t mask) const
+void zsw::Triangulation::writeTetMesh(const std::string &filepath,
+                                      std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const
 {
   std::ofstream ofs;
   OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
@@ -495,8 +496,8 @@ void zsw::Triangulation::writeTetMesh(const std::string &filepath, size_t mask) 
   for(const Tet &tet : tets_) {
     if(!tet.valid_) { continue; }
     bool ignore=false;
-    for(size_t i=0; i<4;++i) {
-      if(vertices_[tet.vid_[i]].pt_type_ & mask) { ignore=true; break; }
+    for(std::function<bool(const Tet &tet)> &ig_func : ignore_tet_funcs) {
+      if(ig_func(tet)) { ignore=true; break; }
     }
     if(ignore) { continue; }
     tets_data.push_back(tet.vid_[0]);
@@ -609,7 +610,26 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     }
     ++tet_itr;
   }
-  assert(jpts.size()==0);
+
+  bool need_return=false;
+  if(jpts.size()!=0) {
+    static int lost_jpts_count=0;
+    lost_jpts_count+=jpts.size();
+    auto &jpt = jpts.front();
+    for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris)  {
+      Eigen::Matrix<zsw::Scalar,3,3> A;
+      A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
+      A.block<3,1>(0,1) = vertices_[b_tr[1]].pt_-pt;
+      A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
+      Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
+      pplu.compute(A);
+      Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
+      std::cerr << ans.transpose() << std::endl;
+    }
+    std::cerr << "lost jpts cnt " << lost_jpts_count << std::endl;
+    if(lost_jpts_count==100) { need_return=true; }
+  }
+  //assert(jpts.size()==0);
 
   // add new edges
   std::set<size_t> arround_v;
@@ -622,6 +642,7 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   for(const size_t v_id : arround_v) {
     REUSE_EDGE(e.vid_[0], v_id, *e_itr); ++e_itr;
   }
+  if(need_return) { return; }
 }
 
 void zsw::Triangulation::writeTet(const std::string &filepath, const size_t tet_id) const
@@ -635,4 +656,20 @@ void zsw::Triangulation::writeTet(const std::string &filepath, const size_t tet_
   std::ofstream ofs;
   OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
   tet2vtk(ofs, pts_data.data(), 4, tets_data, 1);
+}
+
+bool zsw::Triangulation::ignoreWithPtType(const Tet &tet, PointType pt_type)
+{
+  for(size_t i=0; i<4; ++i) {
+    if(vertices_[tet.vid_[i]].pt_type_ == pt_type) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool zsw::Triangulation::ignoreOnlyWithPtType(const Tet &tet, PointType pt_type)
+{
+  return vertices_[tet.vid_[0]].pt_type_==pt_type && vertices_[tet.vid_[1]].pt_type_==pt_type &&
+    vertices_[tet.vid_[2]].pt_type_==pt_type && vertices_[tet.vid_[3]].pt_type_==pt_type;
 }

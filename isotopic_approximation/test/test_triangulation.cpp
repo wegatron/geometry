@@ -26,7 +26,9 @@ void test_init1()
   // init triangulation
   zsw::Triangulation triangulation(0.1, bo_points, bi_points);
   // output triangulation
-  triangulation.writeTetMesh("/home/wegatron/tmp/cube1_bbox.vtk", zsw::BBOX_POINT);
+  std::function<bool(const zsw::Tet&)> ignore_bbox
+    = std::bind(&zsw::Triangulation::ignoreWithPtType, &triangulation, std::placeholders::_1, zsw::BBOX_POINT);
+  triangulation.writeTetMesh("/home/wegatron/tmp/cube1_bbox.vtk", {ignore_bbox});
   // output judge points
   const string jp_file="/home/wegatron/tmp/cube1_jp.obj";
   ofstream ofs(jp_file, std::ofstream::out) ;
@@ -59,7 +61,9 @@ void test_init2()
   // init triangulation
   zsw::Triangulation triangulation(0.1, bo_points, bi_points);
   // output triangulation
-  triangulation.writeTetMesh("/home/wegatron/tmp/cube2_bbox.vtk", zsw::BBOX_POINT);
+  std::function<bool(const zsw::Tet&)> ignore_bbox
+    = std::bind(&zsw::Triangulation::ignoreWithPtType, &triangulation, std::placeholders::_1, zsw::BBOX_POINT);
+  triangulation.writeTetMesh("/home/wegatron/tmp/cube2_bbox.vtk", {ignore_bbox});
   // output judge points
   const string jp_file="/home/wegatron/tmp/cube2_jp.obj";
   ofstream ofs(jp_file, std::ofstream::out) ;
@@ -93,7 +97,12 @@ void test_mutualTessellation()
   zsw::Triangulation triangulation(0.1, bo_points, bi_points);
   triangulation.mutualTessellation();
   // output triangulation
-  triangulation.writeTetMesh("/home/wegatron/tmp/cube_mutual.vtk", zsw::BBOX_POINT|zsw::OUTER_POINT);
+  std::function<bool(const zsw::Tet&)> ignore_bbox
+    = std::bind(&zsw::Triangulation::ignoreWithPtType, &triangulation, std::placeholders::_1, zsw::BBOX_POINT);
+  std::function<bool(const zsw::Tet&)> ignore_out
+    = std::bind(&zsw::Triangulation::ignoreWithPtType, &triangulation, std::placeholders::_1, zsw::OUTER_POINT);
+
+  triangulation.writeTetMesh("/home/wegatron/tmp/cube_mutual.vtk", {ignore_bbox, ignore_out});
 }
 
 int main(int argc, char *argv[])
