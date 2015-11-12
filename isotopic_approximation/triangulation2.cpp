@@ -172,17 +172,18 @@ bool zsw::Triangulation::linkCondition(const Edge &e) const
   std::set<size_t> adj_v0; // vertex link e.vid_[0]
   std::set<size_t> adj_v1; // vertex link e.vid_[1]
   for(size_t tid : vertices_[e.vid_[0]].tet_ids_) {
-    bool isfv=false;
+    assert(tets_[tid].valid_);
     for(size_t vid : tets_[tid].vid_) {
-      if(vid == e.vid_[1]) { isfv=true; }
       adj_v0.insert(vid);
+      if(vid == e.vid_[1]) {
+        fv.insert(tets_[t_id].vid_[0]); fv.insert(tets_[t_id].vid_[1]);
+        fv.insert(tets_[t_id].vid_[2]); fv.insert(tets_[t_id].vid_[3]);
+      }
     }
-    if(isfv) {    for(size_t vid : tets_[tid].vid_) {      fv.insert(vid);    }    }
   }
   for(size_t tid : vertices_[e.vid_[1]].tet_ids_) {
-    for(size_t vid : tets_[tid].vid_) {
-      adj_v1.insert(vid);
-    }
+    assert(tets_[tid].valid_);
+    for(size_t vid : tets_[tid].vid_) { adj_v1.insert(vid); }
   }
   size_t fv_cnt=fv.size();
   if(fv.find(e.vid_[0]) != fv.end()) { --fv_cnt; }
@@ -251,12 +252,6 @@ void zsw::Triangulation::simpTolerance()
 
     std::cerr << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
     std::cerr << "candicate_pts:" << candicate_pts.size() << std::endl;
-    // static int debug_cnt=0;
-    // if(++debug_cnt == 2) {
-    //   writeJudgePoints("/home/wegatron/tmp/simp_tol/judgepts", all_jpts);
-    //   for(size_t dtid : debug_tet_ids) {      writeTet("/home/wegatron/tmp/simp_tol/dbt"+std::to_string(dtid)+".vtk", dtid);    }
-    //   return;
-    // }
 
     // find the best point in the candicate_pts
     std::sort(candicate_pts.begin(), candicate_pts.end(),

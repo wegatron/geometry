@@ -105,6 +105,11 @@ void test_mutualTessellation()
   triangulation.writeTetMesh("/home/wegatron/tmp/cube_mutual.vtk", {ignore_bbox, ignore_out});
 }
 
+void test_mutualTessellation2()
+{
+
+}
+
 int main(int argc, char *argv[])
 {
   // test_init1();

@@ -20,17 +20,22 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   zsw::Triangulation tr(thick_dis/10, bo_points, bi_points);
   std::function<bool(const zsw::Tet&)> ignore_bbox
     = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::BBOX_POINT);
+  std::function<bool(const zsw::Tet&)> ignore_out
+    = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::OUTER_POINT);
   std::function<bool(const zsw::Tet&)> ignore_self_out
     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, &tr, std::placeholders::_1, zsw::OUTER_POINT);
   std::function<bool(const zsw::Tet&)> ignore_self_in
     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, &tr, std::placeholders::_1, zsw::INNER_POINT);
 
-  tr.writeTetMesh(output_prefix+"_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
-  tr.writeTetMesh(output_prefix+"_ori_with_bbox.vtk", {});
+  tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
+  tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
+  //tr.writeTetMesh(output_prefix+"_tol_zero.vtk", {ignore_bbox, ignore_out});
+  //tr.writeTetMesh(output_prefix+"_ori_with_bbox.vtk", {});
   tr.simpTolerance();
   //tr.mutualTessellation();
   tr.writeTetMesh(output_prefix+"_simp_tol.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
-  tr.writeTetMesh(output_prefix+"_simp_tol_with_bbox.vtk", {});
+  //tr.writeTetMesh(output_prefix+"_simp_zero.vtk", {ignore_bbox, ignore_out});
+  //tr.writeTetMesh(output_prefix+"_simp_tol_with_bbox.vtk", {});
 }
 
 int main(int argc, char *argv[])
