@@ -68,9 +68,10 @@ namespace zsw
 
     void simpTolerance();
     void mutualTessellation();
+    void writeTetMeshAdjV(const std::string &filepath, const size_t v_id) const;
     void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;
     /* void writeTetMesh(const std::string &filepath, size_t mask) const; */
-    void writeSurface(const std::string &filepath, PointType pt_tyte) const;
+    void writeSurface(const std::string &filepath, PointType pt_type) const;
 
 
     /// \brief a funtion for debug or check.
@@ -84,6 +85,8 @@ namespace zsw
     bool ignoreWithPtType(const Tet &tet, PointType pt_type);
 
     bool ignoreOnlyWithPtType(const Tet &tet, PointType pt_type);
+
+    bool ignoreNotWithPtType(const Tet &tet, PointType pt_type);
 
     const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<Tet>& getTets() const { return tets_; }

@@ -78,6 +78,7 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
     Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
     Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
     Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
+    assert(vn.norm()>zsw::const_val::eps);
     vn.normalized();
     if(vn.dot(vr-v0) < 0) { vn=-vn; }
     vec_vn.push_back(vn);
@@ -168,36 +169,37 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
 
 bool zsw::Triangulation::linkCondition(const Edge &e) const
 {
-  std::unordered_set<size_t> fv; // vertex construct a face with edge e
-  std::set<size_t> adj_v0; // vertex link e.vid_[0]
-  std::set<size_t> adj_v1; // vertex link e.vid_[1]
-  for(size_t tid : vertices_[e.vid_[0]].tet_ids_) {
-    assert(tets_[tid].valid_);
-    for(size_t vid : tets_[tid].vid_) {
-      adj_v0.insert(vid);
-      if(vid == e.vid_[1]) {
-        fv.insert(tets_[t_id].vid_[0]); fv.insert(tets_[t_id].vid_[1]);
-        fv.insert(tets_[t_id].vid_[2]); fv.insert(tets_[t_id].vid_[3]);
-      }
+  std::set<size_t> adj_v[2]; // vertex link e.vid_[0] and e.vid_[1]
+  for(size_t vind=0; vind<2; ++vind) {
+    for(size_t t_id : vertices_[e.vid_[vind]].tet_ids_) {
+      assert(tets_[t_id].valid_);
+      adj_v[vind].insert(tets_[t_id].vid_[0]); adj_v[vind].insert(tets_[t_id].vid_[1]);
+      adj_v[vind].insert(tets_[t_id].vid_[2]); adj_v[vind].insert(tets_[t_id].vid_[3]);
     }
-  }
-  for(size_t tid : vertices_[e.vid_[1]].tet_ids_) {
-    assert(tets_[tid].valid_);
-    for(size_t vid : tets_[tid].vid_) { adj_v1.insert(vid); }
   }
   size_t cv_cnt=0;
   {
-    std::set<size_t>::iterator it0=adj_v0.begin();
-    std::set<size_t>::iterator it1=adj_v1.begin();
-    while(it0!=adj_v0.end() && it1!=adj_v1.end()) {
+    std::set<size_t>::iterator it0=adj_v[0].begin();
+    std::set<size_t>::iterator it1=adj_v[1].begin();
+    while(it0!=adj_v[0].end() && it1!=adj_v[1].end()) {
       if(*it0 == *it1) { ++cv_cnt; ++it0; ++it1; }
       else if(*it0>*it1) { ++it1; }
       else { ++it0; }
     }
-    if(adj_v0.find(e.vid_[0])!=adj_v0.end() && adj_v1.find(e.vid_[0])!=adj_v1.end()) { --cv_cnt; }
-    if(adj_v0.find(e.vid_[1])!=adj_v0.end() && adj_v1.find(e.vid_[1])!=adj_v1.end()) { --cv_cnt; }
+    if(adj_v[0].find(e.vid_[0])!=adj_v[0].end() && adj_v[1].find(e.vid_[0])!=adj_v[1].end()) { --cv_cnt; }
+    if(adj_v[0].find(e.vid_[1])!=adj_v[0].end() && adj_v[1].find(e.vid_[1])!=adj_v[1].end()) { --cv_cnt; }
   }
 
+  std::unordered_set<size_t> fv; // vertex construct a face with edge e
+  for(size_t t_id : vertices_[e.vid_[0]].tet_ids_) {
+    for(size_t vid : tets_[t_id].vid_) {
+      if(vid == e.vid_[1]) {
+        fv.insert(tets_[t_id].vid_[0]); fv.insert(tets_[t_id].vid_[1]);
+        fv.insert(tets_[t_id].vid_[2]); fv.insert(tets_[t_id].vid_[3]);
+        break;
+      }
+    }
+  }
   size_t fv_cnt=fv.size();
   if(fv.find(e.vid_[0]) != fv.end()) { --fv_cnt; }
   if(fv.find(e.vid_[1]) != fv.end()) { --fv_cnt; }
@@ -507,9 +509,24 @@ void zsw::Triangulation::writeTetMesh(const std::string &filepath,
   tet2vtk(ofs, &pts_data[0], n_pts, &tets_data[0], n_tets);
 }
 
-void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_tyte) const
+void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_type) const
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  std::ofstream ofs(filepath);
+  for(const Vertex &v : vertices_) {
+    ofs << "v " << v.pt_[0] << " " << v.pt_[1] << " " << v.pt_[2]  << std::endl;
+  }
+  size_t zv_id[4];
+  for(const Tet &tet : tets_) {
+    size_t id_cnt=0;
+    for(size_t v_id : tet.vid_) {
+      if(vertices_[v_id].pt_type_ == pt_type) {
+        zv_id[id_cnt++]=v_id;
+      }
+    }
+    if(id_cnt==3) {
+      ofs << "f " << zv_id[0]+1 << " " << zv_id[1]+1 << " " << zv_id[2]+1 << std::endl;
+    }
+  }
 }
 
 bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
@@ -569,22 +586,24 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   REUSE_VERTEX(pt, pt_type, e.vid_[0]);
 
   // add new tets
-  zsw::Scalar pt_val=0.0;
-  if(pt_type==zsw::INNER_POINT) { pt_val=-1.0; }
-  else if(pt_type==zsw::ZERO_POINT) { pt_val=0.0; }
-  else { pt_val=1.0; }
   assert(inv_tet_ids.size()>=bound_tris.size());
   auto tet_itr = inv_tet_ids.begin();
   for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
     REUSE_TET(e.vid_[0], b_tr[0], b_tr[1], b_tr[2], *tet_itr);
+
     // check if jpt in tet
+    Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
     Eigen::Matrix<zsw::Scalar,3,3> A;
     A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
     A.block<3,1>(0,1) = vertices_[b_tr[1]].pt_-pt;
     A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
-    Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
     pplu.compute(A);
+
     Eigen::Matrix<zsw::Scalar,3,1> nv;
+    zsw::Scalar pt_val=0.0;
+    if(pt_type==zsw::INNER_POINT) { pt_val=-1.0; }
+    else if(pt_type==zsw::ZERO_POINT) { pt_val=0.0; }
+    else { pt_val=1.0; }
     for(size_t i=0; i<3; ++i) {
       if(vertices_[b_tr[i]].pt_type_==zsw::INNER_POINT) { nv[i]=-1.0-pt_val; }
       else if(vertices_[b_tr[i]].pt_type_==zsw::ZERO_POINT) { nv[i]=0.0-pt_val; }
@@ -667,4 +686,18 @@ bool zsw::Triangulation::ignoreOnlyWithPtType(const Tet &tet, PointType pt_type)
 {
   return vertices_[tet.vid_[0]].pt_type_==pt_type && vertices_[tet.vid_[1]].pt_type_==pt_type &&
     vertices_[tet.vid_[2]].pt_type_==pt_type && vertices_[tet.vid_[3]].pt_type_==pt_type;
+}
+
+bool zsw::Triangulation::ignoreNotWithPtType(const Tet &tet, PointType pt_type)
+{
+  return !(vertices_[tet.vid_[0]].pt_type_==pt_type || vertices_[tet.vid_[1]].pt_type_==pt_type ||
+           vertices_[tet.vid_[2]].pt_type_==pt_type || vertices_[tet.vid_[3]].pt_type_==pt_type);
+}
+
+
+void zsw::Triangulation::writeTetMeshAdjV(const std::string &filepath, const size_t v_id) const
+{
+  for(size_t t_id : vertices_[v_id].tet_ids_) {
+    writeTet(filepath+"_"+std::to_string(t_id)+".vtk", t_id);
+  }
 }

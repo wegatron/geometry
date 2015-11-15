@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(real_triangulation)
       break;
     }
   }
-  triangulation.writeTetMesh("/home/wegatron/tmp/test_linkcondition/cube_link_cond.vtk", 0);
+  triangulation.writeTetMesh("/home/wegatron/tmp/test_linkcondition/cube_link_cond.vtk", {});
 }
 
 BOOST_AUTO_TEST_SUITE_END()

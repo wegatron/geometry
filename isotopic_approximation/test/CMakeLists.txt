@@ -35,7 +35,7 @@ include_directories(${CGAL_INCLUDE_DIRS})
 # add_executable(test_cgal_triangulation test_triangle.cpp)
 # add_executable(test_kernelRegionJudge test_KernelRegionJudge.cpp)
 add_executable(test_triangulation test_triangulation.cpp)
-# add_executable(test_linkcondition test_linkcondition.cpp)
+add_executable(test_linkcondition test_linkcondition.cpp)
 
 # target_link_libraries(test_sampling2 isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 # target_link_libraries(test_gen_surf isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
@@ -43,8 +43,8 @@ add_executable(test_triangulation test_triangulation.cpp)
 # target_link_libraries(test_kernelRegionJudge isotropic_approximate ${CGAL_LIBRARY} ${GMP_LIBRARIES}
 #   ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
 target_link_libraries(test_triangulation isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES} zswlib)
-# target_link_libraries(test_linkcondition isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES}
-# ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+target_link_libraries(test_linkcondition isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES}
+${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 
 ### old unused
 # add_executable(test_optimizer test_optimizer.cpp)
