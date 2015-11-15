@@ -260,7 +260,7 @@ void zsw::Triangulation::simpTolerance()
     const JudgePoint *merge_point_ptr=nullptr;
     int step_info=0;
     for(const JudgePoint &jpt : candicate_pts) {
-      if((++step_info)%10==0) std::cerr << step_info << " - ";
+      if((++step_info)%100==0) std::cerr << step_info << " - ";
       if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) { merge_point_ptr=&jpt; break; }
     }
 
@@ -510,10 +510,9 @@ void zsw::Triangulation::writeTetMesh(const std::string &filepath,
 void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_type) const
 {
   std::ofstream ofs(filepath);
-  for(const Vertex &v : vertices_) {
-    ofs << "v " << v.pt_[0] << " " << v.pt_[1] << " " << v.pt_[2]  << std::endl;
-  }
-  size_t zv_id[4];
+  std::set<size_t> valid_vid;
+  std::vector<Eigen::Matrix<size_t,3,1>> faces;
+  Eigen::Matrix<size_t,4,1> zv_id;
   for(const Tet &tet : tets_) {
     size_t id_cnt=0;
     for(size_t v_id : tet.vid_) {
@@ -522,8 +521,18 @@ void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_
       }
     }
     if(id_cnt==3) {
-      ofs << "f " << zv_id[0]+1 << " " << zv_id[1]+1 << " " << zv_id[2]+1 << std::endl;
+      valid_vid.insert(zv_id[0]); valid_vid.insert(zv_id[1]); valid_vid.insert(zv_id[2]);
+      faces.push_back(zv_id.block<3,1>(0,0));
     }
+  }
+  std::map<size_t,size_t> vv_map;
+  size_t vid_cnt=0;
+  for(size_t v_id : valid_vid) {
+    vv_map[v_id]=++vid_cnt;
+    ofs << "v " << vertices_[v_id].pt_.transpose() << std::endl;
+  }
+  for(const Eigen::Matrix<size_t,3,1> &f : faces) {
+    ofs << "f " << vv_map[f[0]] << " " << vv_map[f[1]] << " " << vv_map[f[2]] << std::endl;
   }
 }
 
@@ -614,8 +623,8 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(cur_jpt_itr->pt_-pt);
       assert(((A*ans-(cur_jpt_itr->pt_-pt)).squaredNorm()<zsw::const_val::eps));
 
-      if(ans[0]<-zsw::const_val::eps || ans[1]<-zsw::const_val::eps
-         || ans[2]<-zsw::const_val::eps || ans[0]+ans[1]+ans[2]>1+zsw::const_val::eps)
+      if(ans[0]<-zsw::const_val::eps || ans[1]<-zsw::const_val::eps ||
+         ans[2]<-zsw::const_val::eps || ans[0]+ans[1]+ans[2]>1+zsw::const_val::eps)
         { continue; } // not in tet
       cur_jpt_itr->val_cur_=pt_val+ans.dot(nv);
       tets_[*tet_itr].jpts_.splice(tets_[*tet_itr].jpts_.end(), jpts, cur_jpt_itr);
@@ -638,7 +647,7 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
       std::cerr << ans.transpose() << std::endl;
     }
     std::cerr << "lost jpts cnt " << lost_jpts_count << std::endl;
-    if(lost_jpts_count==100) { need_return=true; }
+    if(lost_jpts_count>=100) { need_return=true; }
   }
   //assert(jpts.size()==0);
 
