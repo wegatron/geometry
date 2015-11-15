@@ -210,11 +210,16 @@ bool zsw::Triangulation::linkCondition(const Edge &e) const
 
 void zsw::Triangulation::simpTolerance()
 {
-  for(Edge e : edges_) {
+  std::queue<size_t> eids;
+  std::set<size_t> eids_set;
+  for(size_t i=0; i<edges_.size(); ++i) {  eids.push(i); eids_set.insert(i);  }
+  while(!eids.empty()) {
+    size_t cur_eid=eids.front();
+    Edge &e = edges_[cur_eid];  eids_set.erase(cur_eid); eids.pop();
     // if e is invalid or is not bi and bo edge
     if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
-       (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) ) {
-      continue; }
+       (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
+      { continue; }
 
     // link condition
     if(!linkCondition(e)) { continue; }
@@ -266,7 +271,7 @@ void zsw::Triangulation::simpTolerance()
 
     if(merge_point_ptr != nullptr) {
       std::cerr << "collapse edge!!!" << std::endl;
-      edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts);
+      edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts, eids, eids_set);
     } else {      std::cerr << "no poper merge point!"<< std::endl;    }
   }
 }
@@ -577,7 +582,9 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
 void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
                                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                                      std::list<JudgePoint> &jpts)
+                                      std::list<JudgePoint> &jpts,
+                                      std::queue<size_t> &eids,
+                                      std::set<size_t> &eids_set)
 {
   // invalid old tets and edges and vertex
   std::set<size_t> inv_tet_ids, inv_edge_ids;
@@ -632,6 +639,8 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     }
     ++tet_itr;
   }
+
+#if 1
   bool need_return=false;
   if(jpts.size()!=0) {
     static int lost_jpts_count=0;
@@ -650,6 +659,7 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     std::cerr << "lost jpts cnt " << lost_jpts_count << std::endl;
     if(lost_jpts_count>=100) { need_return=true; }
   }
+#endif
   //assert(jpts.size()==0);
 
   // add new edges
@@ -661,6 +671,9 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   assert(inv_edge_ids.size() > arround_v.size());
   auto e_itr=inv_edge_ids.begin();
   for(const size_t v_id : arround_v) {
+    if(eids_set.find(*e_itr) == eids_set.end()) {
+      eids_set.insert(*e_itr); eids.push(*e_itr);
+    }
     REUSE_EDGE(e.vid_[0], v_id, *e_itr); ++e_itr;
   }
   if(need_return) { return; }
