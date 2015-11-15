@@ -213,14 +213,24 @@ void zsw::Triangulation::simpTolerance()
 {
   std::queue<size_t> eids;
   std::set<size_t> eids_set;
-  for(size_t i=0; i<edges_.size(); ++i) {  eids.push(i); eids_set.insert(i);  }
-  while(!eids.empty()) {
-    size_t cur_eid=eids.front();
-    Edge &e = edges_[cur_eid];  eids_set.erase(cur_eid); eids.pop();
-    // if e is invalid or is not bi and bo edge
+  for(size_t i=0; i<edges_.size(); ++i) {
+    Edge &e=edges_[i];
     if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
        (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
       { continue; }
+    eids.push(i); eids_set.insert(i);
+  }
+  while(!eids.empty()) {
+    size_t cur_eid=eids.front();
+    Edge &e = edges_[cur_eid];  eids_set.erase(cur_eid); eids.pop();
+
+    // if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
+    //    (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
+    //   { continue; }
+
+    // if e is invalid or is not bi and bo edge, if is bi bo edge is checked when push into the queue
+    if(!e.valid_)   { continue; }
+
 
     // link condition
     if(!linkCondition(e)) { continue; }
@@ -278,7 +288,6 @@ void zsw::Triangulation::simpTolerance()
 
 void zsw::Triangulation::simpZeroSurface()
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }
 void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
@@ -675,10 +684,17 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   assert(inv_edge_ids.size() > arround_v.size());
   auto e_itr=inv_edge_ids.begin();
   for(const size_t v_id : arround_v) {
-    if(eids_set.find(*e_itr) == eids_set.end()) {
-      eids_set.insert(*e_itr); eids.push(*e_itr);
-    }
-    REUSE_EDGE(e.vid_[0], v_id, *e_itr); ++e_itr;
+    const size_t tmp_eid=*e_itr;
+    REUSE_EDGE(e.vid_[0], v_id, tmp_eid); ++e_itr;
+
+    const zsw::PointType tmp_pt_type[2]={
+      vertices_[edges_[tmp_eid].vid_[0]].pt_type_,
+      vertices_[edges_[tmp_eid].vid_[1]].pt_type_};
+
+    if( tmp_pt_type[0] != tmp_pt_type[1] ||
+        (tmp_pt_type[0]!=OUTER_POINT && tmp_pt_type[1]!=INNER_POINT) ||
+        eids_set.find(*e_itr) != eids_set.end() ) {      continue;    }
+    eids_set.insert(tmp_eid); eids.push(tmp_eid);
   }
 #if 1
   if(need_return) { return; }
