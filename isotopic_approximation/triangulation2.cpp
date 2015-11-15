@@ -539,7 +539,7 @@ void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_
         zv_id[id_cnt++]=v_id;
       }
     }
-    if(id_cnt==3 && vertices_[zv_id[3]].pt_type_!=zsw::ZERO_POINT) {
+    if(id_cnt==3 && vertices_[zv_id[3]].pt_type_!=zsw::BBOX_POINT) {
       valid_vid.insert(zv_id[0]); valid_vid.insert(zv_id[1]); valid_vid.insert(zv_id[2]);
       faces.push_back(zv_id.block<3,1>(0,0));
     }
