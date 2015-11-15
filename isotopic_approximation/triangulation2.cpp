@@ -226,9 +226,9 @@ void zsw::Triangulation::simpTolerance()
     KernelRegionJudger krj;
     std::list<JudgePoint> all_jpts;
     std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
-    std::list<size_t> debug_tet_ids;
     for(size_t tid : tet_ids) {
-      all_jpts.splice(all_jpts.begin(), tets_[tid].jpts_);
+      //all_jpts.splice(all_jpts.end(), tets_[tid]); // @bug when can't merge
+      all_jpts.insert(all_jpts.end(), tets_[tid].jpts_.begin(), tets_[tid].jpts_.end());
 
       // add kernel region constraint
       size_t vcnt=0;
@@ -238,7 +238,6 @@ void zsw::Triangulation::simpTolerance()
         else {          tmp_bound_tri[vcnt++]=tvid;        }
       }
       if(vcnt==3) {
-        debug_tet_ids.push_back(tid);
         krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
                           vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
         bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
@@ -264,12 +263,11 @@ void zsw::Triangulation::simpTolerance()
       if((++step_info)%10==0) std::cerr << step_info << " - ";
       if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) { merge_point_ptr=&jpt; break; }
     }
-    std::cerr << std::endl;
 
     if(merge_point_ptr != nullptr) {
       std::cerr << "collapse edge!!!" << std::endl;
       edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts);
-    } else { std::cerr << "no poper merge point!"<< std::endl;    }
+    } else {      std::cerr << "no poper merge point!"<< std::endl;    }
   }
 }
 
@@ -624,7 +622,6 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     }
     ++tet_itr;
   }
-
   bool need_return=false;
   if(jpts.size()!=0) {
     static int lost_jpts_count=0;

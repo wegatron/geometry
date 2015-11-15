@@ -47,6 +47,19 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
   //tr.writeTetMesh(output_prefix+"_tol_zero.vtk", {ignore_bbox, ignore_out});
   //tr.writeTetMesh(output_prefix+"_ori_with_bbox.vtk", {});
+
+  {
+    const string in_jp_file=output_prefix+"beforein_jp.obj";
+    std::ofstream ofs(in_jp_file, std::ofstream::out) ;
+    const vector<zsw::Tet>& tets = tr.getTets();
+    for(const zsw::Tet &tet : tets) {
+      for(const zsw::JudgePoint &jp : tet.jpts_) {
+        ofs << "v " << jp.pt_[0] << " " << jp.pt_[1] << " " << jp.pt_[2] << std::endl;
+      }
+    }
+    ofs.close();
+  }
+
   tr.simpTolerance();
 
   {
