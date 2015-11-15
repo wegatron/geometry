@@ -224,12 +224,12 @@ void zsw::Triangulation::simpTolerance()
     size_t cur_eid=eids.front();
     Edge &e = edges_[cur_eid];  eids_set.erase(cur_eid); eids.pop();
 
-    // if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
-    //    (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
-    //   { continue; }
+    if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
+       (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
+      { continue; }
 
     // if e is invalid or is not bi and bo edge, if is bi bo edge is checked when push into the queue
-    if(!e.valid_)   { continue; }
+    //if(!e.valid_)   { continue; }
 
 
     // link condition
@@ -539,7 +539,7 @@ void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_
         zv_id[id_cnt++]=v_id;
       }
     }
-    if(id_cnt==3 && vertices_[zv_id[3]].pt_type_!=zsw::BBOX_POINT) {
+    if(id_cnt==3) {
       valid_vid.insert(zv_id[0]); valid_vid.insert(zv_id[1]); valid_vid.insert(zv_id[2]);
       faces.push_back(zv_id.block<3,1>(0,0));
     }
