@@ -69,6 +69,7 @@ namespace zsw
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
 
     void simpTolerance();
+    void simpZeroSurface();
     void mutualTessellation();
     void writeTetMeshAdjV(const std::string &filepath, const size_t v_id) const;
     void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;

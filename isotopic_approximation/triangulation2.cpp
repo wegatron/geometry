@@ -4,6 +4,7 @@
 #include <zswlib/mesh/vtk.h>
 #include <zswlib/error_ctrl.h>
 #include <zswlib/const_val.h>
+#include <zswlib/zsw_log.h>
 
 #include "sampling.h"
 #include "basic_op.h"
@@ -255,9 +256,8 @@ void zsw::Triangulation::simpTolerance()
       // judge if jpt in kernel region
       if(krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
     }
-
-    std::cerr << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
-    std::cerr << "candicate_pts:" << candicate_pts.size() << std::endl;
+    NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
+    NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
 
     // find the best point in the candicate_pts
     std::sort(candicate_pts.begin(), candicate_pts.end(),
@@ -265,17 +265,21 @@ void zsw::Triangulation::simpTolerance()
     const JudgePoint *merge_point_ptr=nullptr;
     int step_info=0;
     for(const JudgePoint &jpt : candicate_pts) {
-      if((++step_info)%100==0) std::cerr << step_info << " - ";
+      if((++step_info)%100==0) { NZSWLOG("zsw_info") << step_info << " - "; }
       if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) { merge_point_ptr=&jpt; break; }
     }
 
     if(merge_point_ptr != nullptr) {
-      std::cerr << "collapse edge!!!" << std::endl;
+      NZSWLOG("zsw_info")  << "collapse edge!!!" << std::endl;
       edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts, eids, eids_set);
-    } else {      std::cerr << "no poper merge point!"<< std::endl;    }
+    } else {      NZSWLOG("zsw_info")  << "no poper merge point!"<< std::endl;    }
   }
 }
 
+void zsw::Triangulation::simpZeroSurface()
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+}
 void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
@@ -507,8 +511,8 @@ void zsw::Triangulation::writeTetMesh(const std::string &filepath,
   }
   size_t n_pts = pts_data.size()/3;
   size_t n_tets = tets_data.size()/4;
-  std::cerr << "[INFO] point size:" << n_pts << std::endl;
-  std::cerr << "[INFO] tet size:" << n_tets << std::endl;
+  NZSWLOG("zsw_info")  << "point size:" << n_pts << std::endl;
+  NZSWLOG("zsw_info")  << "tet size:" << n_tets << std::endl;
   tet2vtk(ofs, &pts_data[0], n_pts, &tets_data[0], n_tets);
 }
 
@@ -654,9 +658,9 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
       Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
       pplu.compute(A);
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
-      std::cerr << ans.transpose() << std::endl;
+      NZSWLOG("zsw_info")  << ans.transpose() << std::endl;
     }
-    std::cerr << "lost jpts cnt " << lost_jpts_count << std::endl;
+    NZSWLOG("zsw_info") << "lost jpts cnt " << lost_jpts_count << std::endl;
     if(lost_jpts_count>=100) { need_return=true; }
   }
 #endif
@@ -676,7 +680,9 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     }
     REUSE_EDGE(e.vid_[0], v_id, *e_itr); ++e_itr;
   }
+#if 1
   if(need_return) { return; }
+#endif
 }
 
 void zsw::Triangulation::writeTet(const std::string &filepath, const size_t tet_id) const
