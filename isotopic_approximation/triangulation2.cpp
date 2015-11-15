@@ -514,6 +514,7 @@ void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_
   std::vector<Eigen::Matrix<size_t,3,1>> faces;
   Eigen::Matrix<size_t,4,1> zv_id;
   for(const Tet &tet : tets_) {
+    if(!tet.valid_) { continue; }
     size_t id_cnt=0;
     for(size_t v_id : tet.vid_) {
       if(vertices_[v_id].pt_type_ == pt_type) {
