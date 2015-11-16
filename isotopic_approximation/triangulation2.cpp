@@ -214,7 +214,7 @@ void zsw::Triangulation::simpTolerance()
   std::queue<size_t> eids;
   std::set<size_t> eids_set;
   for(size_t i=0; i<edges_.size(); ++i) {
-    Edge &e=edges_[i];
+    const Edge &e=edges_[i];
     if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
        (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
       { continue; }
@@ -224,12 +224,12 @@ void zsw::Triangulation::simpTolerance()
     size_t cur_eid=eids.front();
     Edge &e = edges_[cur_eid];  eids_set.erase(cur_eid); eids.pop();
 
-    if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
-       (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
-      { continue; }
+    // if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
+    //    (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
+    //   { continue; }
 
     // if e is invalid or is not bi and bo edge, if is bi bo edge is checked when push into the queue
-    //if(!e.valid_)   { continue; }
+    if(!e.valid_)   { continue; }
 
 
     // link condition
@@ -288,6 +288,20 @@ void zsw::Triangulation::simpTolerance()
 
 void zsw::Triangulation::simpZeroSurface()
 {
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  std::queue<size_t> eids;
+  std::set<size_t> eids_set;
+  for(size_t i=0; i<edges_.size(); ++i) {
+    const Edge &e=edges_[i];
+    if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
+       (vertices_[e.vid_[0]].pt_type_!=ZERO_POINT && vertices_[e.vid_[0]].pt_type_!=ZERO_POINT) )
+      { continue; }
+    eids.push(i); eids_set.insert(i);
+  }
+
+  while(!eids.empty()) {
+
+  }
 }
 void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
