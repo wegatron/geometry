@@ -757,3 +757,68 @@ void zsw::Triangulation::writeTetMeshAdjV(const std::string &filepath, const siz
     writeTet(filepath+"_"+std::to_string(t_id)+".vtk", t_id);
   }
 }
+
+void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id)
+{
+  Edge &e = edges_[e_id];
+
+  // if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
+  //    (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
+  //   { continue; }
+
+  // if e is invalid or is not bi and bo edge, if is bi bo edge is checked when push into the queue
+  if(!e.valid_)   { return; }
+
+
+  // link condition
+  if(!linkCondition(e)) { return; }
+
+  std::unordered_set<size_t> tet_ids;
+  for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.insert(tid); }
+  for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.insert(tid); }
+
+  KernelRegionJudger krj;
+  std::list<JudgePoint> all_jpts;
+  std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
+  for(size_t tid : tet_ids) {
+    //all_jpts.splice(all_jpts.end(), tets_[tid]); // @bug when can't merge
+    all_jpts.insert(all_jpts.end(), tets_[tid].jpts_.begin(), tets_[tid].jpts_.end());
+
+    // add kernel region constraint
+    size_t vcnt=0;
+    Eigen::Matrix<size_t,4,1> tmp_bound_tri;
+    for(size_t tvid : tets_[tid].vid_) {
+      if(tvid == e.vid_[0] || tvid==e.vid_[1]) {          tmp_bound_tri[3]=tvid;        }
+      else {          tmp_bound_tri[vcnt++]=tvid;        }
+    }
+    if(vcnt==3) {
+      krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
+                        vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
+      bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
+    }
+  }
+
+  // find the candicate points
+  std::vector<JudgePoint> candicate_pts;
+  for(const JudgePoint &jpt : all_jpts) {
+    // judge if jpt in kernel region
+    if(krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
+  }
+  NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
+  NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
+
+  // find the best point in the candicate_pts
+  std::sort(candicate_pts.begin(), candicate_pts.end(),
+            [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
+  const JudgePoint *merge_point_ptr=nullptr;
+  int step_info=0;
+  for(const JudgePoint &jpt : candicate_pts) {
+    if((++step_info)%100==0) { NZSWLOG("zsw_info") << step_info << " - "; }
+    if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) { merge_point_ptr=&jpt; break; }
+  }
+
+  if(merge_point_ptr != nullptr) {
+    NZSWLOG("zsw_info")  << "collapse edge!!!" << std::endl;
+    edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts, eids, eids_set);
+  } else {      NZSWLOG("zsw_info")  << "no poper merge point!"<< std::endl;    }
+}

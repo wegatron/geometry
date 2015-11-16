@@ -19,6 +19,12 @@ BUNNY_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/bunny/bunny
 BUNNY_THICK = 0.007
 BUNNY_SAMPLE_R = 0.0035
 
+CUBE = /home/wegatron/workspace/geometry/data/cube.stl
+CUBE_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/cube
+CUBE_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/cube/cube
+CUBE_THICK = 0.06
+CUBE_SAMPLE_R = 0.006
+
 .PHONY : default
 default:
 	echo "test simp tolerance, please specify a case to run!"
@@ -35,6 +41,10 @@ test_simp_fandisk:
 test_simp_bunny:
 	${TEST_SIMP_TOL_EXEC} ${BUNNY} ${BUNNY_OUTPUT_PREFIX} ${BUNNY_THICK} ${BUNNY_SAMPLE_R}
 
+.PHONY : test_simp_cube
+test_simp_cube:
+	${TEST_SIMP_TOL_EXEC} ${CUBE} ${CUBE_OUTPUT_PREFIX} ${CUBE_THICK} ${CUBE_SAMPLE_R}
+
 .PHONY : clean_simp_sphere
 clean_simp_sphere:
 	rm -rf ${SPHERE_OUTPUT_DIR}*
@@ -44,8 +54,12 @@ clean_simp_fandisk:
 	rm -rf ${FANDISK_OUTPUT_DIR}*
 
 .PHONY : clean_simp_bunny
-clean_simp_fandisk:
+clean_simp_bunny:
 	rm -rf ${BUNNY_OUTPUT_DIR}*
 
+.PHONY : clean_simp_cube
+clean_simp_cube:
+	rm -rf ${CUBE_OUTPUT_DIR}
+	
 .PHONY : clean_all
-clean_all: clean_simp_sphere clean_simp_fandisk
+clean_all: clean_simp_sphere clean_simp_fandisk clean_simp_bunny clean_simp_cube 

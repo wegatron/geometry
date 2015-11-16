@@ -121,6 +121,8 @@ namespace zsw
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                       const std::list<JudgePoint> &jpts) const;
 
+    void tryCollapseBoundaryEdge(const size_t e_id);
+
     void edgeCollapse(Edge &e, const PointType pt_type,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                       const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> &jpts,
