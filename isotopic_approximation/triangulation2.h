@@ -91,6 +91,10 @@ namespace zsw
 
     bool ignoreNotWithPtType(const Tet &tet, PointType pt_type);
 
+    void tryCollapseBoundaryEdge(const size_t e_id,
+                                 std::queue<size_t> &eids,
+                                 std::set<size_t> eids_set);
+
     const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<Tet>& getTets() const { return tets_; }
     const std::vector<Edge>& getEdges() const { return edges_; }
@@ -120,8 +124,6 @@ namespace zsw
     bool testCollapse(const Edge &e, const PointType pt_type, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                       const std::list<JudgePoint> &jpts) const;
-
-    void tryCollapseBoundaryEdge(const size_t e_id);
 
     void edgeCollapse(Edge &e, const PointType pt_type,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,

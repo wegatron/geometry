@@ -221,68 +221,8 @@ void zsw::Triangulation::simpTolerance()
     eids.push(i); eids_set.insert(i);
   }
   while(!eids.empty()) {
-    size_t cur_eid=eids.front();
-    Edge &e = edges_[cur_eid];  eids_set.erase(cur_eid); eids.pop();
-
-    // if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
-    //    (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
-    //   { continue; }
-
-    // if e is invalid or is not bi and bo edge, if is bi bo edge is checked when push into the queue
-    if(!e.valid_)   { continue; }
-
-
-    // link condition
-    if(!linkCondition(e)) { continue; }
-
-    std::unordered_set<size_t> tet_ids;
-    for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.insert(tid); }
-    for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.insert(tid); }
-
-    KernelRegionJudger krj;
-    std::list<JudgePoint> all_jpts;
-    std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
-    for(size_t tid : tet_ids) {
-      //all_jpts.splice(all_jpts.end(), tets_[tid]); // @bug when can't merge
-      all_jpts.insert(all_jpts.end(), tets_[tid].jpts_.begin(), tets_[tid].jpts_.end());
-
-      // add kernel region constraint
-      size_t vcnt=0;
-      Eigen::Matrix<size_t,4,1> tmp_bound_tri;
-      for(size_t tvid : tets_[tid].vid_) {
-        if(tvid == e.vid_[0] || tvid==e.vid_[1]) {          tmp_bound_tri[3]=tvid;        }
-        else {          tmp_bound_tri[vcnt++]=tvid;        }
-      }
-      if(vcnt==3) {
-        krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
-                          vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
-        bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
-      }
-    }
-
-    // find the candicate points
-    std::vector<JudgePoint> candicate_pts;
-    for(const JudgePoint &jpt : all_jpts) {
-      // judge if jpt in kernel region
-      if(krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
-    }
-    NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
-    NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
-
-    // find the best point in the candicate_pts
-    std::sort(candicate_pts.begin(), candicate_pts.end(),
-              [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
-    const JudgePoint *merge_point_ptr=nullptr;
-    int step_info=0;
-    for(const JudgePoint &jpt : candicate_pts) {
-      if((++step_info)%100==0) { NZSWLOG("zsw_info") << step_info << " - "; }
-      if(testCollapse(e, vertices_[e.vid_[0]].pt_type_, jpt.pt_, bound_tris, all_jpts)) { merge_point_ptr=&jpt; break; }
-    }
-
-    if(merge_point_ptr != nullptr) {
-      NZSWLOG("zsw_info")  << "collapse edge!!!" << std::endl;
-      edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts, eids, eids_set);
-    } else {      NZSWLOG("zsw_info")  << "no poper merge point!"<< std::endl;    }
+    size_t cur_eid=eids.front(); eids_set.erase(cur_eid); eids.pop();
+    tryCollapseBoundaryEdge(cur_eid, eids, eids_set);
   }
 }
 
@@ -585,7 +525,11 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
     A.block<3,1>(0,1) = vertices_[b_tr[1]].pt_-pt;
     A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
     // on the same plane of one bound_tri
-    if(fabs(A.determinant())<zsw::const_val::eps) { return false; }
+    if(fabs(A.determinant())<zsw::const_val::small_eps) {
+      // std::cerr << "determinant :" << fabs(A.determinant()) << std::endl;
+      continue;
+      //return false;
+    }
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
     pplu.compute(A);
 
@@ -598,9 +542,15 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
     for(const JudgePoint &jpt : jpts) {
       //check if jpt in the tet and if jpt's error is in tolerance
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
+      assert((A*ans-(jpt.pt_-pt)).norm()<zsw::const_val::eps);
+      if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) {   continue;      }
       if(ans[0]<0 || ans[1]<0 || ans[2]<0 || ans[0]+ans[1]+ans[2]>1) { continue; } // not in tet
-      assert((A*ans-(jpt.pt_-pt)).squaredNorm()<zsw::const_val::eps);
-      if(fabs(pt_val+ans.dot(nv)-jpt.val_exp_) > 1.0) {        return false;      }
+      if(fabs(pt_val+ans.dot(nv)-jpt.val_exp_) > 1.0) {
+        // std::cerr << "collapse into:" << pt.transpose() << std::endl;
+        // std::cerr << "b_tr:" << b_tr.transpose() << std::endl;
+        // std::cerr << "error in jpt:"  << fabs(pt_val+ans.dot(nv)) << std::endl;
+        return false;
+      }
     }
   }
   return true;
@@ -656,8 +606,8 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     for(auto jpt_itr=jpts.begin(); jpt_itr!=jpts.end(); ) {
       auto cur_jpt_itr=jpt_itr; ++jpt_itr;
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(cur_jpt_itr->pt_-pt);
-      assert(((A*ans-(cur_jpt_itr->pt_-pt)).squaredNorm()<zsw::const_val::eps));
-
+      assert(((A*ans-(cur_jpt_itr->pt_-pt)).norm()<zsw::const_val::eps));
+      if((A*ans-(cur_jpt_itr->pt_-pt)).norm()>zsw::const_val::eps) {   continue;      }
       if(ans[0]<-zsw::const_val::eps || ans[1]<-zsw::const_val::eps ||
          ans[2]<-zsw::const_val::eps || ans[0]+ans[1]+ans[2]>1+zsw::const_val::eps)
         { continue; } // not in tet
@@ -668,7 +618,6 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
   }
 
 #if 1
-  bool need_return=false;
   if(jpts.size()!=0) {
     static int lost_jpts_count=0;
     lost_jpts_count+=jpts.size();
@@ -684,7 +633,6 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
       NZSWLOG("zsw_info")  << ans.transpose() << std::endl;
     }
     NZSWLOG("zsw_info") << "lost jpts cnt " << lost_jpts_count << std::endl;
-    if(lost_jpts_count>=100) { need_return=true; }
   }
 #endif
   //assert(jpts.size()==0);
@@ -710,9 +658,6 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
         eids_set.find(*e_itr) != eids_set.end() ) {      continue;    }
     eids_set.insert(tmp_eid); eids.push(tmp_eid);
   }
-#if 1
-  if(need_return) { return; }
-#endif
 }
 
 void zsw::Triangulation::writeTet(const std::string &filepath, const size_t tet_id) const
@@ -758,7 +703,9 @@ void zsw::Triangulation::writeTetMeshAdjV(const std::string &filepath, const siz
   }
 }
 
-void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id)
+void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
+                                                 std::queue<size_t> &eids,
+                                                 std::set<size_t> eids_set)
 {
   Edge &e = edges_[e_id];
 
@@ -769,6 +716,8 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id)
   // if e is invalid or is not bi and bo edge, if is bi bo edge is checked when push into the queue
   if(!e.valid_)   { return; }
 
+  // writeTetMeshAdjV("/home/wegatron/tmp/simp_tol/fandisk/adjv/"+std::to_string(e.vid_[0]), e.vid_[0]);
+  // writeTetMeshAdjV("/home/wegatron/tmp/simp_tol/fandisk/adjv/"+std::to_string(e.vid_[1]), e.vid_[1]);
 
   // link condition
   if(!linkCondition(e)) { return; }
@@ -798,14 +747,18 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id)
     }
   }
 
-  // find the candicate points
+
+  //writeJudgePoints("/home/wegatron/tmp/simp_tol/fandisk/jpts/all", all_jpts);
+
+  // find the candicate points :  jpt in kernel region
   std::vector<JudgePoint> candicate_pts;
   for(const JudgePoint &jpt : all_jpts) {
-    // judge if jpt in kernel region
     if(krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
   }
   NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
   NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
+
+  //writeJudgePoints("/home/wegatron/tmp/simp_tol/fandisk/jpts/inkrj", candicate_pts);
 
   // find the best point in the candicate_pts
   std::sort(candicate_pts.begin(), candicate_pts.end(),

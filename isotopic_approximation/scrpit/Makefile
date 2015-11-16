@@ -1,5 +1,6 @@
 SHELL = /bin/sh
 TEST_SIMP_TOL_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/test_simptolerance
+DEBUG_SIMP_JPTS_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/debug_simp_jpts
 
 SPHERE = /home/wegatron/workspace/geometry/data/sphere.stl
 SPHERE_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/sphere/
@@ -28,38 +29,48 @@ CUBE_SAMPLE_R = 0.006
 .PHONY : default
 default:
 	echo "test simp tolerance, please specify a case to run!"
-
+	
+.PHONY : debug_simp_jpts
+debug_simp_jpts: clean_simp_fandisk
+	${DEBUG_SIMP_JPTS_EXEC} ${FANDISK} ${FANDISK_OUTPUT_DIR} ${FANDISK_THICK} ${FANDISK_SAMPLE_R} 35402 35403
+	
 .PHONY : test_simp_sphere
-test_simp_sphere:
+test_simp_sphere: clean_simp_sphere
 	${TEST_SIMP_TOL_EXEC} ${SPHERE} ${SPHERE_OUTPUT_PREFIX} ${SPHERE_THICK} ${SPHERE_SAMPLE_R}
 
 .PHONY : test_simp_fandisk
-test_simp_fandisk:
+test_simp_fandisk: clean_simp_fandisk
 	${TEST_SIMP_TOL_EXEC} ${FANDISK} ${FANDISK_OUTPUT_PREFIX} ${FANDISK_THICK} ${FANDISK_SAMPLE_R}
 	
 .PHONY : test_simp_bunny
-test_simp_bunny:
+test_simp_bunny: clean_simp_bunny
 	${TEST_SIMP_TOL_EXEC} ${BUNNY} ${BUNNY_OUTPUT_PREFIX} ${BUNNY_THICK} ${BUNNY_SAMPLE_R}
 
 .PHONY : test_simp_cube
-test_simp_cube:
+test_simp_cube: clean_simp_cube
 	${TEST_SIMP_TOL_EXEC} ${CUBE} ${CUBE_OUTPUT_PREFIX} ${CUBE_THICK} ${CUBE_SAMPLE_R}
 
 .PHONY : clean_simp_sphere
-clean_simp_sphere:
+clean_simp_sphere: clean_log
 	rm -rf ${SPHERE_OUTPUT_DIR}*
 
 .PHONY : clean_simp_fandisk
-clean_simp_fandisk:
-	rm -rf ${FANDISK_OUTPUT_DIR}*
+clean_simp_fandisk: clean_log
+	rm -rf ${FANDISK_OUTPUT_DIR}*; \
+	mkdir ${FANDISK_OUTPUT_DIR}jpts; \
+	mkdir ${FANDISK_OUTPUT_DIR}adjv; \
 
 .PHONY : clean_simp_bunny
-clean_simp_bunny:
+clean_simp_bunny: clean_log
 	rm -rf ${BUNNY_OUTPUT_DIR}*
 
 .PHONY : clean_simp_cube
-clean_simp_cube:
+clean_simp_cube: clean_log
 	rm -rf ${CUBE_OUTPUT_DIR}
-	
+
+.PHONY : clean_log
+clean_log:
+	rm /tmp/zswlog.log
+
 .PHONY : clean_all
 clean_all: clean_simp_sphere clean_simp_fandisk clean_simp_bunny clean_simp_cube 
