@@ -45,7 +45,7 @@
 #define REUSE_TET(v0, v1, v2, v3, t_id) do {                            \
     vertices_[v0].tet_ids_.push_back(t_id);   vertices_[v1].tet_ids_.push_back(t_id); \
     vertices_[v2].tet_ids_.push_back(t_id);   vertices_[v3].tet_ids_.push_back(t_id); \
-    tets_[t_id] = {true, v0, v1, v2, v3, {}};                          \
+    tets_[t_id] = {true, v0, v1, v2, v3};                          \
   } while(0)
 
 #define CHECK_ADD_EDGE(v0, v1, isnew0, isnew1) do{      \
@@ -535,7 +535,7 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
     A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
     // on the same plane of one bound_tri
     if(fabs(A.determinant())<zsw::const_val::small_eps) {
-      std::cerr << "determinant :" << fabs(A.determinant()) << std::endl;
+      std::cerr << "testCollapse - determinant :" << fabs(A.determinant()) << std::endl;
       continue;
     }
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
@@ -550,14 +550,14 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
 
     for(auto jp_id_it=jp_ids_left.begin(); jp_id_it!=jp_ids_left.end();) {
       auto cur_jp_id_it=jp_id_it; ++jp_id_it;
-      JudgePoint &jp = all_jpts_[*cur_jp_id_it];
+      const JudgePoint &jpt = all_jpts_[*cur_jp_id_it];
       //check if jpt in the tet and if jpt's error is in tolerance
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
       assert((A*ans-(jpt.pt_-pt)).norm()<zsw::const_val::eps);
       if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) {   continue;      }
       if(ans[0]<0 || ans[1]<0 || ans[2]<0 || ans[0]+ans[1]+ans[2]>1) { continue; } // not in tet
       if(fabs(pt_val+ans.dot(nv)-jpt.val_exp_) > 1.0) {        return false;      }
-      else {        jp_ids_left.erase(cur_jp_it);      }
+      else {        jp_ids_left.erase(cur_jp_id_it);      }
     }
     if(jp_ids_left.empty()) { break; }
   }
@@ -567,10 +567,10 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
 void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
                                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                                      std::vector<size_t> &cur_all_jp_ids,
                                       std::queue<size_t> &eids,
                                       std::set<size_t> &eids_set)
 {
-  #if 0
   // invalid old tets and edges and vertex
   std::set<size_t> inv_tet_ids, inv_edge_ids;
   vertices_[e.vid_[0]].valid_=false;  vertices_[e.vid_[1]].valid_=false;
@@ -597,6 +597,10 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
     A.block<3,1>(0,1) = vertices_[b_tr[1]].pt_-pt;
     A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
+    if(fabs(A.determinant())<zsw::const_val::small_eps) {
+      std::cerr << "edgeCollapse - determinant :" << fabs(A.determinant()) << std::endl;
+      continue;
+    }
     pplu.compute(A);
 
     Eigen::Matrix<zsw::Scalar,3,1> nv;
@@ -611,39 +615,19 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
     }
 
     // adjust jpts
-    for(auto jpt_itr=jpts.begin(); jpt_itr!=jpts.end(); ) {
-      auto cur_jpt_itr=jpt_itr; ++jpt_itr;
-      Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(cur_jpt_itr->pt_-pt);
-      assert(((A*ans-(cur_jpt_itr->pt_-pt)).norm()<zsw::const_val::eps));
-      if((A*ans-(cur_jpt_itr->pt_-pt)).norm()>zsw::const_val::eps) {   continue;      }
+    for(size_t &jp_id : cur_all_jp_ids) {
+      if(jp_id==-1) { continue; }
+      JudgePoint &jpt = all_jpts_[jp_id];
+      Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
+      assert(((A*ans-(jpt.pt_-pt)).norm()<zsw::const_val::eps));
+      if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) {   continue;      }
       if(ans[0]<-zsw::const_val::eps || ans[1]<-zsw::const_val::eps ||
          ans[2]<-zsw::const_val::eps || ans[0]+ans[1]+ans[2]>1+zsw::const_val::eps)
         { continue; } // not in tet
-      cur_jpt_itr->val_cur_=pt_val+ans.dot(nv);
-      tets_[*tet_itr].jpts_.splice(tets_[*tet_itr].jpts_.end(), jpts, cur_jpt_itr);
+      jpt.val_cur_=pt_val+ans.dot(nv);
+      jp_id=-1;
     }
-    ++tet_itr;
   }
-
-// #if 1
-//   if(jpts.size()!=0) {
-//     static int lost_jpts_count=0;
-//     lost_jpts_count+=jpts.size();
-//     auto &jpt = jpts.front();
-//     for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris)  {
-//       Eigen::Matrix<zsw::Scalar,3,3> A;
-//       A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
-//       A.block<3,1>(0,1) = vertices_[b_tr[1]].pt_-pt;
-//       A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
-//       Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
-//       pplu.compute(A);
-//       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
-//       NZSWLOG("zsw_info")  << ans.transpose() << std::endl;
-//     }
-//     NZSWLOG("zsw_info") << "lost jpts cnt " << lost_jpts_count << std::endl;
-//   }
-// #endif
-  //assert(jpts.size()==0);
 
   // add new edges
   std::set<size_t> arround_v;
@@ -666,7 +650,6 @@ void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
         eids_set.find(*e_itr) != eids_set.end() ) {      continue;    }
     eids_set.insert(tmp_eid); eids.push(tmp_eid);
   }
-  #endif
 }
 
 void zsw::Triangulation::writeTet(const std::string &filepath, const size_t tet_id) const
@@ -785,6 +768,6 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
 
   if(merge_point_ptr != nullptr) {
     NZSWLOG("zsw_info")  << "collapse edge!!!" << std::endl;
-    edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, all_jpts, eids, eids_set);
+    edgeCollapse(e, vertices_[e.vid_[0]].pt_type_, bound_tris, merge_point_ptr->pt_, cur_all_jp_ids, eids, eids_set);
   } else {      NZSWLOG("zsw_info")  << "no poper merge point!"<< std::endl;    }
 }
