@@ -57,7 +57,6 @@ namespace zsw
     bool testLinkCondition(const Edge &e) const { return linkCondition(e); }
 #endif
 
-
     /// \brief Triangulation
     ///
     /// A construct a triangulation with bo and bi points, and sample
@@ -126,7 +125,7 @@ namespace zsw
     /// \param jpts the judge points
     /// \return true if S is keeped or false otherwise
     bool testCollapse(const Edge &e, const PointType pt_type, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris) const;
+                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::vector<size_t> &cur_all_jp_ids) const;
 
     void edgeCollapse(Edge &e, const PointType pt_type,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
