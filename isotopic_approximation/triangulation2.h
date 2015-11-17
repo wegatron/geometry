@@ -18,6 +18,7 @@
 #include <set>
 #include <Eigen/Dense>
 #include <zswlib/config.h>
+#include <zswlib/flann2.h>
 #include "cgal_common.h"
 #include "basic_data_structure.h"
 
@@ -122,12 +123,11 @@ namespace zsw
     /// \param jpts the judge points
     /// \return true if S is keeped or false otherwise
     bool testCollapse(const Edge &e, const PointType pt_type, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
-                      const std::list<JudgePoint> &jpts) const;
+                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris) const;
 
     void edgeCollapse(Edge &e, const PointType pt_type,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
-                      const Eigen::Matrix<zsw::Scalar,3,1> &pt, std::list<JudgePoint> &jpts,
+                      const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                       std::queue<size_t> &eids, std::set<size_t> &eids_set);
 
     void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
@@ -151,6 +151,7 @@ namespace zsw
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
+    std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_;
   };
 
 }

@@ -133,6 +133,7 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
 void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
 {
   size_t t_id=0;
+  std::vector<zsw::JudgePoint> all_jpts;
   for(Delaunay::Finite_cells_iterator cit=delaunay.finite_cells_begin();
       cit!=delaunay.finite_cells_end(); ++cit) {
     tets_.push_back({true, {cit->vertex(0)->info(), cit->vertex(1)->info(),
@@ -149,12 +150,14 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
         bi_points.block<3,1>(0,bi_cnt++)=vertices_[tvid].pt_;
       }
     }
-    if(bo_cnt==3) { sampleTriangle(bo_points.block<3,3>(0,0), r, 1, tmp_tet.jpts_); }
-    else if(bi_cnt==3) { sampleTriangle(bi_points.block<3,3>(0,0), r, -1, tmp_tet.jpts_); }
+    if(bo_cnt==3) { sampleTriangle(bo_points.block<3,3>(0,0), r, 1, all_jpts); }
+    else if(bi_cnt==3) { sampleTriangle(bi_points.block<3,3>(0,0), r, -1, all_jpts); }
     // vertex info
     vertices_[tmp_tet.vid_[0]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[1]].tet_ids_.push_back(t_id);
     vertices_[tmp_tet.vid_[2]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[3]].tet_ids_.push_back(t_id++);
   }
+
+  jpts_ptr_.reset(new Flann2(all_jpts[0].data(), all_jpts.size()));
 
   // edge info
   size_t e_id=0;
@@ -511,8 +514,7 @@ void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_
 
 bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
                                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
-                                      const std::list<JudgePoint> &jpts) const
+                                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris) const
 {
   assert(pt_type!=zsw::BBOX_POINT);
   zsw::Scalar pt_val=0.0;
@@ -559,7 +561,6 @@ bool zsw::Triangulation::testCollapse(const Edge &e, const PointType pt_type,
 void zsw::Triangulation::edgeCollapse(Edge &e, const PointType pt_type,
                                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                                      std::list<JudgePoint> &jpts,
                                       std::queue<size_t> &eids,
                                       std::set<size_t> &eids_set)
 {
