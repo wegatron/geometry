@@ -9,7 +9,7 @@
 namespace zsw
 {
   void sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &tri_points, const zsw::Scalar r,
-                      const zsw::Scalar val_exp, std::list<zsw::JudgePoint> &samples);
+                      const zsw::Scalar val_exp, std::vector<zsw::JudgePoint> &samples);
 
   void sampleTet(const Eigen::Matrix<zsw::Scalar,3,4> &tet_points, const zsw::Scalar r,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);

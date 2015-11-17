@@ -8,6 +8,7 @@ using namespace std;
 
 void test(const std::string &file_path, const string &output_prefix, const zsw::Scalar thick_dis, const zsw::Scalar sample_r)
 {
+  #if 0
   zsw::mesh::TriMesh input_mesh;
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     std::cerr << "[ERROR] can't read mesh!" << std::endl;
@@ -67,6 +68,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeSurface(output_prefix+"_simp_tol_after_zero_mt.obj", zsw::ZERO_POINT);
   tr.writeSurface(output_prefix+"_simp_tol_after_inner_mt.obj", zsw::INNER_POINT);
   tr.writeSurface(output_prefix+"_simp_tol_after_outer_mt.obj", zsw::OUTER_POINT);
+  #endif
 }
 
 int main(int argc, char *argv[])

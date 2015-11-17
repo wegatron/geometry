@@ -29,7 +29,10 @@ find_package(CGAL REQUIRED)
 include_directories(${CGAL_INCLUDE_DIRS})
 
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
-include_directories(${BOOST_INCLUDE_DIRES})
+include_directories(${BOOST_INCLUDE_DIRS})
+
+find_package(Flann REQUIRED)
+include_directories(${FLANN_INCLUDE_DIRS})
 
 # add_subdirectory(src)
 

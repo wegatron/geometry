@@ -18,7 +18,7 @@
 #include <set>
 #include <Eigen/Dense>
 #include <zswlib/config.h>
-#include <zswlib/flann2.h>
+#include <zswlib/mesh/zsw_flann2.h>
 #include "cgal_common.h"
 #include "basic_data_structure.h"
 
@@ -53,6 +53,7 @@ namespace zsw
     std::vector<Vertex>& getVertices() { return vertices_; }
     std::vector<Tet>& getTets()  { return tets_; }
     std::vector<Edge>& getEdges() { return edges_; }
+    std::vector<JudgePoint> &getJpts() { return all_jpts_; }
     bool testLinkCondition(const Edge &e) const { return linkCondition(e); }
 #endif
 
@@ -111,6 +112,8 @@ namespace zsw
     void init(const zsw::Scalar r, Delaunay &delaunay);
 
 
+    void findJudgePointsAdjE(const size_t e_id, std::vector<size_t> &jp_id);
+
     bool linkCondition(const Edge &e) const;
 
     /// \brief test if the edge can collapse to this point
@@ -152,6 +155,7 @@ namespace zsw
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
     std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_;
+    std::vector<JudgePoint> all_jpts_;
   };
 
 }

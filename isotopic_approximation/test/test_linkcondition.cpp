@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE(fake_triangulation)
   vertices.push_back({true, zsw::OUTER_POINT, v[2], {1,2}, {}});  vertices.push_back({true, zsw::OUTER_POINT, v[3], {0,1,2}, {}});
   vertices.push_back({true, zsw::OUTER_POINT, v[4], {0,1,2}, {}});
 
-  tets.push_back({true,{0,1,3,4}, {}}); tets.push_back({true,{0,2,3,4}, {}}); tets.push_back({true,{1,2,3,4}, {}});
+  tets.push_back({true,{0,1,3,4}}); tets.push_back({true,{0,2,3,4}}); tets.push_back({true,{1,2,3,4}});
   edges.push_back({true, 0,1}); edges.push_back({true, 0,2});
   edges.push_back({true, 0,3}); edges.push_back({true, 0,4});
   edges.push_back({true, 1,2}); edges.push_back({true, 1,3});
