@@ -1,0 +1,49 @@
+digraph G {
+        fontname = "Bitstream Vera Sans"
+        fontsize = 12
+
+        node [
+                fontname = "Bitstream Vera Sans"
+                fontsize = 12
+                shape = "record"
+        ]
+
+        ZSW_Vertex [
+                label = "{Vertex|+valid_ : bool\l+pt_ : Vector3d\l+tet_ids_ : list\<size_t\>\l+edge_ids_:list\<size_t\>\l}"
+        ]
+
+        ZSW_JudgePoint[
+                label = "{JudgePoint|+pt_ : Vector3d\l +val_cur_ : double\l +val_exp_:double\l}"
+        ]
+
+        ZSW_Tet [
+            label = "{Tet |+valid_ : bool\l+vid_[4]:size_t\l+jpts_ : list\<JudgePoint\>\l}"
+        ]
+
+        ZSW_Edge [
+             label = "{Edge|+valid_: bool\l+vid_[2]:size_t\l}"
+        ]
+
+        ZSW_Triangulation[
+                label = "{Triangulation|+vertices_ : vector\<Vertex\>\l+tets_:vector\<Tet\>\l+edges_:vector\<Edge\>|+invTet(size_t t_id):void\l+invEdge(size_t e_id):void\l+collapseEdge(size_t e_id):void\l+...\l}"
+        ]
+
+        edge [
+                fontname = "Bitstream Vera Sans"
+                fontsize = 20
+                headlabel = "adj"
+                taillabel = ""
+        ]
+
+        ZSW_Vertex -> ZSW_Tet
+        ZSW_Vertex -> ZSW_Edge
+
+        edge [
+                fontname = "Bitstream Vera Sans"
+                fontsize = 20
+                headlabel = "in"
+                taillabel = ""
+        ]
+
+        ZSW_JudgePoint -> ZSW_Tet
+}
