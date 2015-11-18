@@ -75,8 +75,8 @@ void test_mutualTessellation()
 
 int main(int argc, char *argv[])
 {
-  test_init("/home/wegatron/workspace/geometry/data/fandisk.obj",
-            "/home/wegatron/tmp/test_triangulation/tr", 0.008, 0.002);
+  test_init("/home/wegatron/workspace/geometry/data/sphere.stl",
+            "/home/wegatron/tmp/test_triangulation/tr", 0.1, 0.3);
   // test_init2();
   //test_mutualTessellation();
   return 0;
