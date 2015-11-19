@@ -110,9 +110,6 @@ namespace zsw
     /// \param Delaunay cgal's delaunay triangulation
     void init(const zsw::Scalar r, Delaunay &delaunay);
 
-
-    void findJudgePointsAdjE(const size_t e_id, std::vector<size_t> &jp_id);
-
     bool linkCondition(const Edge &e) const;
 
     /// \brief test if the edge can collapse to this point
@@ -125,12 +122,20 @@ namespace zsw
     /// \param jpts the judge points
     /// \return true if S is keeped or false otherwise
     bool testCollapse(const Edge &e, const PointType pt_type, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::vector<size_t> &cur_all_jp_ids) const;
+                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts) const;
+
+    bool isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                    const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts,
+                    std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const;
+
+    bool testResolveLeftJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                             const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
+                             std::list<JudgePoint> &jpts_left) const;
 
     void edgeCollapse(Edge &e, const PointType pt_type,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                      std::vector<size_t> &cur_all_jp_ids,
+                      std::list<JudgePoint> &all_jpts,
                       std::queue<size_t> &eids, std::set<size_t> &eids_set);
 
     void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
@@ -154,9 +159,7 @@ namespace zsw
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
-    std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_;
-    std::vector<JudgePoint> all_jpts_;
-  };
+};
 
 }
 
