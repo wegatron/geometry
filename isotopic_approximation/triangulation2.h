@@ -15,7 +15,7 @@
 #include <vector>
 #include <map>
 #include <queue>
-#include <set>
+#include <unordered_set>
 #include <Eigen/Dense>
 #include <zswlib/config.h>
 #include <zswlib/mesh/zsw_flann2.h>
@@ -53,7 +53,6 @@ namespace zsw
     std::vector<Vertex>& getVertices() { return vertices_; }
     std::vector<Tet>& getTets()  { return tets_; }
     std::vector<Edge>& getEdges() { return edges_; }
-    std::vector<JudgePoint> &getJpts() { return all_jpts_; }
     bool testLinkCondition(const Edge &e) const { return linkCondition(e); }
 #endif
 
@@ -112,29 +111,21 @@ namespace zsw
 
     bool linkCondition(const Edge &e) const;
 
-    /// \brief test if the edge can collapse to this point
-    ///
-    /// check if the judge points' error is satisfied,
-    /// in other words check whether the classifcation of S is keeped.
-    ///
-    /// \param e input edge
-    /// \param pt the point this edge collapse to
-    /// \param jpts the judge points
-    /// \return true if S is keeped or false otherwise
-    bool testCollapse(const Edge &e, const PointType pt_type, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts) const;
-
     bool isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                     const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts,
                     std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const;
 
-    bool testResolveLeftJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                             const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
-                             std::list<JudgePoint> &jpts_left) const;
+    bool isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                        const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
+                        const std::list<JudgePoint> &jpts_left,
+                        std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const;
 
-    void edgeCollapse(Edge &e, const PointType pt_type,
+    void edgeCollapse(const zsw::Scalar pt_val,
+                      const std::unordered_set<size_t> &tet_ids,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                      const std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update,
+                      Edge &e,
                       std::list<JudgePoint> &all_jpts,
                       std::queue<size_t> &eids, std::set<size_t> &eids_set);
 
@@ -159,7 +150,7 @@ namespace zsw
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
-};
+  };
 
 }
 

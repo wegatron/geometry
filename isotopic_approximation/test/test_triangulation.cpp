@@ -40,7 +40,7 @@ void test_init(const std::string &file_path, const std::string &output_prefix,
 
   tr.writeTetMesh(output_prefix+"_tol.vtk", {ignore_bbox, ignore_self_out});
 
-  zsw::writeJudgePoints(output_prefix, tr.getJpts());
+  //zsw::writeJudgePoints(output_prefix, tr.getJpts());
   // output edges
   // const vector<zsw::Edge>& edges = triangulation.getEdges();
   // for(const zsw::Edge &e : edges) {
