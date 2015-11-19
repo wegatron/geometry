@@ -120,10 +120,10 @@ namespace zsw
                         const std::list<JudgePoint> &jpts_left,
                         std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const;
 
-    void edgeCollapse(const zsw::Scalar pt_val,
-                      const std::unordered_set<size_t> &tet_ids,
+    void edgeCollapse(const std::unordered_set<size_t> &tet_ids,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                      const zsw::PointType pt_type,
                       const std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update,
                       Edge &e,
                       std::list<JudgePoint> &all_jpts,
