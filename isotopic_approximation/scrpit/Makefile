@@ -70,7 +70,7 @@ clean_simp_cube: clean_log
 
 .PHONY : clean_log
 clean_log:
-	rm /tmp/zswlog.log
+	echo > /tmp/zswlog.log
 
 .PHONY : clean_all
 clean_all: clean_simp_sphere clean_simp_fandisk clean_simp_bunny clean_simp_cube 

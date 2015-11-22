@@ -514,11 +514,12 @@ void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_
 }
 
 bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                    const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts,
-                    std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const
+                                    const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts,
+                                    std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const
 {
-  std::list<JudgePoint> jpts_left = all_jpts;
+  jpts_update.assign(all_jpts.size(), std::pair<size_t,zsw::Scalar>(-1, 0.0));
   int bt_i=-1;
+  size_t update_cnt=0;
   for(const Eigen::Matrix<size_t,3,1> &b_tr  : bound_tris) {
     ++bt_i;
     Eigen::Matrix<zsw::Scalar,3,3> A;
@@ -537,20 +538,23 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
     }
 
     auto up_itr = jpts_update.begin();
-    for(auto jpt_itr=jpts_left.begin(); jpt_itr!=jpts_left.end(); ++up_itr) {
-      auto cur_jpt_itr=jpt_itr; ++jpt_itr;
-      const JudgePoint &jpt = *cur_jpt_itr;
-      //check if jpt in the tet and if jpt's error is in tolerance
+    auto jpt_itr = all_jpts.begin();
+    for(; up_itr!=jpts_update.end(); ++up_itr, ++jpt_itr) {
+      if(up_itr->first != -1) { continue; } // allready updated
+      const JudgePoint &jpt = *jpt_itr;
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
       assert((A*ans-(jpt.pt_-pt)).norm()<zsw::const_val::eps);
       if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) {std::cerr << "[WARNING] : Solve error!" << std::endl;continue;}
       if(ans[0]<0 || ans[1]<0 || ans[2]<0 || ans[0]+ans[1]+ans[2]>1) { continue; } // not in tet
       zsw::Scalar jpt_val_cur=pt_val+ans.dot(nv);
-      if(fabs(jpt_val_cur-jpt.val_exp_) > 1.0+zsw::const_val::eps) {        return false;      }
-      else {        up_itr->first=bt_i; up_itr->second=jpt_val_cur; jpts_left.erase(cur_jpt_itr);      }
+      if(fabs(jpt_val_cur-jpt.val_exp_) > 1.0+zsw::const_val::eps) {
+        std::cerr << "ans:" <<  ans.transpose() << std::endl;
+        std::cerr << "jpt_val_cur:" << jpt_val_cur << ", val_exp:" << jpt.val_exp_ << std::endl;
+        return false;
+      } else {  up_itr->first=bt_i; up_itr->second=jpt_val_cur;  ++update_cnt; }
     }
   }
-  return jpts_left.empty() || isKeepJptsLeft(pt_val, pt, bound_tris, jpts_left, jpts_update);
+  return (update_cnt==all_jpts.size()) || isKeepJptsLeft(pt_val, pt, bound_tris, all_jpts, jpts_update);
 }
 
 bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
@@ -558,6 +562,7 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
                                         const std::list<JudgePoint> &jpts_left,
                                         std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const
 {
+  std::cerr << "left jpts size:" << jpts_left.size() << std::endl;
   auto jpts_update_itr=jpts_update.begin();
   for(; jpts_update_itr!=jpts_update.end(); ++jpts_update_itr);
   for(const JudgePoint &jpt : jpts_left) {
@@ -750,7 +755,7 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
     // find the candicate points :  jpt in kernel region
     std::vector<JudgePoint> candicate_pts;
     for(const JudgePoint &jpt : all_jpts) {
-      if(krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
+      if(fabs(jpt.val_exp_-pt_val)<zsw::const_val::eps && krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
     }
     NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
     NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
@@ -759,7 +764,7 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
     std::sort(candicate_pts.begin(), candicate_pts.end(),
               [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
     const JudgePoint *merge_point_ptr=nullptr;
-    std::vector<std::pair<size_t,zsw::Scalar>> jpts_update(all_jpts.size(), std::pair<size_t,zsw::Scalar>(-1, 0.0));
+    std::vector<std::pair<size_t,zsw::Scalar>> jpts_update;
     int step_info=0;
     for(const JudgePoint &jpt : candicate_pts) {
       if((++step_info)%100==0) { NZSWLOG("zsw_info") << step_info << " - "; }
