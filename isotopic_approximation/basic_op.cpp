@@ -78,33 +78,33 @@ zsw::Scalar zsw::calcPoint2TriSquaredDis(const Eigen::Matrix<zsw::Scalar,3,1> &p
   }
 
   // init ret
-  zsw::Scalar ret=min((pt-v0).squaredNorm(), (pt-v1).squaredNorm());
-  ret = min(ret, (pt-v2).squaredNorm());
+  zsw::Scalar ret=std::min((pt-v0).squaredNorm(), (pt-v1).squaredNorm());
+  ret = std::min(ret, (pt-v2).squaredNorm());
 
   {    // project to v0 v1
     Eigen::Matrix<zsw::Scalar,3,1> a = v1-v0;
-    Eigen::Matrix<zsw::Scalar,3,1> na = a.normalize();
+    Eigen::Matrix<zsw::Scalar,3,1> na = a/a.norm();
     zsw::Scalar jv=(pt-v0).dot(na);
     if(jv>0 && jv<a.norm()) { // on segement v0 v1
-      ret = min(ret, ((pt-v0).cross(na)).squaredNorm());
+      ret = std::min(ret, ((pt-v0).cross(na)).squaredNorm());
     }
   }
 
   {   // project to v0 v2
     Eigen::Matrix<zsw::Scalar,3,1> b = v2-v0;
-    Eigen::Matrix<zsw::Scalar,3,1> nb = b.normalize();
+    Eigen::Matrix<zsw::Scalar,3,1> nb = b/b.norm();
     zsw::Scalar jv=(pt-v0).dot(nb);
     if(jv>0 && jv<b.norm()) {
-      ret = min(ret, ((pt-v0).cross(nb)).squaredNorm());
+      ret = std::min(ret, ((pt-v0).cross(nb)).squaredNorm());
     }
   }
 
   {  // project to v1 v2
     Eigen::Matrix<zsw::Scalar,3,1> c = v2-v1;
-    Eigen::Matrix<zsw::Scalar,3,1> nc = c.normalize();
+    Eigen::Matrix<zsw::Scalar,3,1> nc = c/c.norm();
     zsw::Scalar jv=(pt-v1).dot(nc);
     if(jv>0 && jv<c.norm()) {
-      ret = min(ret, ((pt-v1).cross(nc)).squaredNorm());
+      ret = std::min(ret, ((pt-v1).cross(nc)).squaredNorm());
     }
   }
   return ret;

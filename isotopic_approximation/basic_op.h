@@ -1,7 +1,9 @@
 #ifndef BASIC_OP_H
 #define BASIC_OP_H
 
+#include <Eigen/Dense>
 #include <zswlib/config.h>
+
 
 namespace zsw{
 
