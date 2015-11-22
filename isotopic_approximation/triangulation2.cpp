@@ -74,7 +74,7 @@
 
 #define UPDATE_MIN_JPT_DIS2FACE(vid0, vid1, vid2, v0, v1, v2) do{       \
     zsw::Scalar tmp_s_dis = calcPoint2TriSquaredDis(jpt_itr->pt_, v0, v1, v2); \
-    if(squared_dis > tmp_s_dis) { target_face<vid0, vid1, vid2; squared_dis=tmp_s_dis; target_bt_i=bt_i; } \
+    if(squared_dis > tmp_s_dis) { target_face<<vid0, vid1, vid2; squared_dis=tmp_s_dis; target_bt_i=bt_i; } \
   }while(0)
 
 void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
@@ -577,7 +577,7 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
     size_t target_bt_i=0;
     zsw::Scalar squared_dis = (jpt_itr->pt_-pt).squaredNorm();
     Eigen::Matrix<size_t,3,1> target_face;
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &b_tr : bound_tris) {
+    for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
       UPDATE_MIN_JPT_DIS2FACE(b_tr[0], b_tr[1], b_tr[2], vertices_[b_tr[0]].pt_, vertices_[b_tr[1]].pt_, vertices_[b_tr[2]].pt_);
       UPDATE_MIN_JPT_DIS2FACE(-1, b_tr[0], b_tr[1], pt, vertices_[b_tr[0]].pt_, vertices_[b_tr[1]].pt_);
       UPDATE_MIN_JPT_DIS2FACE(-1, b_tr[0], b_tr[2], pt, vertices_[b_tr[0]].pt_, vertices_[b_tr[2]].pt_);
@@ -610,10 +610,10 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
     Eigen::Matrix<zsw::Scalar,2,3> AT = A.transpose();
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,2,2>> pplu;
     pplu.compute(AT*A);
-    Eigen::Matrix<zsw::Scalar,2,1> ans = pplu.solve(AT*(jpt.pt_ - tri_v[0]));
+    Eigen::Matrix<zsw::Scalar,2,1> ans = pplu.solve(AT*(jpt_itr->pt_ - tri_v[0]));
     zsw::Scalar jpt_val_cur=ans.dot(nv)+val0;
-    if(fabs(ans.dot(nv)+val0-jpt.val_exp_) > 1+zsw::const_val::eps) { return false; }
-    else {      jpts_update_itr->first=bt_i; jpts_update_itr->second=jpt_val_cur;    }
+    if(fabs(ans.dot(nv)+val0-jpt_itr->val_exp_) > 1+zsw::const_val::eps) { return false; }
+    else { up_itr->first=bt_i; up_itr->second=jpt_val_cur;    }
   }
   return true;
 }
