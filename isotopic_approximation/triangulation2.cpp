@@ -613,7 +613,7 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
     Eigen::Matrix<zsw::Scalar,2,1> ans = pplu.solve(AT*(jpt_itr->pt_ - tri_v[0]));
     zsw::Scalar jpt_val_cur=ans.dot(nv)+val0;
     if(fabs(ans.dot(nv)+val0-jpt_itr->val_exp_) > 1+zsw::const_val::eps) { return false; }
-    else { up_itr->first=bt_i; up_itr->second=jpt_val_cur;    }
+    else { up_itr->first=target_bt_i; up_itr->second=jpt_val_cur;    }
   }
   return true;
 }
@@ -654,6 +654,7 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
     std::list<JudgePoint> &cur_tet_jpts = tets_[reuse_tet_ids[jpt_update.first]].jpts_;
     jpt_itr->val_cur_=jpt_update.second;
     auto tmp_jpt_itr = jpt_itr; ++jpt_itr;
+    std::cerr << tmp_jpt_itr->val_cur_ << " : " << tmp_jpt_itr->val_exp_ << std::endl;
     cur_tet_jpts.splice(cur_tet_jpts.end(), all_jpts, tmp_jpt_itr);
   }
 

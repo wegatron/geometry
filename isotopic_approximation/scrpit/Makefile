@@ -1,5 +1,6 @@
 SHELL = /bin/sh
 TEST_SIMP_TOL_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/test_simptolerance
+TEST_SIMP_TOL_EXEC_DEBUG = /home/wegatron/workspace/geometry/isotopic_approximation/build-debug/bin/test_simptolerance
 DEBUG_SIMP_JPTS_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/debug_simp_jpts
 
 SPHERE = /home/wegatron/workspace/geometry/data/sphere.stl
@@ -37,6 +38,10 @@ debug_simp_jpts: clean_simp_fandisk
 .PHONY : test_simp_sphere
 test_simp_sphere: clean_simp_sphere
 	${TEST_SIMP_TOL_EXEC} ${SPHERE} ${SPHERE_OUTPUT_PREFIX} ${SPHERE_THICK} ${SPHERE_SAMPLE_R}
+
+.PHONY : test_simp_sphere_debug
+test_simp_sphere_debug: clean_simp_sphere
+	${TEST_SIMP_TOL_EXEC_DEBUG} ${SPHERE} ${SPHERE_OUTPUT_PREFIX} ${SPHERE_THICK} ${SPHERE_SAMPLE_R}
 
 .PHONY : test_simp_fandisk
 test_simp_fandisk: clean_simp_fandisk
