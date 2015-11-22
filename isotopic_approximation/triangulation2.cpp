@@ -565,22 +565,22 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
     size_t target_bt_i=0;
     auto itr=bound_tris.begin();
     Eigen::Matrix<size_t,3,1> target_face = *itr;
-    zsw::Scalar dis=calcPoint2TriDis(jpt.pt_, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[1]].pt_, vertices_[(*itr)[2]].pt_);
-    zsw::Scalar tmp_dis=calcPoint2TriDis(jpt.pt_, pt, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[1]].pt_);
+    zsw::Scalar dis=calcPoint2TriSquaredDis(jpt.pt_, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[1]].pt_, vertices_[(*itr)[2]].pt_);
+    zsw::Scalar tmp_dis=calcPoint2TriSquaredDis(jpt.pt_, pt, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[1]].pt_);
     if(dis > tmp_dis) { target_face<<-1, (*itr)[0], (*itr)[1]; dis=tmp_dis; }
-    tmp_dis=calcPoint2TriDis(jpt.pt_, pt, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[2]].pt_);
+    tmp_dis=calcPoint2TriSquaredDis(jpt.pt_, pt, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[2]].pt_);
     if(dis > tmp_dis) { target_face<<-1, (*itr)[0], (*itr)[2]; dis=tmp_dis; }
-    tmp_dis=calcPoint2TriDis(jpt.pt_, pt, vertices_[(*itr)[1]].pt_, vertices_[(*itr)[2]].pt_);
+    tmp_dis=calcPoint2TriSquaredDis(jpt.pt_, pt, vertices_[(*itr)[1]].pt_, vertices_[(*itr)[2]].pt_);
     if(dis > tmp_dis) { target_face<<-1, (*itr)[1], (*itr)[2]; dis=tmp_dis; }
     ++itr; ++bt_i;
     for(; itr!=bound_tris.end(); ++itr, ++bt_i) {
-      tmp_dis = calcPoint2TriDis(jpt.pt_, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[1]].pt_, vertices_[(*itr)[2]].pt_);
+      tmp_dis = calcPoint2TriSquaredDis(jpt.pt_, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[1]].pt_, vertices_[(*itr)[2]].pt_);
       if(dis > tmp_dis) { target_face=*itr; dis=tmp_dis; target_bt_i=bt_i; }
-      tmp_dis = calcPoint2TriDis(jpt.pt_, pt, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[1]].pt_);
+      tmp_dis = calcPoint2TriSquaredDis(jpt.pt_, pt, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[1]].pt_);
       if(dis > tmp_dis) { target_face<<-1, (*itr)[0], (*itr)[1]; dis=tmp_dis; target_bt_i=bt_i; }
-      tmp_dis = calcPoint2TriDis(jpt.pt_, pt, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[2]].pt_);
+      tmp_dis = calcPoint2TriSquaredDis(jpt.pt_, pt, vertices_[(*itr)[0]].pt_, vertices_[(*itr)[2]].pt_);
       if(dis > tmp_dis) { target_face<<-1, (*itr)[0], (*itr)[2]; dis=tmp_dis; target_bt_i=bt_i; }
-      tmp_dis = calcPoint2TriDis(jpt.pt_, pt, vertices_[(*itr)[1]].pt_, vertices_[(*itr)[2]].pt_);
+      tmp_dis = calcPoint2TriSquaredDis(jpt.pt_, pt, vertices_[(*itr)[1]].pt_, vertices_[(*itr)[2]].pt_);
       if(dis > tmp_dis) { target_face<<-1, (*itr)[1], (*itr)[2]; dis=tmp_dis; target_bt_i=bt_i; }
     }
 

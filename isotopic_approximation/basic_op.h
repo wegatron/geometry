@@ -20,7 +20,7 @@ namespace zsw{
       }
     }
 
-  zsw::Scalar calcPoint2TriDis(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+  zsw::Scalar calcPoint2TriSquaredDis(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                const Eigen::Matrix<zsw::Scalar,3,1> &v0,
                                const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                                const Eigen::Matrix<zsw::Scalar,3,1> &v2);
