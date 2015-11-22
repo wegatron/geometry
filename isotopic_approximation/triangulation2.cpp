@@ -552,11 +552,8 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
       if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) {std::cerr << "[WARNING] : Solve error!" << std::endl;continue;}
       if(ans[0]<0 || ans[1]<0 || ans[2]<0 || ans[0]+ans[1]+ans[2]>1) { continue; } // not in tet
       zsw::Scalar jpt_val_cur=pt_val+ans.dot(nv);
-      if(fabs(jpt_val_cur-jpt.val_exp_) > 1.0+zsw::const_val::eps) {
-        std::cerr << "ans:" <<  ans.transpose() << std::endl;
-        std::cerr << "jpt_val_cur:" << jpt_val_cur << ", val_exp:" << jpt.val_exp_ << std::endl;
-        return false;
-      } else {  up_itr->first=bt_i; up_itr->second=jpt_val_cur;  ++update_cnt; }
+      if(fabs(jpt_val_cur-jpt.val_exp_) > 1.0+zsw::const_val::eps) { return false; }
+      else {  up_itr->first=bt_i; up_itr->second=jpt_val_cur;  ++update_cnt; }
     }
   }
   std::cerr << "left jpts size:" << all_jpts.size()-update_cnt << std::endl;
@@ -651,10 +648,10 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
   assert(all_jpts.size() == jpts_update.size());
   auto jpt_itr=all_jpts.begin();
   for(const std::pair<size_t,zsw::Scalar> &jpt_update : jpts_update) {
+    assert(jpt_update.first < reuse_tet_ids.size());
     std::list<JudgePoint> &cur_tet_jpts = tets_[reuse_tet_ids[jpt_update.first]].jpts_;
     jpt_itr->val_cur_=jpt_update.second;
     auto tmp_jpt_itr = jpt_itr; ++jpt_itr;
-    std::cerr << tmp_jpt_itr->val_cur_ << " : " << tmp_jpt_itr->val_exp_ << std::endl;
     cur_tet_jpts.splice(cur_tet_jpts.end(), all_jpts, tmp_jpt_itr);
   }
 
