@@ -111,8 +111,10 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
 
   Eigen::Matrix<zsw::Scalar,3,2> bbox;
   calcBBOX(bo_pts, bbox);
-  Eigen::Matrix<zsw::Scalar,3,1> diff = bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1);
-  bbox.block<3,1>(0,0) += 0.2*diff; bbox.block<3,1>(0,1) += -0.2*diff;
+  zsw::Scalar scale = 0.5*(bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1)).norm();
+  Eigen::Matrix<zsw::Scalar,3,1> transform = 0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
+  zsw::BoundSphere bs("/home/wegatron/workspace/geometry/data/bound_sphere.obj",
+                      scale, transform);
 
   size_t pt_id=0;
   std::vector<std::pair<Point, size_t>> tet_points;
@@ -126,15 +128,11 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
     vertices_.push_back({true, INNER_POINT, tmp, {}, {}});
   }
 
-  // add 8 bbox points
-  for(size_t i=0; i<2; ++i) {
-    for(size_t j=0; j<2; ++j) {
-      for(size_t k=0; k<2; ++k) {
-        tet_points.push_back({Point(bbox(0,i), bbox(1,j), bbox(2,k)), pt_id++});
-        Eigen::Matrix<zsw::Scalar,3,1> tmp; tmp<<bbox(0,i), bbox(1,j), bbox(2,k);
-        vertices_.push_back({true, BBOX_POINT, tmp, {}, {}});
-      }
-    }
+  // add bound sphere points
+  const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_vertices = bs.getVertices();
+  for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bs_vertices) {
+    tet_points.push_back({Point(v[0], v[1], v[2]), pt_id++});
+    vertices_.push_back({true, BBOX_POINT, v, {}, {}});
   }
 
   Delaunay delaunay(tet_points.begin(), tet_points.end());
