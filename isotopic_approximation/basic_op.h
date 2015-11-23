@@ -15,7 +15,7 @@ namespace zsw{
       bbox.block(0,0,3,1)=vertices[0];
       bbox.block(0,1,3,1)=vertices[0];
       for(const Eigen::Matrix<SCALAR,3,1> &vertex : vertices) {
-        for(size_t di=0; di<3; ++di) {
+        for(size_t di=0; di<DIMENSION; ++di) {
           if(vertex[di] < bbox(di,0)) { bbox(di,0) = vertex[di]; }
           else if(vertex[di] > bbox(di,1)) { bbox(di,1) = vertex[di]; }
         }

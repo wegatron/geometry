@@ -84,7 +84,10 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
     Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
     Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
     Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
-    assert(vn.norm()>zsw::const_val::eps);
+    if(vn.norm()<zsw::const_val::eps) {
+      std::cerr << "nv norm too small:" << vn.norm();
+    }
+    //assert(vn.norm()>zsw::const_val::eps);
     vn.normalized();
     if(vn.dot(vr-v0) < 0) { vn=-vn; }
     vec_vn.push_back(vn);
@@ -92,8 +95,9 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
 
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
+  const zsw::Scalar cos80 = cos(zsw::const_val::pi*88/180);
   for(size_t i=0; i<vec_v0.size(); ++i) {
-    if(vec_vn[i].dot(pt-vec_v0[i]) < -zsw::const_val::eps) {
+    if(vec_vn[i].dot(pt-vec_v0[i]) < cos80*(pt-vec_v0[i]).norm()) {
       return false;
     }
   }
@@ -106,7 +110,9 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
   assert(bo_pts.size()!=0 && bi_pts.size()!=0);
 
   Eigen::Matrix<zsw::Scalar,3,2> bbox;
-  calcBBOX(bo_pts, bbox); bbox = bbox * 1.2;
+  calcBBOX(bo_pts, bbox);
+  Eigen::Matrix<zsw::Scalar,3,1> diff = bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1);
+  bbox.block<3,1>(0,0) += 0.2*diff; bbox.block<3,1>(0,1) += -0.2*diff;
 
   size_t pt_id=0;
   std::vector<std::pair<Point, size_t>> tet_points;
@@ -754,10 +760,11 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
     // find the candicate points :  jpt in kernel region
     std::vector<JudgePoint> candicate_pts;
     for(const JudgePoint &jpt : all_jpts) {
-      if(fabs(jpt.val_exp_-pt_val)<zsw::const_val::eps && krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
+      if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
     }
     NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
     NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
+    NZSWLOG("zsw_info") << "all_pts:" << all_jpts.size() << std::endl;
     //-- find the best point in the candicate_pts--
     // sort by fabs(val_exp-val_cur) by decrease order
     std::sort(candicate_pts.begin(), candicate_pts.end(),

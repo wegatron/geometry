@@ -47,6 +47,10 @@ test_simp_sphere_debug: clean_simp_sphere
 test_simp_fandisk: clean_simp_fandisk
 	${TEST_SIMP_TOL_EXEC} ${FANDISK} ${FANDISK_OUTPUT_PREFIX} ${FANDISK_THICK} ${FANDISK_SAMPLE_R}
 	
+.PHONY : test_simp_fandisk
+test_simp_fandisk_debug: clean_simp_fandisk
+	${TEST_SIMP_TOL_EXEC_DEBUG} ${FANDISK} ${FANDISK_OUTPUT_PREFIX} ${FANDISK_THICK} ${FANDISK_SAMPLE_R}
+	
 .PHONY : test_simp_bunny
 test_simp_bunny: clean_simp_bunny
 	${TEST_SIMP_TOL_EXEC} ${BUNNY} ${BUNNY_OUTPUT_PREFIX} ${BUNNY_THICK} ${BUNNY_SAMPLE_R}
