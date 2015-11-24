@@ -95,9 +95,10 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
 
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
-  const zsw::Scalar cos80 = cos(zsw::const_val::pi*88/180);
+  //const zsw::Scalar cos80 = cos(zsw::const_val::pi*88/180);
   for(size_t i=0; i<vec_v0.size(); ++i) {
-    if(vec_vn[i].dot(pt-vec_v0[i]) < cos80*(pt-vec_v0[i]).norm()) {
+    //if(vec_vn[i].dot(pt-vec_v0[i]) < cos80*(pt-vec_v0[i]).norm()) {
+    if(vec_vn[i].dot(pt-vec_v0[i]) < zsw::const_val::eps) {
       return false;
     }
   }
@@ -720,6 +721,7 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
 
   void zsw::Triangulation::writeTetMeshAdjV(const std::string &filepath, const size_t v_id) const
   {
+    std::cout << __FILE__ << __LINE__ << std::endl;
     for(size_t t_id : vertices_[v_id].tet_ids_) {
       writeTet(filepath+"_"+std::to_string(t_id)+".vtk", t_id);
     }

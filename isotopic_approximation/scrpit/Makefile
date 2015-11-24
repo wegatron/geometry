@@ -61,7 +61,8 @@ test_simp_cube: clean_simp_cube
 
 .PHONY : clean_simp_sphere
 clean_simp_sphere: clean_log
-	rm -rf ${SPHERE_OUTPUT_DIR}*
+	rm -rf ${SPHERE_OUTPUT_DIR}*; \
+	mkdir /home/wegatron/tmp/simp_tol/sphere/debug
 
 .PHONY : clean_simp_fandisk
 clean_simp_fandisk: clean_log
