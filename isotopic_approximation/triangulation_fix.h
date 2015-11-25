@@ -1,6 +1,9 @@
 #ifndef TRIANGULATION_FIX_H
 #define TRIANGULATION_FIX_H
 
+#include <Eigen/Dense>
+#include <zswlib/config.h>
+#include <zswlib/const_val.h>
 #include "cgal_common.h"
 
 namespace zsw{
