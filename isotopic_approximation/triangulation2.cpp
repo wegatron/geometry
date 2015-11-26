@@ -8,6 +8,7 @@
 
 #include "sampling.h"
 #include "basic_op.h"
+#include "triangulation_fix.h"
 #include "debug.h"
 
 #define ADD_VERTEX(pt_type, pt) do{                     \
@@ -137,6 +138,8 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
   }
 
   Delaunay delaunay(tet_points.begin(), tet_points.end());
+  removeSliverTet(delaunay, vertices_);
+  haveSliverTet(delaunay, vertices_);
   init(r, delaunay);
 }
 

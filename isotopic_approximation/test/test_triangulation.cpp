@@ -12,6 +12,15 @@
 
 using namespace std;
 
+bool adjEdge(const zsw::Tet &tet, const size_t v0, const size_t v1)
+{
+  size_t vcnt=0;
+  for(size_t i=0; i<4; ++i) {
+    if(tet.vid_[i] == v0 || tet.vid_[i]==v1) {      ++vcnt;    }
+  }
+  return vcnt!=2;
+}
+
 void test_init(const std::string &file_path, const std::string &output_prefix,
                const zsw::Scalar thick, const zsw::Scalar r)
 {
@@ -37,9 +46,15 @@ void test_init(const std::string &file_path, const std::string &output_prefix,
     = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::BBOX_POINT);
   std::function<bool(const zsw::Tet&)> ignore_self_out
     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, &tr, std::placeholders::_1, zsw::OUTER_POINT);
+  // std::function<bool(const zsw::Tet&)> adj_edge
+  //   = std::bind(adjEdge, std::placeholders::_1, 67, 56);
+
+  // std::function<bool(const zsw::Tet&)> adj_edge2
+  //   = std::bind(adjEdge, std::placeholders::_1, 50, 65);
 
   tr.writeTetMesh(output_prefix+"_tol.vtk", {ignore_bbox, ignore_self_out});
-
+  // tr.writeTetMesh(output_prefix+"_adj.vtk", {adj_edge});
+  // tr.writeTetMesh(output_prefix+"_adj2.vtk", {adj_edge2});
   //zsw::writeJudgePoints(output_prefix, tr.getJpts());
   // output edges
   // const vector<zsw::Edge>& edges = triangulation.getEdges();
@@ -75,8 +90,10 @@ void test_mutualTessellation()
 
 int main(int argc, char *argv[])
 {
-  test_init("/home/wegatron/workspace/geometry/data/sphere.stl",
-            "/home/wegatron/tmp/test_triangulation/tr", 0.1, 0.3);
+  // test_init("/home/wegatron/workspace/geometry/data/sphere.stl",
+  //           "/home/wegatron/tmp/test_triangulation/tr", 0.1, 0.3);
+  test_init("/home/wegatron/workspace/geometry/data/fandisk.obj",
+            "/home/wegatron/tmp/test_triangulation/tr", 0.008, 0.004);
   // test_init2();
   //test_mutualTessellation();
   return 0;
