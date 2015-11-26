@@ -534,13 +534,15 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
   size_t update_cnt=0;
   jpts_update.assign(all_jpts.size(), std::pair<size_t,zsw::Scalar>(-1, 0.0));
   for(const Eigen::Matrix<size_t,3,1> &b_tr  : bound_tris) {
+    // almost on the same plane of one bound_tri, can't tell kernel region
+    Eigen::Matrix<zsw::Scalar,3,1> tmp_vn = (vertices_[b_tr[1]].pt_-vertices_[b_tr[0]].pt_).cross(vertices_[b_tr[2]].pt_-vertices_[b_tr[1]].pt_); tmp_vn.normalize();
+    if(fabs(tmp_vn.dot(vertices_[b_tr[0]].pt_-pt)) < 10*zsw::const_val::eps) { return false; }
     ++bt_i;
     Eigen::Matrix<zsw::Scalar,3,3> A;
     A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
     A.block<3,1>(0,1) = vertices_[b_tr[1]].pt_-pt;
     A.block<3,1>(0,2) = vertices_[b_tr[2]].pt_-pt;
-    // almost on the same plane of one bound_tri
-    if(fabs(A.determinant())<zsw::const_val::eps) {      continue;    }
+
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
     pplu.compute(A);
     Eigen::Matrix<zsw::Scalar,3,1> nv;
