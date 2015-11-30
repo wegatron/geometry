@@ -34,11 +34,14 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_ori_all.vtk", {});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
-  // std::cout << "two vid:" << std::endl;
-  // size_t in_vid0, in_vid1;
-  // std::cin >> in_vid0 >> in_vid1;
-  // tr.writeTetMeshAdjV("/home/wegatron/tmp/simp_tol/debug/"+std::to_string(in_vid0), in_vid0);
-  // tr.writeTetMeshAdjV("/home/wegatron/tmp/simp_tol/debug/"+std::to_string(in_vid1), in_vid1);
+  std::cout << "input two vid:" << std::endl;
+  vector<size_t> vids(2,0);
+  std::cin >> vids[0] >> vids[1];
+  tr.writeTetMeshAdjVs("/home/wegatron/tmp/simp_tol/debug/adj.vtk", vids);
+  tr.writeBoundTris("/home/wegatron/tmp/simp_tol/debug/bound_tri.obj", vids[0], vids[1]);
+  while(1) {
+    tr.testCollapseDebug(vids[0], vids[1]);
+  }
 #if 0
   {
     std::ofstream ofs_in(output_prefix+"jp_in.obj", std::ofstream::out) ;
@@ -51,7 +54,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
       }
     }
   }
-  #endif
+#endif
 
   tr.simpTolerance();
 

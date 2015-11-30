@@ -38,7 +38,9 @@ namespace zsw
     void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr);
     bool judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt);
+    void setCondition(size_t condition_i) { condition_i_= condition_i; }
   private:
+    size_t condition_i_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v0;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vn;
   };
@@ -56,6 +58,8 @@ namespace zsw
     bool testLinkCondition(const Edge &e) const { return linkCondition(e); }
 #endif
 
+    void testCollapseDebug(const size_t vid0, const size_t vid1);
+
     /// \brief Triangulation
     ///
     /// A construct a triangulation with bo and bi points, and sample
@@ -71,7 +75,7 @@ namespace zsw
     void simpTolerance();
     void simpZeroSurface();
     void mutualTessellation();
-    void writeTetMeshAdjV(const std::string &filepath, const size_t v_id) const;
+    void writeTetMeshAdjVs(const std::string &filepath, const std::vector<size_t> &vids) const;
     void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;
     /* void writeTetMesh(const std::string &filepath, size_t mask) const; */
     void writeSurface(const std::string &filepath, PointType pt_type) const;
@@ -84,6 +88,8 @@ namespace zsw
     ///
     /// \param
     void writeTet(const std::string &filepath, const size_t tet_id) const;
+
+    void writeBoundTris(const std::string &filepath, const size_t vid0, const size_t vid1);
 
     bool ignoreWithPtType(const Tet &tet, PointType pt_type);
 

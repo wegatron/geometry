@@ -85,24 +85,34 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
     Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
     Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
     Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
+
     if(vn.norm()<zsw::const_val::eps) {
       std::cerr << "nv norm too small:" << vn.norm();
     }
-    //assert(vn.norm()>zsw::const_val::eps);
-    vn.normalized();
+    //assert(vn.norm()>zsw::const_val::eps)
+    vn.normalize();
     if(vn.dot(vr-v0) < 0) { vn=-vn; }
+    std::cerr << "vn:" << vn.transpose() << std::endl;
     vec_vn.push_back(vn);
 }
 
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
-  //const zsw::Scalar cos80 = cos(zsw::const_val::pi*88/180);
+#if 0
   for(size_t i=0; i<vec_v0.size(); ++i) {
-    //if(vec_vn[i].dot(pt-vec_v0[i]) < cos80*(pt-vec_v0[i]).norm()) {
     if(vec_vn[i].dot(pt-vec_v0[i]) < zsw::const_val::eps) {
       return false;
     }
   }
+#else
+  std::cerr << "only judge for condition " << condition_i_ << std::endl;
+  std::cerr << "vec_vn:" <<  vec_vn[condition_i_].transpose() << std::endl;
+  std::cerr << "vec_v0:" << vec_v0[condition_i_].transpose() << std::endl;
+  std::cerr << "pt:" << pt.transpose() << std::endl;
+  if(condition_i_!=-1 && vec_vn[condition_i_].dot(pt-vec_v0[condition_i_]) < zsw::const_val::eps) {
+    return false;
+  }
+#endif
   return true;
 }
 
@@ -240,6 +250,21 @@ void zsw::Triangulation::simpTolerance()
     size_t cur_eid=eids.front(); eids_set.erase(cur_eid); eids.pop();
     tryCollapseBoundaryEdge(cur_eid, eids, eids_set);
   }
+}
+
+void zsw::Triangulation::testCollapseDebug(const size_t vid0, const size_t vid1)
+{
+  size_t e_id = -1;
+  for(size_t i=0; i<edges_.size(); ++i) {
+    size_t vcnt=0;
+    if(edges_[i].vid_[0]==vid0 || edges_[i].vid_[1]==vid0) ++vcnt;
+    if(edges_[i].vid_[0]==vid1 || edges_[i].vid_[1]==vid1) ++vcnt;
+    if(vcnt == 2) { e_id=i; break; }
+  }
+
+  std::queue<size_t> eids;
+  std::set<size_t> eids_set;
+  tryCollapseBoundaryEdge(e_id, eids, eids_set);
 }
 
 void zsw::Triangulation::simpZeroSurface()
@@ -724,13 +749,34 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
   }
 
 
-  void zsw::Triangulation::writeTetMeshAdjV(const std::string &filepath, const size_t v_id) const
-  {
-    std::cout << __FILE__ << __LINE__ << std::endl;
-    for(size_t t_id : vertices_[v_id].tet_ids_) {
-      writeTet(filepath+"_"+std::to_string(t_id)+".vtk", t_id);
-    }
+void zsw::Triangulation::writeTetMeshAdjVs(const std::string &filepath, const std::vector<size_t> &vids) const
+{
+  std::set<size_t> tet_ids;
+  for(size_t vid : vids) {
+    for_each(vertices_[vid].tet_ids_.begin(), vertices_[vid].tet_ids_.end(),
+             [&tet_ids](const size_t t_id) { tet_ids.insert(t_id); });
   }
+
+  std::ofstream ofs;
+  OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+  std::vector<zsw::Scalar> pts_data;
+  std::vector<size_t> tets_data;
+  for(const Vertex &v : vertices_) {
+    pts_data.push_back(v.pt_[0]);
+    pts_data.push_back(v.pt_[1]);
+    pts_data.push_back(v.pt_[2]);
+  }
+  size_t n_tets = 0;
+  for(size_t tid : tet_ids) {
+    if(!tets_[tid].valid_) { continue; }
+    ++n_tets;
+    tets_data.push_back(tets_[tid].vid_[0]);
+    tets_data.push_back(tets_[tid].vid_[1]);
+    tets_data.push_back(tets_[tid].vid_[2]);
+    tets_data.push_back(tets_[tid].vid_[3]);
+  }
+  tet2vtk(ofs, &pts_data[0], vertices_.size(), &tets_data[0], n_tets);
+}
 
   void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
                                                    std::queue<size_t> &eids,
@@ -745,6 +791,10 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
     for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.insert(tid); }
     for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.insert(tid); }
     KernelRegionJudger krj;
+    size_t cond_i;
+    std::cerr << "input cond_i:" << std::endl;
+    std::cin >> cond_i;
+    krj.setCondition(cond_i);
     std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
     std::list<JudgePoint> all_jpts;
     for(size_t tid : tet_ids) {
@@ -757,6 +807,7 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
         else {          tmp_bound_tri[vcnt++]=tvid;        }
       }
       if(vcnt==3) {
+        std::cerr << "add constraint:" << tmp_bound_tri.block<3,1>(0,0).transpose() << std::endl;
         krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
                           vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
         bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
@@ -770,6 +821,10 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
     NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
     NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
     NZSWLOG("zsw_info") << "all_pts:" << all_jpts.size() << std::endl;
+    // debug
+    writeJudgePoints("/home/wegatron/tmp/simp_tol/debug/candicate_jpts", candicate_pts);
+    writeJudgePoints("/home/wegatron/tmp/simp_tol/debug/jpts", all_jpts);
+    return;
     //-- find the best point in the candicate_pts--
     // sort by fabs(val_exp-val_cur) by decrease order
     std::sort(candicate_pts.begin(), candicate_pts.end(),
@@ -789,3 +844,31 @@ void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
                    e, all_jpts, eids, eids_set);
     } else {      NZSWLOG("zsw_info")  << "no poper merge point!"<< std::endl;    }
   }
+
+void zsw::Triangulation::writeBoundTris(const std::string &filepath, const size_t vid0, const size_t vid1)
+{
+  std::unordered_set<size_t> tet_ids;
+  for(size_t tid : vertices_[vid0].tet_ids_) { tet_ids.insert(tid); }
+  for(size_t tid : vertices_[vid1].tet_ids_) { tet_ids.insert(tid); }
+  std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
+  Eigen::Matrix<size_t,4,1> tmp_bound_tri;
+  for(size_t tid : tet_ids) {
+    size_t vcnt = 0;
+    for(size_t tvid : tets_[tid].vid_) {
+      if(tvid == vid0 || tvid==vid1) {          tmp_bound_tri[3]=tvid;        }
+      else {          tmp_bound_tri[vcnt++]=tvid+1;        }
+    }
+    if(vcnt==3) {
+      bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
+    }
+  }
+  std::ofstream ofs;
+  OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+  for(const Vertex &vertex : vertices_) {
+    ofs << "v " << vertex.pt_.transpose() << std::endl;
+  }
+  for(auto b_tr : bound_tris) {
+    ofs << "f " << b_tr.transpose() << std::endl;
+  }
+  ofs.close();
+}
