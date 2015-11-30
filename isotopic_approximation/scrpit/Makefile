@@ -13,7 +13,7 @@ FANDISK = /home/wegatron/workspace/geometry/data/fandisk.obj
 FANDISK_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/fandisk/
 FANDISK_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/fandisk/fandisk
 FANDISK_THICK = 0.008
-FANDISK_SAMPLE_R = 0.004
+FANDISK_SAMPLE_R = 0.0008
 
 BUNNY = /home/wegatron/workspace/geometry/data/bunny.obj
 BUNNY_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/bunny/

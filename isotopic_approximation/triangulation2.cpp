@@ -92,13 +92,12 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
     //assert(vn.norm()>zsw::const_val::eps)
     vn.normalize();
     if(vn.dot(vr-v0) < 0) { vn=-vn; }
-    std::cerr << "vn:" << vn.transpose() << std::endl;
     vec_vn.push_back(vn);
 }
 
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
-#if 0
+#if 1
   for(size_t i=0; i<vec_v0.size(); ++i) {
     if(vec_vn[i].dot(pt-vec_v0[i]) < zsw::const_val::eps) {
       return false;
@@ -791,10 +790,6 @@ void zsw::Triangulation::writeTetMeshAdjVs(const std::string &filepath, const st
     for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.insert(tid); }
     for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.insert(tid); }
     KernelRegionJudger krj;
-    size_t cond_i;
-    std::cerr << "input cond_i:" << std::endl;
-    std::cin >> cond_i;
-    krj.setCondition(cond_i);
     std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
     std::list<JudgePoint> all_jpts;
     for(size_t tid : tet_ids) {
@@ -822,9 +817,8 @@ void zsw::Triangulation::writeTetMeshAdjVs(const std::string &filepath, const st
     NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
     NZSWLOG("zsw_info") << "all_pts:" << all_jpts.size() << std::endl;
     // debug
-    writeJudgePoints("/home/wegatron/tmp/simp_tol/debug/candicate_jpts", candicate_pts);
-    writeJudgePoints("/home/wegatron/tmp/simp_tol/debug/jpts", all_jpts);
-    return;
+    // writeJudgePoints("/home/wegatron/tmp/simp_tol/debug/candicate_jpts", candicate_pts);
+    // writeJudgePoints("/home/wegatron/tmp/simp_tol/debug/jpts", all_jpts);
     //-- find the best point in the candicate_pts--
     // sort by fabs(val_exp-val_cur) by decrease order
     std::sort(candicate_pts.begin(), candicate_pts.end(),
