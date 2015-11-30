@@ -34,26 +34,14 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_ori_all.vtk", {});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
-  // std::cout << "input two vid:" << std::endl;
-  // vector<size_t> vids(2,0);
-  // std::cin >> vids[0] >> vids[1];
-  // tr.writeTetMeshAdjVs("/home/wegatron/tmp/simp_tol/debug/adj.vtk", vids);
-  // tr.writeBoundTris("/home/wegatron/tmp/simp_tol/debug/bound_tri.obj", vids[0], vids[1]);
-  // while(1) {
-  //   tr.testCollapseDebug(vids[0], vids[1]);
-  // }
 #if 0
-  {
-    std::ofstream ofs_in(output_prefix+"jp_in.obj", std::ofstream::out) ;
-    std::ofstream ofs_out(output_prefix+"jp_out.obj", std::ofstream::out) ;
-    const vector<zsw::Tet>& tets = tr.getTets();
-    for(const zsw::Tet &tet : tets) {
-      for(const zsw::JudgePoint &jp : tet.jpts_) {
-        if(jp.val_exp_ > 0 ) { ofs_out << "v " << jp.pt_[0] << " " << jp.pt_[1] << " " << jp.pt_[2] << std::endl; }
-        else { ofs_in << "v " << jp.pt_[0] << " " << jp.pt_[1] << " " << jp.pt_[2] << std::endl; }
-      }
-    }
-  }
+  std::cout << "input two vid:" << std::endl;
+  vector<size_t> vids(2,0);
+  std::cin >> vids[0] >> vids[1];
+  tr.writeTetMeshAdjVs("/home/wegatron/tmp/simp_tol/debug/adj.vtk", vids);
+  tr.writeBoundTris("/home/wegatron/tmp/simp_tol/debug/bound_tri.obj", vids[0], vids[1]);
+  tr.testCollapseDebug(vids[0], vids[1]);
+  exit(__LINE__);
 #endif
 
   tr.simpTolerance();
