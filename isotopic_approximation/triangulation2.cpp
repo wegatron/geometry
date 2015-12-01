@@ -268,7 +268,6 @@ void zsw::Triangulation::testCollapseDebug(const size_t vid0, const size_t vid1)
 
 void zsw::Triangulation::simpZeroSurface()
 {
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   std::queue<size_t> eids;
   std::set<size_t> eids_set;
   for(size_t i=0; i<edges_.size(); ++i) {
@@ -280,7 +279,8 @@ void zsw::Triangulation::simpZeroSurface()
   }
 
   while(!eids.empty()) {
-
+    size_t cur_eid = eids.front(); eids_set.erase(cur_eid); eids.pop();
+    tryCollapseZeroEdge(cur_eid, eids, eids_set);
   }
 }
 
@@ -649,7 +649,7 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
   return true;
 }
 
-void zsw::Triangulation::edgeCollapse(const std::unordered_set<size_t> &tet_ids,
+void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
                                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                       const zsw::PointType pt_type,
@@ -786,9 +786,10 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   // if e is invalid or is not bi and bo edge, if is bi bo edge is checked when push into the queue
   if(!e.valid_)   { return; }
   if(!linkCondition(e)) { return; }
-  std::unordered_set<size_t> tet_ids;
-  for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.insert(tid); }
-  for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.insert(tid); }
+  std::vector<size_t> tet_ids;
+  for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.push_back(tid); }
+  for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.push_back(tid); }
+  std::sort(tet_ids.begin(), tet_ids.end()); std::unique(tet_ids.begin(), tet_ids.end());
   KernelRegionJudger krj;
   std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
   std::list<JudgePoint> all_jpts;
@@ -824,21 +825,79 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   // sort by fabs(val_exp-val_cur) by decrease order
   std::sort(candicate_pts.begin(), candicate_pts.end(),
             [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
-  const JudgePoint *merge_point_ptr=nullptr;
+  const JudgePoint *merge_pt_ptr=nullptr;
   std::vector<std::pair<size_t,zsw::Scalar>> jpts_update;
   int step_info=0;
   for(const JudgePoint &jpt : candicate_pts) {
     if((++step_info)%100==0) { NZSWLOG("zsw_info") << step_info << " - "; }
     if(isKeepJpts(pt_val, jpt.pt_, bound_tris, all_jpts, jpts_update)) {
-      merge_point_ptr= &jpt; break;
+      merge_pt_ptr= &jpt; break;
     }
   }
-  if(merge_point_ptr != nullptr) {
-    NZSWLOG("zsw_info")  << "collapse edge!!!" << std::endl;
-    edgeCollapse(tet_ids, bound_tris, merge_point_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update,
+  if(merge_pt_ptr != nullptr) {
+    NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
+    edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update,
                  e, all_jpts, eids, eids_set);
-  } else {      NZSWLOG("zsw_info")  << "no poper merge point!"<< std::endl;    }
+  } else {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
 }
+
+void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
+                                             std::queue<size_t> &eids,
+                                             std::set<size_t> eids_set)
+{
+  Edge &e = edges_[e_id];
+  std::vector<size_t> tet_ids;
+  for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.push_back(tid); }
+  for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.push_back(tid); }
+  sort(tet_ids.begin(), tet_ids.end()); unique(tet_ids.begin(), tet_ids.end());
+  std::list<JudgePoint> all_jpts;
+  std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
+  KernelRegionJudger krj;
+  for(size_t tid : tet_ids) {
+    all_jpts.insert(all_jpts.end(), tets_[tid].jpts_.begin(), tets_[tid].jpts_.end());
+    // bound tri
+    size_t vcnt=0;
+    Eigen::Matrix<size_t,4,1> tmp_bound_tri;
+    for(size_t tvid : tets_[tid].vid_) {
+      if(tvid == e.vid_[0] || tvid==e.vid_[1]) {          tmp_bound_tri[3]=tvid;        }
+      else {          tmp_bound_tri[vcnt++]=tvid;        }
+    }
+    if(vcnt==3) {
+      krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
+                        vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
+      bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
+    }
+  }
+  std::list<Eigen::Matrix<zsw::Scalar,3,1>> candicate_pts;
+  omp_lock_t data_lock;
+  omp_init_lock(&data_lock);
+#pragma omp parallel for
+  for(size_t i=0; i<tet_ids.size(); ++i) {
+    const size_t *vid = tets_[tet_ids[i]].vid_;
+    std::list<Eigen::Matrix<zsw::Scalar,3,1>> tmp_candicate_pts;
+    sampleTet(vertices_[vid[0]].pt_, vertices_[vid[1]].pt_,
+              vertices_[vid[2]].pt_, vertices_[vid[3]].pt_, tet_sample_r_, tmp_candicate_pts);
+    tmp_candicate_pts.remove_if(std::bind(&KernelRegionJudger::judge, &krj, std::placeholders::_1));
+
+    omp_set_lock(&data_lock);
+    candicate_pts.splice(candicate_pts.end(), tmp_candicate_pts);
+    omp_unset_lock(&data_lock);
+  }
+  omp_destroy_lock(&data_lock);
+  // check if keepJpts
+  std::vector<std::pair<size_t,zsw::Scalar>> jpts_update;
+  const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt_ptr = nullptr;
+  for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : candicate_pts) {
+    if(isKeepJpts(0, pt, bound_tris, all_jpts, jpts_update)) {  merge_pt_ptr = &pt; break;  }
+  }
+
+  if(merge_pt_ptr != nullptr) {
+    NZSWLOG("zsw_info")  << "zc: collapse edge!!!" << std::endl;
+    edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
+                 e, all_jpts, eids, eids_set);
+  } else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
+}
+
 
 void zsw::Triangulation::writeBoundTris(const std::string &filepath, const size_t vid0, const size_t vid1)
 {

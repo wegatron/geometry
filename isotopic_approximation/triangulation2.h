@@ -101,6 +101,10 @@ namespace zsw
                                  std::queue<size_t> &eids,
                                  std::set<size_t> eids_set);
 
+    void tryCollapseZeroEdge(const size_t e_id,
+                                 std::queue<size_t> &eids,
+                                 std::set<size_t> eids_set);
+
     const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<Tet>& getTets() const { return tets_; }
     const std::vector<Edge>& getEdges() const { return edges_; }
@@ -126,7 +130,7 @@ namespace zsw
                         const std::list<JudgePoint> &jpts_left,
                         std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const;
 
-    void edgeCollapse(const std::unordered_set<size_t> &tet_ids,
+    void edgeCollapse(const std::vector<size_t> &tet_ids,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                       const zsw::PointType pt_type,
@@ -152,7 +156,7 @@ namespace zsw
     void invalidEdge(const size_t e_id);
 
     void invalidTet(Tet &tet);
-
+    zsw::Scalar tet_sample_r_;
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
