@@ -21,8 +21,11 @@
 #include <zswlib/mesh/zsw_flann2.h>
 #include "cgal_common.h"
 #include "basic_data_structure.h"
+#include "constraint.h"
 
 #define ZSW_DEBUG
+
+#define NORMAL_CONT_TOL 0.8
 
 namespace zsw
 {
@@ -101,6 +104,8 @@ namespace zsw
     void init(const zsw::Scalar r, Delaunay &delaunay);
 
     bool linkCondition(const Edge &e) const;
+
+    void initNormalCond(NormalConditionJudger &ncj, const Edge &e) const;
 
     bool isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                     const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts,

@@ -8,7 +8,6 @@
 
 #include "sampling.h"
 #include "basic_op.h"
-#include "constraint.h"
 #include "triangulation_fix.h"
 #include "debug.h"
 
@@ -751,6 +750,10 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.push_back(tid); }
   for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.push_back(tid); }
   std::sort(tet_ids.begin(), tet_ids.end()); std::unique(tet_ids.begin(), tet_ids.end());
+
+  // normal condition
+  NormalConditionJudger ncj(NORMAL_CONT_TOL);
+  initNormalCond(ncj, e);
   KernelRegionJudger krj;
   std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
   std::list<JudgePoint> all_jpts;
@@ -772,7 +775,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   // find the candicate points :  jpt in kernel region
   std::vector<JudgePoint> candicate_pts;
   for(const JudgePoint &jpt : all_jpts) {
-    if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)) {
+    if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_) && ncj.judge(jpt.pt_)) {
       candicate_pts.push_back(jpt);
     }
   }
@@ -888,4 +891,31 @@ void zsw::Triangulation::writeBoundTris(const std::string &filepath, const size_
     ofs << "f " << b_tr.transpose() << std::endl;
   }
   ofs.close();
+}
+
+#define ADD_NORMAL_CONSTRAINT(cur_vid, oth_vid) do{                     \
+    for(size_t tid : vertices_[cur_vid].tet_ids_) {                     \
+      size_t e_type_cnt=0, opposite_type_cnt=0;                         \
+      size_t tmp_vid[3];                                                \
+      for(size_t vid : tets_[tid].vid_) {                               \
+        if(vid==cur_vid || vid==oth_vid) { continue; }                  \
+        if(vertices_[vid].pt_type_ == e_pt_type) { tmp_vid[e_type_cnt]=vid; ++e_type_cnt; } \
+        else if(vertices_[vid].pt_type_ == opposite_pt_type) { ++opposite_type_cnt; } \
+      }                                                                 \
+      if(e_type_cnt==2 && opposite_type_cnt==1) {                       \
+        Eigen::Matrix<zsw::Scalar,3,1> tmp_normal =                     \
+          (vertices_[tmp_vid[0]].pt_-vertices_[cur_vid].pt_).cross(vertices_[tmp_vid[1]].pt_-vertices_[cur_vid].pt_); \
+        tmp_normal.normalize();                                         \
+        ncj.addConstraint(vertices_[tmp_vid[0]].pt_, vertices_[tmp_vid[1]].pt_, tmp_normal); \
+      }                                                                 \
+    }                                                                   \
+  }while(0)
+
+void zsw::Triangulation::initNormalCond(NormalConditionJudger &ncj, const Edge &e) const
+{
+  // bound faces
+  zsw::PointType e_pt_type = vertices_[e.vid_[0]].pt_type_;
+  zsw::PointType opposite_pt_type = (e_pt_type==zsw::OUTER_POINT) ? zsw::INNER_POINT : zsw::OUTER_POINT;
+  ADD_NORMAL_CONSTRAINT(e.vid_[0], e.vid_[1]);
+  ADD_NORMAL_CONSTRAINT(e.vid_[1], e.vid_[0]);
 }

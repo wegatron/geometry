@@ -34,12 +34,8 @@ namespace zsw
   class NormalConditionJudger final
   {
   public:
-    NormalConditionJudger(const zsw::Scalar tol,
-                          const Eigen::Matrix<zsw::Scalar,3,1> &ev0,
-                          const Eigen::Matrix<zsw::Scalar,3,1> &ev1) {
+    NormalConditionJudger(const zsw::Scalar tol) {
       tol_=tol;
-      ev0_=ev0;
-      ev1_=ev1;
     }
 
     /// \brief add normal constraint
@@ -50,16 +46,15 @@ namespace zsw
     /// \param be, boundary edge
     /// \param normal, expected normal merge point with that boundary edge
     /// \param vid, 0 or 1, the collapse edge's vertex id
-    void addConstraint(const size_t vid,
-                       const Eigen::Matrix<zsw::Scalar,3,1> &bev0,
+    void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &bev0,
                        const Eigen::Matrix<zsw::Scalar,3,1> &bev1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &normal);
 
     bool judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt);
   private:
     zsw::Scalar tol_;
-    Eigen::Matrix<zsw::Scalar,3,1> ev0_;
-    Eigen::Matrix<zsw::Scalar,3,1> ev1_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bev_[2];
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> normals_;
   };
 
 }
