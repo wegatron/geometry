@@ -5,6 +5,7 @@
 #include <zswlib/mesh/vtk.h>
 #include <zswlib/zsw_log.h>
 #include <zswlib/zsw_clock_c11.h>
+#include <zswlib/const_val.h>
 #include "../surface_generator.h"
 #include "../triangulation2.h"
 #include "../debug.h"
@@ -53,14 +54,24 @@ void test_init(const std::string &file_path, const std::string &output_prefix,
   //   = std::bind(adjEdge, std::placeholders::_1, 50, 65);
 
   tr.writeTetMesh(output_prefix+"_tol.vtk", {ignore_bbox, ignore_self_out});
-  // tr.writeTetMesh(output_prefix+"_adj.vtk", {adj_edge});
-  // tr.writeTetMesh(output_prefix+"_adj2.vtk", {adj_edge2});
-  //zsw::writeJudgePoints(output_prefix, tr.getJpts());
-  // output edges
-  // const vector<zsw::Edge>& edges = triangulation.getEdges();
-  // for(const zsw::Edge &e : edges) {
-  //   std::cerr << "e: " << e.vid_[0] << " " << e.vid_[1] << std::endl;
-  // }
+  std::vector<zsw::Vertex> &vertices = tr.getVertices();
+  std::vector<zsw::Tet> &tets = tr.getTets();
+  std::vector<size_t> sliver_tet_ids;
+  for(size_t i=0; i<tets.size(); ++i) {
+    const zsw::Tet &tet = tets[i];
+    const Eigen::Matrix<zsw::Scalar,3,1> &v0 = vertices[tet.vid_[0]].pt_;
+    const Eigen::Matrix<zsw::Scalar,3,1> &v1 = vertices[tet.vid_[1]].pt_;
+    const Eigen::Matrix<zsw::Scalar,3,1> &v2 = vertices[tet.vid_[2]].pt_;
+    const Eigen::Matrix<zsw::Scalar,3,1> &v3 = vertices[tet.vid_[3]].pt_;
+    Eigen::Matrix<zsw::Scalar,3,1> va = v1 - v0;
+    Eigen::Matrix<zsw::Scalar,3,1> vb = v2 - v0;
+    Eigen::Matrix<zsw::Scalar,3,1> vc = v3 - v0;
+    Eigen::Matrix<zsw::Scalar,3,1> vn = va.cross(vb); vn.normalize();
+    if(fabs(vc.dot(vn)) < 10*zsw::const_val::eps) {
+      tr.writeTet("/home/wegatron/tmp/simp_tol/debug/slivertet_"+std::to_string(i)+".vtk", i);
+    }
+  }
+
 }
 
 void test_mutualTessellation()

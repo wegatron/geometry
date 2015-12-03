@@ -1,6 +1,5 @@
 #include "triangulation_fix.h"
 
-
 namespace zsw{
   void removeSliverTet(Delaunay &delaunay, const std::vector<zsw::Vertex> &vertices)
   {
@@ -56,6 +55,29 @@ namespace zsw{
                   << cit->vertex(3)->info() << std::endl;
       }
     }
+  }
+
+  zsw::Scalar calcTetQuality(const Eigen::Matrix<zsw::Scalar,3,1> &v0,
+                             const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+                             const Eigen::Matrix<zsw::Scalar,3,1> &v2,
+                             const Eigen::Matrix<zsw::Scalar,3,1> &v3)
+  {
+    static const zsw::Scalar N = 9*sqrt(3)/8.0;
+    Eigen::Matrix<zsw::Scalar,3,3> vol_tet_mat;
+    vol_tet_mat.block<3,1>(0,0) = v1-v0;
+    vol_tet_mat.block<3,1>(0,1) = v2-v0;
+    vol_tet_mat.block<3,1>(0,2) = v3-v0;
+    zsw::Scalar vol_tet = fabs(vol_tet_mat.determinant()/6.0);
+    Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
+    pplu.compute(2*vol_tet_mat.transpose());
+    zsw::Scalar v_v0 = v0.squaredNorm();
+    zsw::Scalar v_v1 = v1.squaredNorm();
+    zsw::Scalar v_v2 = v2.squaredNorm();
+    zsw::Scalar v_v3 = v3.squaredNorm();
+    Eigen::Matrix<zsw::Scalar,3,1> b; b<<v_v1 - v_v0, v_v2-v_v0, v_v3-v_v0;
+    Eigen::Matrix<zsw::Scalar,3,1> c = pplu.solve(b);
+    zsw::Scalar r = (c-v0).norm();
+    return pow(N*vol_tet, 0.333)/r;
   }
 
 }

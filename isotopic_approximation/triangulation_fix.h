@@ -16,6 +16,11 @@ namespace zsw{
 
   void haveSliverTet(Delaunay &delaunay, const std::vector<zsw::Vertex> &vertices);
 
+  zsw::Scalar calcTetQuality(const Eigen::Matrix<zsw::Scalar,3,1> &v0,
+                             const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+                             const Eigen::Matrix<zsw::Scalar,3,1> &v2,
+                             const Eigen::Matrix<zsw::Scalar,3,1> &v3);
+
 }
 
 #endif /* TRIANGULATION_FIX_H */

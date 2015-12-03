@@ -26,25 +26,6 @@
 
 namespace zsw
 {
-
-  /// \brief kernel region judger.
-  ///
-  ///  judge wether the point is in kernel region.
-  ///
-  class KernelRegionJudger final
-  {
-  public:
-    KernelRegionJudger() {}
-    void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
-                       const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr);
-    bool judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt);
-    // void setCondition(size_t condition_i) { condition_i_= condition_i; }
-  private:
-    // size_t condition_i_;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v0;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vn;
-  };
-
   typedef bool(*PairCompFunc)(const std::pair<size_t,size_t>&a, const std::pair<size_t,size_t>&b);
 
   class Triangulation final

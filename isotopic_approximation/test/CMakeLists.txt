@@ -38,6 +38,7 @@ add_executable(test_triangulation test_triangulation.cpp)
 add_executable(test_linkcondition test_linkcondition.cpp)
 add_executable(test_simptolerance test_simptolerance.cpp)
 add_executable(debug_simp_jpts debug_simp_jpts.cpp)
+add_executable(test_tetquality test_tetquality.cpp)
 
 # target_link_libraries(test_sampling2 isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 # target_link_libraries(test_gen_surf isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
@@ -52,6 +53,9 @@ target_link_libraries(test_simptolerance isotropic_approximate ${OPENMESH_LIBRAR
 ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 
 target_link_libraries(debug_simp_jpts isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES}
+${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+
+target_link_libraries(test_tetquality isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES}
 ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 
 ### old unused

@@ -8,6 +8,7 @@
 
 #include "sampling.h"
 #include "basic_op.h"
+#include "constraint.h"
 #include "triangulation_fix.h"
 #include "debug.h"
 
@@ -77,43 +78,6 @@
     zsw::Scalar tmp_s_dis = calcPoint2TriSquaredDis(jpt_itr->pt_, v0, v1, v2); \
     if(squared_dis > tmp_s_dis) { target_face<<vid0, vid1, vid2; squared_dis=tmp_s_dis; target_bt_i=bt_i; } \
   }while(0)
-
-void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
-                       const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
-{
-    vec_v0.push_back(v0);
-    Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
-    Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
-    Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
-
-    if(vn.norm()<zsw::const_val::eps) {
-      std::cerr << "nv norm too small:" << vn.norm();
-    }
-    //assert(vn.norm()>zsw::const_val::eps)
-    vn.normalize();
-    if(vn.dot(vr-v0) < 0) { vn=-vn; }
-    vec_vn.push_back(vn);
-}
-
-bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
-{
-#if 1
-  for(size_t i=0; i<vec_v0.size(); ++i) {
-    if(vec_vn[i].dot(pt-vec_v0[i]) < zsw::const_val::eps) {
-      return false;
-    }
-  }
-#else
-  std::cerr << "only judge for condition " << condition_i_ << std::endl;
-  std::cerr << "vec_vn:" <<  vec_vn[condition_i_].transpose() << std::endl;
-  std::cerr << "vec_v0:" << vec_v0[condition_i_].transpose() << std::endl;
-  std::cerr << "pt:" << pt.transpose() << std::endl;
-  if(condition_i_!=-1 && vec_vn[condition_i_].dot(pt-vec_v0[condition_i_]) < zsw::const_val::eps) {
-    return false;
-  }
-#endif
-  return true;
-}
 
 zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_pts,
                                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_pts)
@@ -558,9 +522,6 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
   size_t update_cnt=0;
   jpts_update.assign(all_jpts.size(), std::pair<size_t,zsw::Scalar>(-1, 0.0));
   for(const Eigen::Matrix<size_t,3,1> &b_tr  : bound_tris) {
-    // almost on the same plane of one bound_tri, can't tell kernel region
-    Eigen::Matrix<zsw::Scalar,3,1> tmp_vn = (vertices_[b_tr[1]].pt_-vertices_[b_tr[0]].pt_).cross(vertices_[b_tr[2]].pt_-vertices_[b_tr[1]].pt_); tmp_vn.normalize();
-    if(fabs(tmp_vn.dot(vertices_[b_tr[0]].pt_-pt)) < 10*zsw::const_val::eps) { return false; }
     ++bt_i;
     Eigen::Matrix<zsw::Scalar,3,3> A;
     A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
@@ -811,7 +772,9 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   // find the candicate points :  jpt in kernel region
   std::vector<JudgePoint> candicate_pts;
   for(const JudgePoint &jpt : all_jpts) {
-    if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)) { candicate_pts.push_back(jpt); }
+    if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)) {
+      candicate_pts.push_back(jpt);
+    }
   }
   NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
   NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
