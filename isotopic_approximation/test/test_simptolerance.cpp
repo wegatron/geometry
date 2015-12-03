@@ -50,7 +50,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   // tr.writeTetMeshAdjV(output_prefix+"_simp_tol_before_mt_adjv4", 4);
   tr.mutualTessellation();
   tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_not_with_zero_point});
-  // tr.writeSurface(output_prefix+"_simp_tol_after_zero_mt.obj", zsw::ZERO_POINT);
+  tr.writeSurface(output_prefix+"_simp_tol_after_zero_mt.obj", zsw::ZERO_POINT);
   // tr.writeSurface(output_prefix+"_simp_tol_after_inner_mt.obj", zsw::INNER_POINT);
   // tr.writeSurface(output_prefix+"_simp_tol_after_outer_mt.obj", zsw::OUTER_POINT);
 }
