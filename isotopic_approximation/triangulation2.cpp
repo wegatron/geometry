@@ -749,11 +749,12 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   std::vector<size_t> tet_ids;
   for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.push_back(tid); }
   for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.push_back(tid); }
-  std::sort(tet_ids.begin(), tet_ids.end()); std::unique(tet_ids.begin(), tet_ids.end());
-
+  std::sort(tet_ids.begin(), tet_ids.end());
+  auto unq_end = std::unique(tet_ids.begin(), tet_ids.end());
+  tet_ids.resize(std::distance(tet_ids.begin(), unq_end));
   // normal condition
-  NormalConditionJudger ncj(NORMAL_CONT_TOL);
-  initNormalCond(ncj, e);
+  // NormalConditionJudger ncj(NORMAL_CONT_TOL);
+  // initNormalCond(ncj, e);
   KernelRegionJudger krj;
   std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
   std::list<JudgePoint> all_jpts;
@@ -775,7 +776,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   // find the candicate points :  jpt in kernel region
   std::vector<JudgePoint> candicate_pts;
   for(const JudgePoint &jpt : all_jpts) {
-    if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_) && ncj.judge(jpt.pt_)) {
+    if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)) { //&& ncj.judge(jpt.pt_)) {
       candicate_pts.push_back(jpt);
     }
   }
@@ -815,7 +816,10 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
   std::vector<size_t> tet_ids;
   for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.push_back(tid); }
   for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.push_back(tid); }
-  sort(tet_ids.begin(), tet_ids.end()); unique(tet_ids.begin(), tet_ids.end());
+  sort(tet_ids.begin(), tet_ids.end());
+  auto unq_end = unique(tet_ids.begin(), tet_ids.end());
+  tet_ids.resize(std::distance(tet_ids.begin(), unq_end));
+
   std::list<JudgePoint> all_jpts;
   std::list<Eigen::Matrix<size_t,3,1>> bound_tris;
   KernelRegionJudger krj;
