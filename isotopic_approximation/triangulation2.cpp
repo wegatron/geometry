@@ -10,6 +10,7 @@
 #include "basic_op.h"
 #include "triangulation_fix.h"
 #include "debug.h"
+#include "config.h"
 
 #define ADD_VERTEX(pt_type, pt) do{                     \
     vertices_.push_back({true, pt_type, pt, {}, {}});   \
@@ -87,19 +88,18 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
   calcBBOX(bo_pts, bbox);
   zsw::Scalar scale = 0.5*(bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1)).norm();
   Eigen::Matrix<zsw::Scalar,3,1> transform = 0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
-  zsw::BoundSphere bs("/home/wegatron/workspace/geometry/data/bound_sphere.obj",
-                      scale, transform);
+  zsw::BoundSphere bs(BOUND_SPHERE_MODEL_FILE, scale, transform);
 
   size_t pt_id=0;
   std::vector<std::pair<Point, size_t>> tet_points;
   for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bo_pts) {
     tet_points.push_back({Point(tmp[0], tmp[1], tmp[2]), pt_id++});
-    vertices_.push_back({true, OUTER_POINT, tmp, {}, {}});
+    vertices_.push_back({true, OUTER_POINT, tmp, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
   }
 
   for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bi_pts) {
     tet_points.push_back({Point(tmp[0],tmp[1],tmp[2]), pt_id++});
-    vertices_.push_back({true, INNER_POINT, tmp, {}, {}});
+    vertices_.push_back({true, INNER_POINT, tmp, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
   }
 
   // add bound sphere points
@@ -124,19 +124,23 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
             cit->vertex(2)->info(), cit->vertex(3)->info()}});
     // judge points in tets
     size_t bo_cnt=0, bi_cnt=0;
+    Eigen::Matrix<size_t,4,1> bo_vids;
+    Eigen::Matrix<size_t,4,1> bi_vids;
     Eigen::Matrix<zsw::Scalar,3,4> bo_points;
     Eigen::Matrix<zsw::Scalar,3,4> bi_points;
     Tet &tmp_tet=tets_.back();
     for(size_t tvid : tmp_tet.vid_) {
       if(vertices_[tvid].pt_type_==OUTER_POINT) {
+        bo_vids[bo_cnt] = tvid;
         bo_points.block<3,1>(0,bo_cnt++)=vertices_[tvid].pt_;
       } else if(vertices_[tvid].pt_type_==INNER_POINT) {
+        bi_vids[bi_cnt] = tvid;
         bi_points.block<3,1>(0,bi_cnt++)=vertices_[tvid].pt_;
       } else {        bo_cnt=0; bi_cnt=0;        break;      }
     }
 
-    if(bo_cnt==3) { sampleTriangle(bo_points.block<3,3>(0,0), r, 1, tmp_tet.jpts_); }
-    else if(bi_cnt==3) { sampleTriangle(bi_points.block<3,3>(0,0), r, -1, tmp_tet.jpts_); }
+    if(bo_cnt==3) { sampleTriangle(bo_points.block<3,3>(0,0), r, 1, tmp_tet.jpts_); initQem(bo_vids[0], bo_vids[1], bo_vids[2]); }
+    else if(bi_cnt==3) { sampleTriangle(bi_points.block<3,3>(0,0), r, -1, tmp_tet.jpts_); initQem(bi_vids[0], bi_vids[1], bi_vids[2]); }
     // vertex info
     vertices_[tmp_tet.vid_[0]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[1]].tet_ids_.push_back(t_id);
     vertices_[tmp_tet.vid_[2]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[3]].tet_ids_.push_back(t_id++);
@@ -154,6 +158,20 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
     vertices_[tmp_edge.vid_[1]].edge_ids_.push_back(e_id++);
   }
   std::cerr << "tol edge size:" << e_id << std::endl;
+}
+
+void zsw::Triangulation::initQem(const size_t vid0, const size_t vid1, const size_t vid2)
+{
+  Eigen::Matrix<zsw::Scalar,3,1> v0 = vertices_[vid0].pt_;
+  Eigen::Matrix<zsw::Scalar,3,1> v1 = vertices_[vid1].pt_;
+  Eigen::Matrix<zsw::Scalar,3,1> v2 = vertices_[vid2].pt_;
+  Eigen::Matrix<zsw::Scalar,3,1> vn = (v1-v0).cross(v2-v0); vn.normalize();
+  Eigen::Matrix<zsw::Scalar,4,1> p;
+  p.block<3,1>(0,0) = vn; p[3] = -vn.dot(v0);
+  Eigen::Matrix<zsw::Scalar, 4,4> q = p * p.transpose();
+  vertices_[vid0].qem_+=q;
+  vertices_[vid1].qem_+=q;
+  vertices_[vid2].qem_+=q;
 }
 
 bool zsw::Triangulation::linkCondition(const Edge &e) const
@@ -550,7 +568,7 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
       else {  up_itr->first=bt_i; up_itr->second=jpt_val_cur;  ++update_cnt; }
     }
   }
-  std::cerr << "left jpts size:" << all_jpts.size()-update_cnt << std::endl;
+  //std::cerr << "left jpts size:" << all_jpts.size()-update_cnt << std::endl;
   return (update_cnt==all_jpts.size()) || isKeepJptsLeft(pt_val, pt, bound_tris, all_jpts, jpts_update);
 }
 
@@ -780,15 +798,20 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       candicate_pts.push_back(jpt);
     }
   }
-  NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
-  NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
-  NZSWLOG("zsw_info") << "all_pts:" << all_jpts.size() << std::endl;
+  static size_t step_info = 0;
+  ++step_info;
+  if(step_info %100 == 0) {
+    NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
+    NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
+    NZSWLOG("zsw_info") << "all_pts:" << all_jpts.size() << std::endl;
+  }
   // debug
 #if 0
   writeJudgePoints("/home/wegatron/tmp/simp_tol/debug/candicate_jpts", candicate_pts);
   writeJudgePoints("/home/wegatron/tmp/simp_tol/debug/jpts", all_jpts);
 #endif
   //-- find the best point in the candicate_pts--
+#if 0
   // sort by fabs(val_exp-val_cur) by decrease order
   std::sort(candicate_pts.begin(), candicate_pts.end(),
             [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
@@ -801,11 +824,36 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       merge_pt_ptr= &jpt; break;
     }
   }
+#else
+  // using qem in accending order
+  Eigen::Matrix<zsw::Scalar,4,4> cur_qem = vertices_[e.vid_[0]].qem_ + vertices_[e.vid_[1]].qem_;
+  std::vector<std::pair<zsw::Scalar, size_t>> q_error; q_error.resize(candicate_pts.size());
+  for(size_t q_i=0; q_i<q_error.size(); ++q_i) {
+    Eigen::Matrix<zsw::Scalar,4,1> tmp_pt;
+    tmp_pt.block<3,1>(0,0) = candicate_pts[q_i].pt_; tmp_pt[4]=1.0;
+    q_error[q_i].first = tmp_pt.transpose() * cur_qem * tmp_pt;
+    q_error[q_i].second = q_i;
+  }
+  std::sort(q_error.begin(), q_error.end(),
+            [](const std::pair<zsw::Scalar, size_t> &a, const std::pair<zsw::Scalar, size_t> &b){ return a.first<b.first; });
+  const JudgePoint *merge_pt_ptr=nullptr;
+  std::vector<std::pair<size_t,zsw::Scalar>> jpts_update;
+  //int step_info=0;
+  for(const std::pair<zsw::Scalar, size_t> &qe : q_error) {
+    const JudgePoint &jpt = candicate_pts[qe.second];
+    //    if((++step_info)%100==0) { NZSWLOG("zsw_info") << step_info << " - "; }
+    if(isKeepJpts(pt_val, jpt.pt_, bound_tris, all_jpts, jpts_update)) {
+      merge_pt_ptr= &jpt; break;
+    }
+  }
+#endif
   if(merge_pt_ptr != nullptr) {
-    NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
+    if(step_info %100 == 0) {
+      NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
+    }
     edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update,
                  e, all_jpts, eids, eids_set);
-  } else {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
+  } else if(step_info %100 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
 }
 
 void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
@@ -865,6 +913,18 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
     NZSWLOG("zsw_info")  << "zc: collapse edge!!!" << std::endl;
     edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
                  e, all_jpts, eids, eids_set);
+    // debug write out
+    // static size_t debug_cnt=0;
+    // if((*merge_pt_ptr)[0]<0.58 && (*merge_pt_ptr)[0]>0.53
+    //    && (*merge_pt_ptr)[1]<-0.01 && (*merge_pt_ptr)[1]>-0.045
+    //    && (*merge_pt_ptr)[2]<-1.04 && (*merge_pt_ptr)[2]>-1.06)
+    // {
+    //   std::function<bool(const zsw::Tet&)> ignore_bbox
+    //     = std::bind(&zsw::Triangulation::ignoreWithPtType, &(*this), std::placeholders::_1, zsw::BBOX_POINT);
+    //   std::function<bool(const zsw::Tet&)> ignore_self_out
+    //     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, &(*this), std::placeholders::_1, zsw::OUTER_POINT);
+    //   writeTetMesh(std::string(DEBUG_OUTPUT_DIR)+"tol_"+std::to_string(debug_cnt++), {ignore_bbox, ignore_self_out});
+    // }
   } else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
 }
 

@@ -27,6 +27,7 @@ namespace zsw{
     bool valid_;
     PointType pt_type_;
     Eigen::Matrix<zsw::Scalar,3,1> pt_;
+    Eigen::Matrix<zsw::Scalar,4,4> qem_;
     std::list<size_t> tet_ids_;
     std::list<size_t> edge_ids_;
   };

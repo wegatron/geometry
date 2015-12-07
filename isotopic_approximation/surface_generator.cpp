@@ -2,7 +2,7 @@
 #include "surface_generator.h"
 
 #include <iostream>
-#define ZSW_DEBUG
+//#define ZSW_DEBUG
 // void zsw::SurfaceGenerator::genSurface(const zsw::Scalar dis, zsw::mesh::TriMesh &tm,
 //                                        zsw::mesh::TriMesh &bo_mesh, zsw::mesh::TriMesh &bi_mesh)
 // {

@@ -103,6 +103,8 @@ namespace zsw
     /// \param Delaunay cgal's delaunay triangulation
     void init(const zsw::Scalar r, Delaunay &delaunay);
 
+    void initQem(const size_t vid0, const size_t vid1, const size_t vid2);
+
     bool linkCondition(const Edge &e) const;
 
     void initNormalCond(NormalConditionJudger &ncj, const Edge &e) const;

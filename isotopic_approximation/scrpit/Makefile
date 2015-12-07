@@ -27,14 +27,35 @@ CUBE_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/cube/cube
 CUBE_THICK = 0.06
 CUBE_SAMPLE_R = 0.006
 
+CYLINDER = /home/wegatron/workspace/geometry/data/cylinder.ply
+CYLINDER_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/cylinder
+CYLINDER_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/cylinder/cylinder
+CYLINDER_THICK = 0.02
+CYLINDER_SAMPLE_R =  0.002
+
+FERTILITY =  /home/wegatron/workspace/geometry/data/fertility.stl
+FERTILITY_OUT_PUT_DIR = /home/wegatron/tmp/simp_tol/fertility
+FERTILITY_OUT_PUT_PREFIX = /home/wegatron/tmp/simp_tol/fertility/fertility
+FERTILITY_THICK = 0.5
+FERTILITY_SAMPLE_R = 0.1 
+
 .PHONY : default
 default:
 	echo "test simp tolerance, please specify a case to run!"
+
 	
 .PHONY : debug_simp_jpts
 debug_simp_jpts: clean_simp_fandisk
 	${DEBUG_SIMP_JPTS_EXEC} ${FANDISK} ${FANDISK_OUTPUT_DIR} ${FANDISK_THICK} ${FANDISK_SAMPLE_R} 35402 35403
+
+.PHONY : test_simp_cylinder
+test_simp_cylinder: 
+	${TEST_SIMP_TOL_EXEC} ${CYLINDER} ${CYLINDER_OUTPUT_PREFIX} ${CYLINDER_THICK} ${CYLINDER_SAMPLE_R}
 	
+.PHONY : test_simp_fertility
+test_simp_fertility: 
+	${TEST_SIMP_TOL_EXEC} ${FERTILITY} ${FERTILITY_OUT_PUT_PREFIX} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R}
+
 .PHONY : test_simp_sphere
 test_simp_sphere: clean_simp_sphere
 	${TEST_SIMP_TOL_EXEC} ${SPHERE} ${SPHERE_OUTPUT_PREFIX} ${SPHERE_THICK} ${SPHERE_SAMPLE_R}
