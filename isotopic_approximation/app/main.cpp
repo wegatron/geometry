@@ -8,7 +8,6 @@ using namespace std;
 
 void test(const std::string &file_path, const string &output_prefix, const zsw::Scalar thick_dis, const zsw::Scalar sample_r)
 {
-  #if 0
   zsw::mesh::TriMesh input_mesh;
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     std::cerr << "[ERROR] can't read mesh!" << std::endl;
@@ -34,46 +33,17 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
 
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
-  {
-    std::ofstream ofs_in(output_prefix+"jp_in.obj", std::ofstream::out) ;
-    std::ofstream ofs_out(output_prefix+"jp_out.obj", std::ofstream::out) ;
-    const vector<zsw::Tet>& tets = tr.getTets();
-    for(const zsw::Tet &tet : tets) {
-      for(const zsw::JudgePoint &jp : tet.jpts_) {
-        if(jp.val_exp_ > 0 ) { ofs_out << "v " << jp.pt_[0] << " " << jp.pt_[1] << " " << jp.pt_[2] << std::endl; }
-        else { ofs_in << "v " << jp.pt_[0] << " " << jp.pt_[1] << " " << jp.pt_[2] << std::endl; }
-      }
-    }
-  }
-
-  {
-    const string in_jp_file=output_prefix+"jp_out.obj";
-    std::ofstream ofs(in_jp_file, std::ofstream::out) ;
-    const vector<zsw::Tet>& tets = tr.getTets();
-    for(const zsw::Tet &tet : tets) {
-      for(const zsw::JudgePoint &jp : tet.jpts_) {
-        if(jp.val_exp_ > 0 ) { continue; }
-        ofs << "v " << jp.pt_[0] << " " << jp.pt_[1] << " " << jp.pt_[2] << std::endl;
-      }
-    }
-    ofs.close();
-  }
 
   tr.simpTolerance();
-
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
-  // tr.writeTetMeshAdjV(output_prefix+"_simp_tol_before_mt_adjv4", 4);
   tr.mutualTessellation();
-  //tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_not_with_zero_point});
   tr.writeSurface(output_prefix+"_simp_tol_after_zero_mt.obj", zsw::ZERO_POINT);
-  tr.writeSurface(output_prefix+"_simp_tol_after_inner_mt.obj", zsw::INNER_POINT);
-  tr.writeSurface(output_prefix+"_simp_tol_after_outer_mt.obj", zsw::OUTER_POINT);
-  #endif
+  tr.simpZeroSurface();
+  tr.writeSurface(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
 }
 
 int main(int argc, char *argv[])
 {
-  test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/simp_tol/sphere/sphere", 0.1, 0.01);
-  //test("/home/wegatron/workspace/geometry/data/fandisk.obj", "/home/wegatron/tmp/simp_tol/fandisk/fandisk", 0.006, 0.003);
+  test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/approximate/sphere/sphere", 0.1, 0.03);
   return 0;
 }

@@ -83,6 +83,7 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
                                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_pts)
 {
   assert(bo_pts.size()!=0 && bi_pts.size()!=0);
+  tet_sample_r_ = r;
 
   Eigen::Matrix<zsw::Scalar,3,2> bbox;
   calcBBOX(bo_pts, bbox);
@@ -842,7 +843,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   std::vector<std::pair<zsw::Scalar, size_t>> q_error; q_error.resize(candicate_pts.size());
   for(size_t q_i=0; q_i<q_error.size(); ++q_i) {
     Eigen::Matrix<zsw::Scalar,4,1> tmp_pt;
-    tmp_pt.block<3,1>(0,0) = candicate_pts[q_i].pt_; tmp_pt[4]=1.0;
+    tmp_pt.block<3,1>(0,0) = candicate_pts[q_i].pt_; tmp_pt[3]=1.0;
     q_error[q_i].first = tmp_pt.transpose() * cur_qem * tmp_pt;
     q_error[q_i].second = q_i;
   }
