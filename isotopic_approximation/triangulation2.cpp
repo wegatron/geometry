@@ -824,6 +824,13 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       merge_pt_ptr= &jpt; break;
     }
   }
+  if(merge_pt_ptr != nullptr) {
+    if(step_info %100 == 0) {
+      NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
+    }
+    edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update,
+                 e, all_jpts, eids, eids_set);
+  } else if(step_info %100 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
 #else
   // using qem in accending order
   Eigen::Matrix<zsw::Scalar,4,4> cur_qem = vertices_[e.vid_[0]].qem_ + vertices_[e.vid_[1]].qem_;
@@ -846,14 +853,15 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       merge_pt_ptr= &jpt; break;
     }
   }
-#endif
   if(merge_pt_ptr != nullptr) {
     if(step_info %100 == 0) {
       NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
     }
     edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update,
                  e, all_jpts, eids, eids_set);
+    vertices_[e.vid_[0]].qem_ = cur_qem;
   } else if(step_info %100 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
+#endif
 }
 
 void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,

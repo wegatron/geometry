@@ -1,60 +1,73 @@
 SHELL = /bin/sh
+
+DATA_DIR =  /home/wegatron/workspace/geometry/data
+SIMP_OUTPUT_DIR = /home/wegatron/tmp/simp_tol
+
 TEST_SIMP_TOL_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/test_simptolerance
 TEST_SIMP_TOL_EXEC_DEBUG = /home/wegatron/workspace/geometry/isotopic_approximation/build-debug/bin/test_simptolerance
 DEBUG_SIMP_JPTS_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/debug_simp_jpts
 
-SPHERE = /home/wegatron/workspace/geometry/data/sphere.stl
-SPHERE_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/sphere/
-SPHERE_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/sphere/sphere
+SPHERE = ${DATA_DIR}/sphere.stl
+SPHERE_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/sphere/
+SPHERE_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/sphere/sphere
 SPHERE_THICK = 0.1
 SPHERE_SAMPLE_R = 0.01
 
-FANDISK = /home/wegatron/workspace/geometry/data/fandisk.obj
-FANDISK_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/fandisk/
-FANDISK_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/fandisk/fandisk
+FANDISK = ${DATA_DIR}/fandisk.obj
+FANDISK_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/fandisk/
+FANDISK_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/fandisk/fandisk
 FANDISK_THICK = 0.008
 FANDISK_SAMPLE_R = 0.0008
 
-BUNNY = /home/wegatron/workspace/geometry/data/bunny.obj
-BUNNY_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/bunny/
-BUNNY_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/bunny/bunny
+BUNNY = ${DATA_DIR}/bunny.obj
+BUNNY_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/bunny/
+BUNNY_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/bunny/bunny
 BUNNY_THICK = 0.007
 BUNNY_SAMPLE_R = 0.0035
 
-CUBE = /home/wegatron/workspace/geometry/data/cube.stl
-CUBE_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/cube
-CUBE_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/cube/cube
+CUBE = ${DATA_DIR}/cube.stl
+CUBE_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/cube
+CUBE_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/cube/cube
 CUBE_THICK = 0.06
 CUBE_SAMPLE_R = 0.006
 
-CYLINDER = /home/wegatron/workspace/geometry/data/cylinder.ply
-CYLINDER_OUTPUT_DIR = /home/wegatron/tmp/simp_tol/cylinder
-CYLINDER_OUTPUT_PREFIX = /home/wegatron/tmp/simp_tol/cylinder/cylinder
+CYLINDER = ${DATA_DIR}/cylinder.ply
+CYLINDER_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/cylinder
+CYLINDER_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/cylinder/cylinder
 CYLINDER_THICK = 0.02
 CYLINDER_SAMPLE_R =  0.002
 
-FERTILITY =  /home/wegatron/workspace/geometry/data/fertility.stl
-FERTILITY_OUT_PUT_DIR = /home/wegatron/tmp/simp_tol/fertility
-FERTILITY_OUT_PUT_PREFIX = /home/wegatron/tmp/simp_tol/fertility/fertility
+FERTILITY =  ${DATA_DIR}/fertility.stl
+FERTILITY_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/fertility
+FERTILITY_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/fertility/fertility
 FERTILITY_THICK = 0.5
-FERTILITY_SAMPLE_R = 0.1 
+FERTILITY_SAMPLE_R = 0.1
+
+ARMADILLO = ${DATA_DIR}/Armadillo.obj
+ARMADILLO_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/Armadillo
+ARMADILLO_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/Armadillo/Armadillo
+ARMADILLO_THICK = 0.6
+ARMADILLO_SAMOKE_R = 0.1
 
 .PHONY : default
 default:
 	echo "test simp tolerance, please specify a case to run!"
 
-	
 .PHONY : debug_simp_jpts
 debug_simp_jpts: clean_simp_fandisk
 	${DEBUG_SIMP_JPTS_EXEC} ${FANDISK} ${FANDISK_OUTPUT_DIR} ${FANDISK_THICK} ${FANDISK_SAMPLE_R} 35402 35403
 
+.PHONY : test_simp_armadillo
+test_simp_armadillo: 
+	${TEST_SIMP_TOL_EXEC} ${ARMADILLO} ${ARMADILLO_OUTPUT_PREFIX} ${ARMADILLO_THICK} ${ARMADILLO_SAMOKE_R}
+	
 .PHONY : test_simp_cylinder
 test_simp_cylinder: 
 	${TEST_SIMP_TOL_EXEC} ${CYLINDER} ${CYLINDER_OUTPUT_PREFIX} ${CYLINDER_THICK} ${CYLINDER_SAMPLE_R}
 	
 .PHONY : test_simp_fertility
 test_simp_fertility: 
-	${TEST_SIMP_TOL_EXEC} ${FERTILITY} ${FERTILITY_OUT_PUT_PREFIX} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R}
+	${TEST_SIMP_TOL_EXEC} ${FERTILITY} ${FERTILITY_OUTPUT_PREFIX} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R}
 
 .PHONY : test_simp_sphere
 test_simp_sphere: clean_simp_sphere
@@ -83,7 +96,7 @@ test_simp_cube: clean_simp_cube
 .PHONY : clean_simp_sphere
 clean_simp_sphere: clean_log
 	rm -rf ${SPHERE_OUTPUT_DIR}*; \
-	mkdir /home/wegatron/tmp/simp_tol/sphere/debug
+	mkdir ${SIMP_OUTPUT_DIR}/sphere/debug
 
 .PHONY : clean_simp_fandisk
 clean_simp_fandisk: clean_log
