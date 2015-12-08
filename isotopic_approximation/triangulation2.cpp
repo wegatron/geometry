@@ -12,8 +12,8 @@
 #include "debug.h"
 #include "config.h"
 
-#define ADD_VERTEX(pt_type, pt) do{                     \
-    vertices_.push_back({true, pt_type, pt, {}, {}});   \
+#define ADD_VERTEX(pt_type, pt) do{                                     \
+    vertices_.push_back({true, pt_type, pt, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}}); \
   }while(0)
 
 #define ADD_TET(v0, v1, v2, v3) do{                                     \
@@ -50,21 +50,24 @@
     tets_[t_id] = {true, v0, v1, v2, v3};                          \
   } while(0)
 
-#define CHECK_ADD_EDGE(v0, v1, isnew0, isnew1) do{      \
-    if(isnew0 || isnew1) {                              \
-      ADD_EDGE(v0, v1);                                 \
-    }                                                   \
+#define CHECK_ADD_EDGE(v0, v1) do{                                      \
+    bool need_add = true;                                               \
+    for(size_t e_id : vertices_[v0].edge_ids_) {                        \
+      if(edges_[e_id].vices_[v0].edge_idsd_[0] == v1 || edges_[e_id].vid_[1]==v1) {      \
+        need_add = false; break;                                        \
+      }                                                                 \
+    }                                                                   \
+    if(need_add) { ADD_EDGE(v0, v1); }                                  \
   }while(0)
 
-#define CHECK_AND_ADD_ZERO_POINT(va, vb, nv, ev_map, isnew) do{         \
+#define CHECK_AND_ADD_ZERO_POINT(va, vb, nv, ev_map) do{         \
     std::pair<size_t, size_t> e= (va<vb) ? std::make_pair(va, vb) : std::make_pair(vb, va); \
     auto itr=ev_map.find(e);                                            \
     if(itr==ev_map.end()) {                                             \
       nv=vertices_.size();                                              \
       ADD_VERTEX(ZERO_POINT, (vertices_[va].pt_+vertices_[vb].pt_)/2.0); \
       ev_map[e]=nv;                                                     \
-      isnew=true;                                                       \
-    } else { isnew=false; nv=itr->second; }                             \
+    } else { nv=itr->second; }                             \
   }while(0)
 
 #define INTET_CONSTRAINT(int_judge, v0, v1, v2, v3) do{                 \
@@ -107,7 +110,7 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
   const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_vertices = bs.getVertices();
   for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bs_vertices) {
     tet_points.push_back({Point(v[0], v[1], v[2]), pt_id++});
-    vertices_.push_back({true, BBOX_POINT, v, {}, {}});
+    vertices_.push_back({true, BBOX_POINT, v, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
   }
 
   Delaunay delaunay(tet_points.begin(), tet_points.end());
@@ -296,7 +299,7 @@ void zsw::Triangulation::mutualTessellation()
       tessellation3v1(vo[0],vo[1],vo[2],vi[0],tet,ev_map);
     }
     // bo : bi = 2 : 2
-    else if(vo_cnt==2 && vo_cnt==vi_cnt) {
+    else if(vo_cnt==2 && vi_cnt==2) {
       tessellation2v2(vo[0],vo[1],vi[0],vi[1],tet, ev_map);
     }
     // bo : bi = 1 : 3
@@ -329,10 +332,9 @@ void zsw::Triangulation::tessellation3v1(const size_t vo_0, const size_t vo_1,
 
   // add vertices
   size_t nv0, nv1, nv2;
-  bool isnew0=false, isnew1=false, isnew2=false; // if nv* is new vertex
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map, isnew0);
-  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_0, nv1, ev_map, isnew1);
-  CHECK_AND_ADD_ZERO_POINT(vo_2, vi_0, nv2, ev_map, isnew2);
+  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map);
+  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_0, nv1, ev_map);
+  CHECK_AND_ADD_ZERO_POINT(vo_2, vi_0, nv2, ev_map);
 
   // add tets
   ADD_TET(vi_0, nv0, nv1, nv2);
@@ -341,14 +343,14 @@ void zsw::Triangulation::tessellation3v1(const size_t vo_0, const size_t vo_1,
   ADD_TET(nv2, nv1, nv0, vo_2);
 
   // add edges
-  CHECK_ADD_EDGE(nv0, vi_0, isnew0, false);  CHECK_ADD_EDGE(nv0, nv1, isnew0, isnew1);
-  CHECK_ADD_EDGE(nv0, nv2, isnew0, isnew2);  CHECK_ADD_EDGE(nv0, vo_0, isnew0, false);
-  CHECK_ADD_EDGE(nv0, vo_1, isnew0, false);  CHECK_ADD_EDGE(nv0, vo_2, isnew0, false);
+  CHECK_ADD_EDGE(nv0, vi_0);  CHECK_ADD_EDGE(nv0, nv1);
+  CHECK_ADD_EDGE(nv0, nv2);  CHECK_ADD_EDGE(nv0, vo_0);
+  CHECK_ADD_EDGE(nv0, vo_1);  CHECK_ADD_EDGE(nv0, vo_2);
 
-  CHECK_ADD_EDGE(nv1, nv2, isnew1, isnew2);  CHECK_ADD_EDGE(nv1, vi_0, isnew1, false);
-  CHECK_ADD_EDGE(nv1, vo_1, isnew1, false);  CHECK_ADD_EDGE(nv1, vo_2, isnew1, false);
+  CHECK_ADD_EDGE(nv1, nv2);  CHECK_ADD_EDGE(nv1, vi_0);
+  CHECK_ADD_EDGE(nv1, vo_1);  CHECK_ADD_EDGE(nv1, vo_2);
 
-  CHECK_ADD_EDGE(nv2, vi_0, isnew2, false);  CHECK_ADD_EDGE(nv2, vo_2, isnew2, false);
+  CHECK_ADD_EDGE(nv2, vi_0);  CHECK_ADD_EDGE(nv2, vo_2);
 }
 
 void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
@@ -380,11 +382,10 @@ void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
   for(size_t ei=0; ei<inv_cnt; ++ei) {    invalidEdge(inv_e_ids[ei]);  }
   // add vertices
   size_t nv0, nv1, nv2, nv3;
-  bool isnew0=false, isnew1=false, isnew2=false, isnew3=false;
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map, isnew0);
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_1, nv1, ev_map, isnew1);
-  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_0, nv2, ev_map, isnew2);
-  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_1, nv3, ev_map, isnew3);
+  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map);
+  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_1, nv1, ev_map);
+  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_0, nv2, ev_map);
+  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_1, nv3, ev_map);
 
   // add tet
   ADD_TET(nv0, nv1, nv2, vo_0);  ADD_TET(nv0, nv1, nv2, vi_0);
@@ -392,18 +393,18 @@ void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
   ADD_TET(nv2, nv1, vo_0, vo_1);  ADD_TET(nv2, nv1, nv3, vo_1);
 
   // add edge
-  CHECK_ADD_EDGE(nv0, vo_0, isnew0, false); CHECK_ADD_EDGE(nv0, nv1, isnew0, isnew1);
-  CHECK_ADD_EDGE(nv0, nv2, isnew0, isnew2); CHECK_ADD_EDGE(nv0, vi_0, isnew0, false);
+  CHECK_ADD_EDGE(nv0, vo_0); CHECK_ADD_EDGE(nv0, nv1);
+  CHECK_ADD_EDGE(nv0, nv2); CHECK_ADD_EDGE(nv0, vi_0);
 
-  CHECK_ADD_EDGE(nv1, vo_0, isnew1, false); CHECK_ADD_EDGE(nv1, vi_0, isnew1, false);
-  CHECK_ADD_EDGE(nv1, vi_1, isnew1, false); CHECK_ADD_EDGE(nv1, vo_1, isnew1, false);
-  CHECK_ADD_EDGE(nv1, nv2, isnew1, isnew2); CHECK_ADD_EDGE(nv1, nv3, isnew1, isnew3);
+  CHECK_ADD_EDGE(nv1, vo_0); CHECK_ADD_EDGE(nv1, vi_0);
+  CHECK_ADD_EDGE(nv1, vi_1); CHECK_ADD_EDGE(nv1, vo_1);
+  CHECK_ADD_EDGE(nv1, nv2); CHECK_ADD_EDGE(nv1, nv3);
 
-  CHECK_ADD_EDGE(nv2, vo_0, isnew2, false); CHECK_ADD_EDGE(nv2, vo_1, isnew2, false);
-  CHECK_ADD_EDGE(nv2, vi_0, isnew2, false); CHECK_ADD_EDGE(nv2, vi_1, isnew2, false);
-  CHECK_ADD_EDGE(nv2, nv3, isnew2, isnew3);
+  CHECK_ADD_EDGE(nv2, vo_0); CHECK_ADD_EDGE(nv2, vo_1);
+  CHECK_ADD_EDGE(nv2, vi_0); CHECK_ADD_EDGE(nv2, vi_1);
+  CHECK_ADD_EDGE(nv2, nv3);
 
-  CHECK_ADD_EDGE(nv3, vo_1, isnew3, false); CHECK_ADD_EDGE(nv3, vi_1, isnew3, false);
+  CHECK_ADD_EDGE(nv3, vo_1); CHECK_ADD_EDGE(nv3, vi_1);
 }
 
 void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
@@ -428,24 +429,23 @@ void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
 
   // add vertices
   size_t nv0, nv1, nv2;
-  bool isnew0, isnew1, isnew2;
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map, isnew0);
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_1, nv1, ev_map, isnew1);
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_2, nv2, ev_map, isnew2);
+  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map);
+  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_1, nv1, ev_map);
+  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_2, nv2, ev_map);
 
   // add tets
   ADD_TET(vo_0, nv0, nv1, nv2);  ADD_TET(nv0, vi_0, vi_1, vi_2);
   ADD_TET(nv1, nv0, vi_1, vi_2);  ADD_TET(nv2, nv0, nv1, vi_2);
 
   // add edge
-  CHECK_ADD_EDGE(nv0, nv1, isnew0, isnew1);  CHECK_ADD_EDGE(nv0, nv2, isnew0, isnew2);
-  CHECK_ADD_EDGE(nv0, vo_0, isnew0, false);  CHECK_ADD_EDGE(nv0, vi_0, isnew0, false);
-  CHECK_ADD_EDGE(nv0, vi_1, isnew0, false);  CHECK_ADD_EDGE(nv0, vi_2, isnew0, false);
+  CHECK_ADD_EDGE(nv0, nv1);  CHECK_ADD_EDGE(nv0, nv2);
+  CHECK_ADD_EDGE(nv0, vo_0);  CHECK_ADD_EDGE(nv0, vi_0);
+  CHECK_ADD_EDGE(nv0, vi_1);  CHECK_ADD_EDGE(nv0, vi_2);
 
-  CHECK_ADD_EDGE(nv1, nv2, isnew1, isnew2);  CHECK_ADD_EDGE(nv1, vo_0, isnew1, false);
-  CHECK_ADD_EDGE(nv1, vi_1, isnew1, false); CHECK_ADD_EDGE(nv1, vi_2, isnew1, false);
+  CHECK_ADD_EDGE(nv1, nv2);  CHECK_ADD_EDGE(nv1, vo_0);
+  CHECK_ADD_EDGE(nv1, vi_1); CHECK_ADD_EDGE(nv1, vi_2);
 
-  CHECK_ADD_EDGE(nv2, vo_0, isnew2, false); CHECK_ADD_EDGE(nv2, vi_2, isnew2, false);
+  CHECK_ADD_EDGE(nv2, vo_0); CHECK_ADD_EDGE(nv2, vi_2);
 }
 
 void zsw::Triangulation::invalidEdge(const size_t e_id)
@@ -648,7 +648,6 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
 
   // add new vertex
   REUSE_VERTEX(pt, pt_type, e.vid_[0]);
-
   // add new tets
   assert(tet_ids.size()>=bound_tris.size());
   auto tet_itr = tet_ids.begin();
@@ -674,6 +673,8 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
     arround_v.insert(b_tr[0]); arround_v.insert(b_tr[1]);
     arround_v.insert(b_tr[2]);
   }
+
+  std::cerr << inv_edge_ids.size() << " :: " << arround_v.size() << std::endl;
   assert(inv_edge_ids.size() > arround_v.size());
   auto e_itr=inv_edge_ids.begin();
   for(const size_t v_id : arround_v) {
@@ -936,6 +937,7 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
                      && vertices_[edges_[e_id].vid_[0]].pt_type_==ZERO_POINT
                       && eids_set.find(e_id)!=eids_set.end()){
                      eids.push(e_id); eids_set.insert(e_id);} });
+    std::cout << __FILE__ << __LINE__ << std::endl;
   } else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
 }
 
