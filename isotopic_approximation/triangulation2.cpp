@@ -906,9 +906,9 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
     }
   }
   std::list<Eigen::Matrix<zsw::Scalar,3,1>> candicate_pts;
-  omp_lock_t data_lock;
-  omp_init_lock(&data_lock);
-#pragma omp parallel for
+  // omp_lock_t data_lock;
+  // omp_init_lock(&data_lock);
+  //#pragma omp parallel for
   for(size_t i=0; i<tet_ids.size(); ++i) {
     const size_t *vid = tets_[tet_ids[i]].vid_;
     std::list<Eigen::Matrix<zsw::Scalar,3,1>> tmp_candicate_pts;
@@ -916,11 +916,11 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
               vertices_[vid[2]].pt_, vertices_[vid[3]].pt_, tet_sample_r_, tmp_candicate_pts);
     tmp_candicate_pts.remove_if(std::bind(&KernelRegionJudger::judge, &krj, std::placeholders::_1));
 
-    omp_set_lock(&data_lock);
+    // omp_set_lock(&data_lock);
     candicate_pts.splice(candicate_pts.end(), tmp_candicate_pts);
-    omp_unset_lock(&data_lock);
+    // omp_unset_lock(&data_lock);
   }
-  omp_destroy_lock(&data_lock);
+  // omp_destroy_lock(&data_lock);
   // check if keepJpts
   std::vector<std::pair<size_t,zsw::Scalar>> jpts_update;
   const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt_ptr = nullptr;

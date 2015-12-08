@@ -25,7 +25,7 @@
 
 #define ZSW_DEBUG
 
-#define NORMAL_CONT_TOL 0.8
+#define NORMAL_CONT_TOL 0.9
 
 namespace zsw
 {

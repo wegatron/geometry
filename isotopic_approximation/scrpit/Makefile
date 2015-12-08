@@ -3,21 +3,21 @@ SHELL = /bin/sh
 DATA_DIR =  /home/wegatron/workspace/geometry/data
 SIMP_OUTPUT_DIR = /home/wegatron/tmp/simp_tol
 
-TEST_SIMP_TOL_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/test_simptolerance
+TEST_SIMP_TOL_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/release/bin/test_simptolerance
 TEST_SIMP_TOL_EXEC_DEBUG = /home/wegatron/workspace/geometry/isotopic_approximation/build-debug/bin/test_simptolerance
-DEBUG_SIMP_JPTS_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/debug_simp_jpts
+DEBUG_SIMP_JPTS_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/release/bin/debug_simp_jpts
 
 SPHERE = ${DATA_DIR}/sphere.stl
 SPHERE_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/sphere/
 SPHERE_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/sphere/sphere
 SPHERE_THICK = 0.1
-SPHERE_SAMPLE_R = 0.01
+SPHERE_SAMPLE_R = 0.03
 
 FANDISK = ${DATA_DIR}/fandisk.obj
 FANDISK_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/fandisk/
 FANDISK_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/fandisk/fandisk
 FANDISK_THICK = 0.008
-FANDISK_SAMPLE_R = 0.0008
+FANDISK_SAMPLE_R = 0.002
 
 BUNNY = ${DATA_DIR}/bunny.obj
 BUNNY_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/bunny/
@@ -35,19 +35,19 @@ CYLINDER = ${DATA_DIR}/cylinder.ply
 CYLINDER_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/cylinder
 CYLINDER_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/cylinder/cylinder
 CYLINDER_THICK = 0.02
-CYLINDER_SAMPLE_R =  0.002
+CYLINDER_SAMPLE_R =  0.006
 
 FERTILITY =  ${DATA_DIR}/fertility.stl
 FERTILITY_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/fertility
 FERTILITY_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/fertility/fertility
 FERTILITY_THICK = 0.5
-FERTILITY_SAMPLE_R = 0.1
+FERTILITY_SAMPLE_R = 0.12
 
 ARMADILLO = ${DATA_DIR}/Armadillo.obj
 ARMADILLO_OUTPUT_DIR = ${SIMP_OUTPUT_DIR}/Armadillo
 ARMADILLO_OUTPUT_PREFIX = ${SIMP_OUTPUT_DIR}/Armadillo/Armadillo
 ARMADILLO_THICK = 0.6
-ARMADILLO_SAMOKE_R = 0.1
+ARMADILLO_SAMOKE_R = 0.12
 
 .PHONY : default
 default:
