@@ -265,10 +265,10 @@ void zsw::Triangulation::simpZeroSurface()
   }
 }
 
-void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
-{
-  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-}
+// void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
+// {
+//   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+// }
 
 bool pairComp(const std::pair<size_t, size_t> &a, const std::pair<size_t, size_t> &b)
 {
@@ -561,7 +561,7 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
       const JudgePoint &jpt = *jpt_itr;
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
       assert((A*ans-(jpt.pt_-pt)).norm()<zsw::const_val::eps);
-      if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) {std::cerr << "[WARNING] : Solve error!" << std::endl;continue;}
+      //if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) {std::cerr << "[WARNING] : Solve error!" << std::endl;continue;}
       if(ans[0]<0 || ans[1]<0 || ans[2]<0 || ans[0]+ans[1]+ans[2]>1) { continue; } // not in tet
       zsw::Scalar jpt_val_cur=pt_val+ans.dot(nv);
       if(fabs(jpt_val_cur-jpt.val_exp_) > 1.0+zsw::const_val::eps) { return false; }
@@ -634,7 +634,7 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
                                       const std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update,
                                       Edge &e,
                                       std::list<JudgePoint> &all_jpts,
-                                      std::queue<size_t> &eids, std::set<size_t> &eids_set)
+                                      std::function<void(const size_t e_id)> eb_func)
 {
   // invalid old tets and edges and vertex
   std::unordered_set<size_t> inv_edge_ids;
@@ -681,12 +681,12 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
 
     const zsw::PointType tmp_pt_type[2]={
       vertices_[edges_[tmp_eid].vid_[0]].pt_type_,
-      vertices_[edges_[tmp_eid].vid_[1]].pt_type_};
-
-    if( tmp_pt_type[0] != tmp_pt_type[1] ||
-        (tmp_pt_type[0]!=OUTER_POINT && tmp_pt_type[1]!=INNER_POINT) ||
-        eids_set.find(*e_itr) != eids_set.end() ) {      continue;    }
-    eids_set.insert(tmp_eid); eids.push(tmp_eid);
+      vertices_[edges_[tmp_eid].vid_[1]].pt_type_
+    };
+    // if( tmp_pt_type[0] != tmp_pt_type[1] ||
+    //     (tmp_pt_type[0]!=OUTER_POINT && tmp_pt_type[1]!=INNER_POINT) ||
+    //     eids_set.find(*e_itr) != eids_set.end() ) {      continue;    }
+    eb_func(tmp_eid);
   }
 }
 
@@ -828,8 +828,13 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
     if(step_info %100 == 0) {
       NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
     }
-    edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update,
-                 e, all_jpts, eids, eids_set);
+    edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update, e, all_jpts,
+                 [&eids, &eids_set,this](const size_t e_id){
+                   if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
+                      && (vertices_[edges_[e_id].vid_[0]].pt_type_==OUTER_POINT || vertices_[edges_[e_id].vid_[0]].pt_type_==INNER_POINT)
+                      && eids_set.find(e_id)!=eids_set.end()) {
+                     eids.push(e_id); eids_set.insert(e_id); }
+                 });
   } else if(step_info %100 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
 #else
   // using qem in accending order
@@ -857,8 +862,13 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
     if(step_info %100 == 0) {
       NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
     }
-    edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update,
-                 e, all_jpts, eids, eids_set);
+    edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update, e, all_jpts,
+                 [&eids, &eids_set, this](const size_t e_id){
+                   if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
+                      && (vertices_[edges_[e_id].vid_[0]].pt_type_==OUTER_POINT || vertices_[edges_[e_id].vid_[0]].pt_type_==INNER_POINT)
+                      && eids_set.find(e_id)!=eids_set.end()) {
+                     eids.push(e_id); eids_set.insert(e_id); }
+                 });
     vertices_[e.vid_[0]].qem_ = cur_qem;
   } else if(step_info %100 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
 #endif
@@ -920,19 +930,11 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
   if(merge_pt_ptr != nullptr) {
     NZSWLOG("zsw_info")  << "zc: collapse edge!!!" << std::endl;
     edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
-                 e, all_jpts, eids, eids_set);
-    // debug write out
-    // static size_t debug_cnt=0;
-    // if((*merge_pt_ptr)[0]<0.58 && (*merge_pt_ptr)[0]>0.53
-    //    && (*merge_pt_ptr)[1]<-0.01 && (*merge_pt_ptr)[1]>-0.045
-    //    && (*merge_pt_ptr)[2]<-1.04 && (*merge_pt_ptr)[2]>-1.06)
-    // {
-    //   std::function<bool(const zsw::Tet&)> ignore_bbox
-    //     = std::bind(&zsw::Triangulation::ignoreWithPtType, &(*this), std::placeholders::_1, zsw::BBOX_POINT);
-    //   std::function<bool(const zsw::Tet&)> ignore_self_out
-    //     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, &(*this), std::placeholders::_1, zsw::OUTER_POINT);
-    //   writeTetMesh(std::string(DEBUG_OUTPUT_DIR)+"tol_"+std::to_string(debug_cnt++), {ignore_bbox, ignore_self_out});
-    // }
+                 e, all_jpts, [&eids, &eids_set,this](const size_t e_id) {
+                   if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
+                     && vertices_[edges_[e_id].vid_[0]].pt_type_==ZERO_POINT
+                      && eids_set.find(e_id)!=eids_set.end()){
+                     eids.push(e_id); eids_set.insert(e_id);} });
   } else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
 }
 

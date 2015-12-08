@@ -93,7 +93,6 @@ namespace zsw
     const std::vector<Tet>& getTets() const { return tets_; }
     const std::vector<Edge>& getEdges() const { return edges_; }
   private:
-
     /// \brief init the triangulation's tets from 3d delaunay triangulation.
     ///
     /// including fill the basic tets data, and bi, bo's surface sampling
@@ -125,9 +124,9 @@ namespace zsw
                       const std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update,
                       Edge &e,
                       std::list<JudgePoint> &all_jpts,
-                      std::queue<size_t> &eids, std::set<size_t> &eids_set);
+                      std::function<void(const size_t e_id)> eb_func);
 
-    void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
+    // void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
 
     void tessellation3v1(const size_t vo_0, const size_t vo_1, const size_t vo_2, const size_t vi_0,
                          Tet &tet, std::map<std::pair<size_t,size_t>,
