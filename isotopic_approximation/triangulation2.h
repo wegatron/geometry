@@ -40,6 +40,7 @@ namespace zsw
     std::vector<Tet>& getTets()  { return tets_; }
     std::vector<Edge>& getEdges() { return edges_; }
     bool testLinkCondition(const Edge &e) const { return linkCondition(e); }
+    void checkTetEdgeExist(const size_t n0, const size_t n1, const size_t n2, const size_t n3);
 #endif
 
     void testCollapseDebug(const size_t vid0, const size_t vid1);
@@ -56,6 +57,15 @@ namespace zsw
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
 
+    /// \brief check triangulation is valid(we can use the triangulation to get a result)
+    ///
+    /// check there is no edge link inner vertex and bbox vertex, if there exist,
+    /// we cant generate no zero surface
+    ///
+    /// \warning
+    /// \return true if the triangulation is good, false otherwise.
+    bool isGoodTriangulation() const;
+
     void simpTolerance();
     void simpZeroSurface();
     void mutualTessellation();
@@ -68,7 +78,6 @@ namespace zsw
     /// \brief a funtion for debug or check.
     ///
     /// write the single tet in the triangulation.
-    ///
     ///
     /// \param
     void writeTet(const std::string &filepath, const size_t tet_id) const;

@@ -286,7 +286,9 @@ void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t
 
 bool pairComp(const std::pair<size_t, size_t> &a, const std::pair<size_t, size_t> &b)
 {
-  return a.first<b.first || a.second<b.second;
+  if(a.first < b.first) { return true; }
+  if(a.first==b.first && a.second<b.second) { return true; }
+  return false;
 }
 
 void zsw::Triangulation::mutualTessellation()
@@ -317,6 +319,24 @@ void zsw::Triangulation::mutualTessellation()
       tessellation1v3(vo[0],vi[0],vi[1],vi[2],tet, ev_map);
     }
   }
+
+#ifdef ZSW_DEBUG
+  size_t ntet_size = tets_.size();
+  std::cerr << "size_old:" << tet_size << std::endl;
+  for(size_t t_id=0; t_id<ntet_size; ++t_id) {
+    Tet &tet=tets_[t_id];
+    if(!tet.valid_) { continue; }
+    size_t vo_cnt=0, vi_cnt=0;
+    for(size_t vid : tet.vid_) {
+      if(vertices_[vid].pt_type_ == OUTER_POINT) { vo_cnt++; }
+      else if(vertices_[vid].pt_type_ == INNER_POINT){ vi_cnt++;  }
+    }
+    if(vo_cnt!=0 && vi_cnt!=0) {
+      std::cerr << "error " << t_id << std::endl;
+      abort();
+    }
+  }
+#endif
 }
 
 void zsw::Triangulation::tessellation3v1(const size_t vo_0,
@@ -332,15 +352,18 @@ void zsw::Triangulation::tessellation3v1(const size_t vo_0,
   // invalid old tet and edges
   invalidTet(tet);
   // add tets
-  ADD_TET(vi_0, nv0, nv1, nv2);
-  ADD_TET(nv0, vo_0, vo_2, vo_1);
-  ADD_TET(nv1, nv0, vo_2, vo_1);
-  ADD_TET(nv2, nv1, nv0, vo_2);
+  ADD_TET(vi_0, nv0, nv1, nv2); ADD_TET(nv0, vo_0, vo_2, vo_1);
+  ADD_TET(nv1, nv0, vo_2, vo_1); ADD_TET(nv2, nv1, nv0, vo_2);
 
   // add edges
   CHECK_ADD_EDGE(nv0,nv1); CHECK_ADD_EDGE(nv0, nv2);
   CHECK_ADD_EDGE(nv1,nv2); CHECK_ADD_EDGE(nv0, vo_1);
   CHECK_ADD_EDGE(nv0, vo_2); CHECK_ADD_EDGE(nv1,vo_2);
+
+#ifdef ZSW_DEBUG
+  checkTetEdgeExist(vi_0, nv0, nv1, nv2); checkTetEdgeExist(nv0, vo_0, vo_2, vo_1);
+  checkTetEdgeExist(nv1, nv0, vo_2, vo_1); checkTetEdgeExist(nv2, nv1, nv0, vo_2);
+#endif
 }
 
 void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
@@ -364,7 +387,14 @@ void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
   CHECK_ADD_EDGE(nv0,nv2);  CHECK_ADD_EDGE(nv0,nv1);
   CHECK_ADD_EDGE(nv1,vi_0);  CHECK_ADD_EDGE(nv1,nv3);
   CHECK_ADD_EDGE(nv1,nv2);  CHECK_ADD_EDGE(nv1,vo_1);
-  CHECK_ADD_EDGE(nv2,vo_0); CHECK_ADD_EDGE(nv2,vi_1);
+  CHECK_ADD_EDGE(nv2,nv3); CHECK_ADD_EDGE(nv2,vo_0);
+  CHECK_ADD_EDGE(nv2,vi_1);
+
+#ifdef ZSW_DEBUG
+  checkTetEdgeExist(nv0, nv1, nv2, vo_0);  checkTetEdgeExist(nv0, nv1, nv2, vi_0);
+  checkTetEdgeExist(nv1, nv2, vi_0, vi_1);  checkTetEdgeExist(nv1, nv2, nv3, vi_1);
+  checkTetEdgeExist(nv2, nv1, vo_0, vo_1);  checkTetEdgeExist(nv2, nv1, nv3, vo_1);
+#endif
 }
 
 void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
@@ -387,6 +417,11 @@ void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
   CHECK_ADD_EDGE(nv0,nv1);  CHECK_ADD_EDGE(nv0,vi_1);
   CHECK_ADD_EDGE(nv0,vi_2);  CHECK_ADD_EDGE(nv1,vi_2);
   CHECK_ADD_EDGE(nv1,nv2);  CHECK_ADD_EDGE(nv0,nv2);
+
+#ifdef ZSW_DEBUG
+  checkTetEdgeExist(vo_0, nv0, nv1, nv2);  checkTetEdgeExist(nv0, vi_0, vi_1, vi_2);
+  checkTetEdgeExist(nv1, nv0, vi_1, vi_2);  checkTetEdgeExist(nv2, nv0, nv1, vi_2);
+#endif
 }
 
 void zsw::Triangulation::invalidEdge(const size_t e_id)
@@ -937,4 +972,41 @@ void zsw::Triangulation::initNormalCond(NormalConditionJudger &ncj, const Edge &
   zsw::PointType opposite_pt_type = (e_pt_type==zsw::OUTER_POINT) ? zsw::INNER_POINT : zsw::OUTER_POINT;
   ADD_NORMAL_CONSTRAINT(e.vid_[0], e.vid_[1]);
   ADD_NORMAL_CONSTRAINT(e.vid_[1], e.vid_[0]);
+}
+
+bool zsw::Triangulation::isGoodTriangulation() const
+{
+  for(const Tet &tet : tets_) {
+    if(!tet.valid_) { continue; }
+    size_t vo_cnt=0, vi_cnt=0;
+    for(size_t vid : tet.vid_) {
+      if(vertices_[vid].pt_type_ == OUTER_POINT) { vo_cnt++; }
+      else if(vertices_[vid].pt_type_ == INNER_POINT){ vi_cnt++;  }
+    }
+    if(vo_cnt!=0 && vi_cnt!=0 && vo_cnt+vi_cnt!=4) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void zsw::Triangulation::checkTetEdgeExist(const size_t n0, const size_t n1, const size_t n2, const size_t n3)
+{
+  size_t e_cnt=0;
+  for(size_t e_id : vertices_[n0].edge_ids_) {
+    if(edges_[e_id].vid_[0]==n1 || edges_[e_id].vid_[0]==n2 ||  edges_[e_id].vid_[0]==n3) { ++e_cnt; }
+    if(edges_[e_id].vid_[1]==n1 || edges_[e_id].vid_[1]==n2 ||  edges_[e_id].vid_[1]==n3) { ++e_cnt; }
+  }
+
+  for(size_t e_id : vertices_[n1].edge_ids_) {
+    if(edges_[e_id].vid_[0]==n2 ||  edges_[e_id].vid_[0]==n3) { ++e_cnt; }
+    if(edges_[e_id].vid_[1]==n2 ||  edges_[e_id].vid_[1]==n3) { ++e_cnt; }
+  }
+
+  for(size_t e_id : vertices_[n2].edge_ids_) {
+    if(edges_[e_id].vid_[0]==n3) { ++e_cnt; }
+    if(edges_[e_id].vid_[1]==n3) { ++e_cnt; }
+  }
+
+  if(e_cnt!=6) { std::cout << __FILE__ << __LINE__ << std::endl; std::abort(); }
 }
