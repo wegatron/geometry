@@ -1,6 +1,7 @@
 #include <fstream>
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <zswlib/mesh/mesh_type.h>
+#include <zswlib/error_ctrl.h>
 #include "../triangulation2.h"
 #include "../surface_generator.h"
 
@@ -18,7 +19,9 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   zsw::genPoints(thick_dis, input_mesh, bo_points, bi_points);
 
   // judge points is 10 times dense as the basic mesh points
-  zsw::Triangulation tr(sample_r, bo_points, bi_points);
+  zsw::Triangulation tr;
+  CALL_FUNC(tr.construct(sample_r, bo_points, bi_points), abort());
+
   std::function<bool(const zsw::Tet&)> ignore_bbox
     = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::BBOX_POINT);
   std::function<bool(const zsw::Tet&)> ignore_out

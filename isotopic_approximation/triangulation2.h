@@ -35,17 +35,17 @@ namespace zsw
   {
   public:
 #ifdef ZSW_DEBUG
-    Triangulation() {}
     std::vector<Vertex>& getVertices() { return vertices_; }
     std::vector<Tet>& getTets()  { return tets_; }
     std::vector<Edge>& getEdges() { return edges_; }
     bool testLinkCondition(const Edge &e) const { return linkCondition(e); }
+    void testCollapseDebug(const size_t vid0, const size_t vid1);
     void checkTetEdgeExist(const size_t n0, const size_t n1, const size_t n2, const size_t n3);
 #endif
 
-    void testCollapseDebug(const size_t vid0, const size_t vid1);
+    Triangulation() {}
 
-    /// \brief Triangulation
+    /// \brief construct
     ///
     /// A construct a triangulation with bo and bi points, and sample
     /// with r radius to get the judge points, The S in paper.
@@ -53,18 +53,9 @@ namespace zsw
     /// \param r, sample triangle with r, as judge points. the S in paper.
     /// \param bo_points points in outer boundary
     /// \param bi_points points in inner boundary
-    Triangulation(const zsw::Scalar r,
+    size_t construct(const zsw::Scalar r,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
-
-    /// \brief check triangulation is valid(we can use the triangulation to get a result)
-    ///
-    /// check there is no edge link inner vertex and bbox vertex, if there exist,
-    /// we cant generate no zero surface
-    ///
-    /// \warning
-    /// \return true if the triangulation is good, false otherwise.
-    bool isGoodTriangulation() const;
 
     void simpTolerance();
     void simpZeroSurface();
@@ -102,6 +93,7 @@ namespace zsw
     const std::vector<Tet>& getTets() const { return tets_; }
     const std::vector<Edge>& getEdges() const { return edges_; }
   private:
+
     /// \brief init the triangulation's tets from 3d delaunay triangulation.
     ///
     /// including fill the basic tets data, and bi, bo's surface sampling
@@ -110,6 +102,15 @@ namespace zsw
     /// \param r the sample radius in bi and bo surface
     /// \param Delaunay cgal's delaunay triangulation
     void init(const zsw::Scalar r, Delaunay &delaunay);
+
+    /// \brief check triangulation is valid(we can use the triangulation to get a result)
+    ///
+    /// check there is no edge link inner vertex and bbox vertex, if there exist,
+    /// we cant generate no zero surface
+    ///
+    /// \warning
+    /// \return true if the triangulation is good, false otherwise.
+    bool isGoodTriangulation() const;
 
     void initQem(const size_t vid0, const size_t vid1, const size_t vid2);
 

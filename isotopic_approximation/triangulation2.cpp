@@ -78,7 +78,7 @@
     if(squared_dis > tmp_s_dis) { target_face<<vid0, vid1, vid2; squared_dis=tmp_s_dis; target_bt_i=bt_i; } \
   }while(0)
 
-zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_pts,
+size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_pts,
                                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_pts)
 {
   assert(bo_pts.size()!=0 && bi_pts.size()!=0);
@@ -113,6 +113,9 @@ zsw::Triangulation::Triangulation(const zsw::Scalar r, std::vector<Eigen::Matrix
   removeSliverTet(delaunay, vertices_);
   haveSliverTet(delaunay, vertices_);
   init(r, delaunay);
+  if(isGoodTriangulation()) { return 0; }
+  NZSWLOG("zsw_error")  << "isGoodTriangulation() failed!!!" << std::endl;
+  return __LINE__;
 }
 
 void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)

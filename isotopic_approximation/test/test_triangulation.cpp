@@ -6,6 +6,7 @@
 #include <zswlib/zsw_log.h>
 #include <zswlib/zsw_clock_c11.h>
 #include <zswlib/const_val.h>
+#include <zswlib/error_ctrl.h>
 #include "../surface_generator.h"
 #include "../triangulation2.h"
 #include "../debug.h"
@@ -40,7 +41,9 @@ void test_init(const std::string &file_path, const std::string &output_prefix,
 
   std::cerr << "start triangulation init!!!" << std::endl;
   zsw::common::ClockC11 clock;
-  zsw::Triangulation tr(r, bo_points, bi_points);
+  zsw::Triangulation tr;
+  CALL_FUNC(tr.construct(r, bo_points, bi_points), abort());
+
   std::cerr << "init triangulation time cost: " << clock.time() << std::endl;
   // output triangulation
   std::function<bool(const zsw::Tet&)> ignore_bbox
@@ -88,15 +91,17 @@ void test_mutualTessellation()
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
   zsw::genPoints(0.5, input_mesh, bo_points, bi_points);
   // init triangulation
-  zsw::Triangulation triangulation(0.1, bo_points, bi_points);
-  triangulation.mutualTessellation();
+  zsw::Triangulation tr;
+  CALL_FUNC(tr.construct(0.1, bo_points, bi_points), abort());
+
+  tr.mutualTessellation();
   // output triangulation
   std::function<bool(const zsw::Tet&)> ignore_bbox
-    = std::bind(&zsw::Triangulation::ignoreWithPtType, &triangulation, std::placeholders::_1, zsw::BBOX_POINT);
+    = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::BBOX_POINT);
   std::function<bool(const zsw::Tet&)> ignore_out
-    = std::bind(&zsw::Triangulation::ignoreWithPtType, &triangulation, std::placeholders::_1, zsw::OUTER_POINT);
+    = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::OUTER_POINT);
 
-  triangulation.writeTetMesh("/home/wegatron/tmp/cube_mutual.vtk", {ignore_bbox, ignore_out});
+  tr.writeTetMesh("/home/wegatron/tmp/cube_mutual.vtk", {ignore_bbox, ignore_out});
 }
 
 int main(int argc, char *argv[])

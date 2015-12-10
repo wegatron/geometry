@@ -5,6 +5,7 @@
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include<zswlib/mesh/mesh_type.h>
 #include <zswlib/mesh/vtk.h>
+#include <zswlib/error_ctrl.h>
 #include "../surface_generator.h"
 
 #include "../triangulation2.h"
@@ -15,10 +16,10 @@ BOOST_AUTO_TEST_SUITE(link_condition)
 
 BOOST_AUTO_TEST_CASE(fake_triangulation)
 {
-  zsw::Triangulation triangulation;
-  std::vector<zsw::Vertex> &vertices=triangulation.getVertices();
-  std::vector<zsw::Tet> &tets=triangulation.getTets();
-  std::vector<zsw::Edge> &edges=triangulation.getEdges();
+  zsw::Triangulation tr;
+  std::vector<zsw::Vertex> &vertices=tr.getVertices();
+  std::vector<zsw::Tet> &tets=tr.getTets();
+  std::vector<zsw::Edge> &edges=tr.getEdges();
   Eigen::Matrix<zsw::Scalar,3,1> v[5];
   v[0]<<0,0,0; v[1]<<1,0,0; v[2]<<0,1,1; v[3]<<0.5,0.5,1; v[4]=(v[1]+v[2])/2.0;
   vertices.push_back({true, zsw::OUTER_POINT, v[0], Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {0,1}, {}});  vertices.push_back({true, zsw::OUTER_POINT, v[1], Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {0,2},{}});
@@ -32,16 +33,16 @@ BOOST_AUTO_TEST_CASE(fake_triangulation)
   edges.push_back({true, 1,4}); edges.push_back({true, 2,3});
   edges.push_back({true, 2,4}); edges.push_back({true, 3,4});
 
-  BOOST_CHECK(!triangulation.testLinkCondition(edges[0]));
-  BOOST_CHECK(!triangulation.testLinkCondition(edges[1]));
-  BOOST_CHECK(triangulation.testLinkCondition(edges[2]));
-  BOOST_CHECK(triangulation.testLinkCondition(edges[3]));
-  BOOST_CHECK(!triangulation.testLinkCondition(edges[4]));
-  BOOST_CHECK(triangulation.testLinkCondition(edges[5]));
-  BOOST_CHECK(triangulation.testLinkCondition(edges[6]));
-  BOOST_CHECK(triangulation.testLinkCondition(edges[7]));
-  BOOST_CHECK(triangulation.testLinkCondition(edges[8]));
-  BOOST_CHECK(triangulation.testLinkCondition(edges[9]));
+  BOOST_CHECK(!tr.testLinkCondition(edges[0]));
+  BOOST_CHECK(!tr.testLinkCondition(edges[1]));
+  BOOST_CHECK(tr.testLinkCondition(edges[2]));
+  BOOST_CHECK(tr.testLinkCondition(edges[3]));
+  BOOST_CHECK(!tr.testLinkCondition(edges[4]));
+  BOOST_CHECK(tr.testLinkCondition(edges[5]));
+  BOOST_CHECK(tr.testLinkCondition(edges[6]));
+  BOOST_CHECK(tr.testLinkCondition(edges[7]));
+  BOOST_CHECK(tr.testLinkCondition(edges[8]));
+  BOOST_CHECK(tr.testLinkCondition(edges[9]));
 }
 
 BOOST_AUTO_TEST_CASE(real_triangulation)
@@ -57,16 +58,17 @@ BOOST_AUTO_TEST_CASE(real_triangulation)
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
   zsw::genPoints(0.5, input_mesh, bo_points, bi_points);
   // init triangulation
-  zsw::Triangulation triangulation(0.1, bo_points, bi_points);
-  const std::vector<zsw::Edge> &edges=triangulation.getEdges();
-  const std::vector<zsw::Vertex> &vertices=triangulation.getVertices();
-  const std::vector<zsw::Tet> &tets=triangulation.getTets();
+  zsw::Triangulation tr;
+  CALL_FUNC(tr.construct(0.1, bo_points, bi_points), abort());
+  const std::vector<zsw::Edge> &edges=tr.getEdges();
+  const std::vector<zsw::Vertex> &vertices=tr.getVertices();
+  const std::vector<zsw::Tet> &tets=tr.getTets();
   for(const zsw::Edge &e : edges) {
-    if(!triangulation.testLinkCondition(e)) {
+    if(!tr.testLinkCondition(e)) {
       std::cerr << "link condition fail with edge : " << e.vid_[0] << ", " << e.vid_[1] << std::endl;
       size_t i=0;
       for(size_t tid : vertices[e.vid_[0]].tet_ids_) {
-        triangulation.writeTet("/home/wegatron/tmp/test_linkcondition/cube_linkcond_single"
+        tr.writeTet("/home/wegatron/tmp/test_linkcondition/cube_linkcond_single"
                                +std::to_string(i++)+".vtk", tid);
       }
       std::set<size_t> fv; // vertex construct a face with edge e
@@ -111,7 +113,7 @@ BOOST_AUTO_TEST_CASE(real_triangulation)
       break;
     }
   }
-  triangulation.writeTetMesh("/home/wegatron/tmp/test_linkcondition/cube_link_cond.vtk", {});
+  tr.writeTetMesh("/home/wegatron/tmp/test_linkcondition/cube_link_cond.vtk", {});
 }
 
 BOOST_AUTO_TEST_SUITE_END()

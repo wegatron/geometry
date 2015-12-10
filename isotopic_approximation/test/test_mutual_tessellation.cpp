@@ -5,6 +5,7 @@
 #include <fstream>
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <zswlib/mesh/mesh_type.h>
+#include <zswlib/error_ctrl.h>
 #include "../triangulation2.h"
 #include "../surface_generator.h"
 
@@ -19,20 +20,21 @@ bool pairComp(const std::pair<size_t, size_t> &a, const std::pair<size_t, size_t
   return false;
 }
 
-BOOST_AUTO_TEST_CASE(test_sphere)
+void test(const std::string &file_path, const double thick, const double sample_r)
 {
   zsw::mesh::TriMesh in_mesh;
-  if(!OpenMesh::IO::read_mesh(in_mesh, "/home/wegatron/workspace/geometry/data/sphere.obj")) {
+  if(!OpenMesh::IO::read_mesh(in_mesh, file_path)) {
     std::cerr << "[ERROR] can't read mesh!" << std::endl;
     abort();
   }
 
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bo_points;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
-  zsw::genPoints(0.1, in_mesh, bo_points, bi_points);
-  zsw::Triangulation tr(0.05, bo_points, bi_points);
-  if(!tr.isGoodTriangulation()) { std::cerr << "invalid triangulation!" << std::endl; abort(); }
+  zsw::genPoints(thick, in_mesh, bo_points, bi_points);
+  zsw::Triangulation tr;
+  CALL_FUNC(tr.construct(sample_r, bo_points, bi_points), abort());
 
+#if 0
   {
     std::function<bool(const zsw::Tet&)> ignore_bbox
       = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::BBOX_POINT);
@@ -48,6 +50,7 @@ BOOST_AUTO_TEST_CASE(test_sphere)
     tr.writeTetMesh("/home/wegatron/tmp/debug_tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
     tr.writeTetMesh("/home/wegatron/tmp/debug_all.vtk", {});
   }
+#endif
 
   tr.mutualTessellation();
   const std::vector<zsw::Tet> &tets = tr.getTets();
@@ -89,6 +92,13 @@ BOOST_AUTO_TEST_CASE(test_sphere)
     ++it_tr; ++it_check;
   }
   BOOST_CHECK(e_set_check.size()==ev_cnt);
+}
+
+BOOST_AUTO_TEST_CASE(test_cases)
+{
+  test("/home/wegatron/workspace/geometry/data/sphere.obj", 0.1,0.05);
+  std::cout << "sphere fine!" << std::endl;
+  test("/home/wegatron/workspace/geometry/data/fandisk.obj", 0.008,0.004);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
