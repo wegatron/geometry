@@ -126,7 +126,7 @@ namespace zsw
                       std::list<JudgePoint> &all_jpts,
                       std::function<void(const size_t e_id)> eb_func);
 
-    // void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
+    void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
 
     void tessellation3v1(const size_t vo_0, const size_t vo_1, const size_t vo_2, const size_t vi_0,
                          Tet &tet, std::map<std::pair<size_t,size_t>,

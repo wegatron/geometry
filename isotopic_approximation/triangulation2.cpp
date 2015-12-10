@@ -44,6 +44,12 @@
     edges_[e_id].vid_[0]=v0; edges_[e_id].vid_[1]=v1;   \
   }while(0)
 
+#define FIND_ZERO_VERTEX_ID(va, vb, vid) do{            \
+    auto it = ev_map.find(std::pair<size_t,size_t>(va,vb));     \
+    ASSURE(it!=ev_map.end(), abort());                          \
+    vid = it->second;                                           \
+  }while(0)
+
 #define REUSE_TET(v0, v1, v2, v3, t_id) do {                            \
     vertices_[v0].tet_ids_.push_back(t_id);   vertices_[v1].tet_ids_.push_back(t_id); \
     vertices_[v2].tet_ids_.push_back(t_id);   vertices_[v3].tet_ids_.push_back(t_id); \
@@ -53,21 +59,11 @@
 #define CHECK_ADD_EDGE(v0, v1) do{                                      \
     bool need_add = true;                                               \
     for(size_t e_id : vertices_[v0].edge_ids_) {                        \
-      if(edges_[e_id].vices_[v0].edge_idsd_[0] == v1 || edges_[e_id].vid_[1]==v1) {      \
+      if(edges_[e_id].vid_[0]==v1 || edges_[e_id].vid_[1]==v1) {        \
         need_add = false; break;                                        \
       }                                                                 \
     }                                                                   \
     if(need_add) { ADD_EDGE(v0, v1); }                                  \
-  }while(0)
-
-#define CHECK_AND_ADD_ZERO_POINT(va, vb, nv, ev_map) do{         \
-    std::pair<size_t, size_t> e= (va<vb) ? std::make_pair(va, vb) : std::make_pair(vb, va); \
-    auto itr=ev_map.find(e);                                            \
-    if(itr==ev_map.end()) {                                             \
-      nv=vertices_.size();                                              \
-      ADD_VERTEX(ZERO_POINT, (vertices_[va].pt_+vertices_[vb].pt_)/2.0); \
-      ev_map[e]=nv;                                                     \
-    } else { nv=itr->second; }                             \
   }while(0)
 
 #define INTET_CONSTRAINT(int_judge, v0, v1, v2, v3) do{                 \
@@ -267,12 +263,26 @@ void zsw::Triangulation::simpZeroSurface()
     size_t cur_eid = eids.front(); eids_set.erase(cur_eid); eids.pop();
     tryCollapseZeroEdge(cur_eid, eids, eids_set);
   }
+  std::cout << __FILE__ << __LINE__ << std::endl;
 }
 
-// void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
-// {
-//   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-// }
+void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
+{
+  const size_t edges_size = edges_.size();
+  for(size_t e_id=0; e_id<edges_size; ++e_id) {
+    Edge &e = edges_[e_id];
+    if(e.valid_ && vertices_[e.vid_[0]].pt_type_==OUTER_POINT && vertices_[e.vid_[1]].pt_type_==INNER_POINT ||
+       vertices_[e.vid_[0]].pt_type_==INNER_POINT && vertices_[e.vid_[1]].pt_type_==OUTER_POINT) {
+      size_t vid = vertices_.size();
+      ADD_VERTEX(ZERO_POINT, (vertices_[e.vid_[0]].pt_+vertices_[e.vid_[1]].pt_)/2.0);
+      invalidEdge(e_id);
+      ADD_EDGE(vid, e.vid_[0]); ADD_EDGE(vid, e.vid_[1]);
+      if(e.vid_[0] > e.vid_[1]) { std::swap(e.vid_[0], e.vid_[1]); }
+      std::pair<size_t,size_t> ep = std::pair<size_t,size_t>(e.vid_[0], e.vid_[1]);
+      ev_map[ep]=vid;
+    }
+  }
+}
 
 bool pairComp(const std::pair<size_t, size_t> &a, const std::pair<size_t, size_t> &b)
 {
@@ -283,7 +293,7 @@ void zsw::Triangulation::mutualTessellation()
 {
   // add zero point with edge
   std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> ev_map(pairComp); // bi bo edge to vertex index map
-  //addZeroPoints(ev_map);
+  addZeroPoints(ev_map);
   size_t tet_size=tets_.size();
   for(size_t t_id=0; t_id<tet_size; ++t_id) {
     Tet &tet=tets_[t_id];
@@ -309,33 +319,18 @@ void zsw::Triangulation::mutualTessellation()
   }
 }
 
-void zsw::Triangulation::tessellation3v1(const size_t vo_0, const size_t vo_1,
-                                         const size_t vo_2, const size_t vi_0,
-                                         Tet &tet,
-                                         std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
+void zsw::Triangulation::tessellation3v1(const size_t vo_0,
+                                         const size_t vo_1, const size_t vo_2, const size_t vi_0,
+                                         Tet &tet, std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
+  // find the zero point
+  size_t nv0, nv1, nv2;
+  FIND_ZERO_VERTEX_ID(vo_0,vi_0,nv0);
+  FIND_ZERO_VERTEX_ID(vo_1,vi_0,nv1);
+  FIND_ZERO_VERTEX_ID(vo_2,vi_0,nv2);
+
   // invalid old tet and edges
   invalidTet(tet);
-
-  size_t inv_cnt=0;
-  size_t inv_e_ids[3]={-1, -1, -1};
-  for(size_t e_id : vertices_[vi_0].edge_ids_) {
-    if(edges_[e_id].vid_[0]==vo_0 || edges_[e_id].vid_[0]==vo_1 || edges_[e_id].vid_[0]==vo_2
-       || edges_[e_id].vid_[1]==vo_0 || edges_[e_id].vid_[1]==vo_1 || edges_[e_id].vid_[1]==vo_2)
-      {
-        inv_e_ids[inv_cnt]=e_id;
-        if(++inv_cnt==3) { break; }
-      }
-  }
-  assert(inv_cnt<=3);
-  for(size_t ei=0; ei<inv_cnt; ++ei) {    invalidEdge(inv_e_ids[ei]);  }
-
-  // add vertices
-  size_t nv0, nv1, nv2;
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map);
-  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_0, nv1, ev_map);
-  CHECK_AND_ADD_ZERO_POINT(vo_2, vi_0, nv2, ev_map);
-
   // add tets
   ADD_TET(vi_0, nv0, nv1, nv2);
   ADD_TET(nv0, vo_0, vo_2, vo_1);
@@ -343,14 +338,9 @@ void zsw::Triangulation::tessellation3v1(const size_t vo_0, const size_t vo_1,
   ADD_TET(nv2, nv1, nv0, vo_2);
 
   // add edges
-  CHECK_ADD_EDGE(nv0, vi_0);  CHECK_ADD_EDGE(nv0, nv1);
-  CHECK_ADD_EDGE(nv0, nv2);  CHECK_ADD_EDGE(nv0, vo_0);
-  CHECK_ADD_EDGE(nv0, vo_1);  CHECK_ADD_EDGE(nv0, vo_2);
-
-  CHECK_ADD_EDGE(nv1, nv2);  CHECK_ADD_EDGE(nv1, vi_0);
-  CHECK_ADD_EDGE(nv1, vo_1);  CHECK_ADD_EDGE(nv1, vo_2);
-
-  CHECK_ADD_EDGE(nv2, vi_0);  CHECK_ADD_EDGE(nv2, vo_2);
+  CHECK_ADD_EDGE(nv0,nv1); CHECK_ADD_EDGE(nv0, nv2);
+  CHECK_ADD_EDGE(nv1,nv2); CHECK_ADD_EDGE(nv0, vo_1);
+  CHECK_ADD_EDGE(nv0, vo_2); CHECK_ADD_EDGE(nv1,vo_2);
 }
 
 void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
@@ -358,53 +348,23 @@ void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
                                          Tet &tet,
                                          std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
-  // invalid old tet and edges
-  invalidTet(tet);
-  tet.valid_=false;
-  size_t inv_e_ids[4]={-1,-1,-1,-1};
-  size_t inv_cnt=0;
-  for(size_t e_id : vertices_[vo_0].edge_ids_) {
-    if(edges_[e_id].vid_[0]==vi_0 || edges_[e_id].vid_[0]==vi_1
-       || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_1) {
-      inv_e_ids[inv_cnt]=e_id;
-      if(++inv_cnt==2) { break; }
-    }
-  }
-  for(size_t e_id : vertices_[vo_1].edge_ids_) {
-    if(edges_[e_id].vid_[0]==vi_0 || edges_[e_id].vid_[0]==vi_1
-       || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_1) {
-      inv_e_ids[inv_cnt]=e_id;
-      if(++inv_cnt==4) { break; }
-    }
-  }
-
-  assert(inv_cnt<=4);
-  for(size_t ei=0; ei<inv_cnt; ++ei) {    invalidEdge(inv_e_ids[ei]);  }
-  // add vertices
   size_t nv0, nv1, nv2, nv3;
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map);
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_1, nv1, ev_map);
-  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_0, nv2, ev_map);
-  CHECK_AND_ADD_ZERO_POINT(vo_1, vi_1, nv3, ev_map);
+  FIND_ZERO_VERTEX_ID(vo_0,vi_0,nv0);
+  FIND_ZERO_VERTEX_ID(vo_0, vi_1,nv1);
+  FIND_ZERO_VERTEX_ID(vo_1,vi_0,nv2);
+  FIND_ZERO_VERTEX_ID(vo_1,vi_1,nv3);
 
-  // add tet
+  // invalid old tet and  add new tet
+  invalidTet(tet);
   ADD_TET(nv0, nv1, nv2, vo_0);  ADD_TET(nv0, nv1, nv2, vi_0);
   ADD_TET(nv1, nv2, vi_0, vi_1);  ADD_TET(nv1, nv2, nv3, vi_1);
   ADD_TET(nv2, nv1, vo_0, vo_1);  ADD_TET(nv2, nv1, nv3, vo_1);
 
-  // add edge
-  CHECK_ADD_EDGE(nv0, vo_0); CHECK_ADD_EDGE(nv0, nv1);
-  CHECK_ADD_EDGE(nv0, nv2); CHECK_ADD_EDGE(nv0, vi_0);
-
-  CHECK_ADD_EDGE(nv1, vo_0); CHECK_ADD_EDGE(nv1, vi_0);
-  CHECK_ADD_EDGE(nv1, vi_1); CHECK_ADD_EDGE(nv1, vo_1);
-  CHECK_ADD_EDGE(nv1, nv2); CHECK_ADD_EDGE(nv1, nv3);
-
-  CHECK_ADD_EDGE(nv2, vo_0); CHECK_ADD_EDGE(nv2, vo_1);
-  CHECK_ADD_EDGE(nv2, vi_0); CHECK_ADD_EDGE(nv2, vi_1);
-  CHECK_ADD_EDGE(nv2, nv3);
-
-  CHECK_ADD_EDGE(nv3, vo_1); CHECK_ADD_EDGE(nv3, vi_1);
+  // add edges
+  CHECK_ADD_EDGE(nv0,nv2);  CHECK_ADD_EDGE(nv0,nv1);
+  CHECK_ADD_EDGE(nv1,vi_0);  CHECK_ADD_EDGE(nv1,nv3);
+  CHECK_ADD_EDGE(nv1,nv2);  CHECK_ADD_EDGE(nv1,vo_1);
+  CHECK_ADD_EDGE(nv2,vo_0); CHECK_ADD_EDGE(nv2,vi_1);
 }
 
 void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
@@ -412,40 +372,21 @@ void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
                                          Tet &tet,
                                          std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
 {
-  // invalid old tet and edges
-  invalidTet(tet);
-  size_t inv_e_ids[3]={-1,-1,-1};
-  size_t inv_cnt=0;
-  for(size_t e_id : vertices_[vo_0].edge_ids_) {
-    if(edges_[e_id].vid_[0]==vi_0 || edges_[e_id].vid_[0]==vi_1 || edges_[e_id].vid_[0]==vi_2
-       || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_0 || edges_[e_id].vid_[1]==vi_0) {
-      inv_e_ids[inv_cnt]=e_id;
-      if(++inv_cnt==3) { break; }
-    }
-  }
-
-  assert(inv_cnt<=3);
-  for(size_t ei=0; ei<inv_cnt; ++ei) { invalidEdge(inv_e_ids[ei]); }
-
-  // add vertices
+  // find zero points
   size_t nv0, nv1, nv2;
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_0, nv0, ev_map);
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_1, nv1, ev_map);
-  CHECK_AND_ADD_ZERO_POINT(vo_0, vi_2, nv2, ev_map);
+  FIND_ZERO_VERTEX_ID(vo_0,vi_0,nv0);
+  FIND_ZERO_VERTEX_ID(vo_0,vi_1,nv1);
+  FIND_ZERO_VERTEX_ID(vo_0,vi_2,nv2);
 
-  // add tets
+  // invalid old tet and add new tets
+  invalidTet(tet);
   ADD_TET(vo_0, nv0, nv1, nv2);  ADD_TET(nv0, vi_0, vi_1, vi_2);
   ADD_TET(nv1, nv0, vi_1, vi_2);  ADD_TET(nv2, nv0, nv1, vi_2);
 
   // add edge
-  CHECK_ADD_EDGE(nv0, nv1);  CHECK_ADD_EDGE(nv0, nv2);
-  CHECK_ADD_EDGE(nv0, vo_0);  CHECK_ADD_EDGE(nv0, vi_0);
-  CHECK_ADD_EDGE(nv0, vi_1);  CHECK_ADD_EDGE(nv0, vi_2);
-
-  CHECK_ADD_EDGE(nv1, nv2);  CHECK_ADD_EDGE(nv1, vo_0);
-  CHECK_ADD_EDGE(nv1, vi_1); CHECK_ADD_EDGE(nv1, vi_2);
-
-  CHECK_ADD_EDGE(nv2, vo_0); CHECK_ADD_EDGE(nv2, vi_2);
+  CHECK_ADD_EDGE(nv0,nv1);  CHECK_ADD_EDGE(nv0,vi_1);
+  CHECK_ADD_EDGE(nv0,vi_2);  CHECK_ADD_EDGE(nv1,vi_2);
+  CHECK_ADD_EDGE(nv1,nv2);  CHECK_ADD_EDGE(nv0,nv2);
 }
 
 void zsw::Triangulation::invalidEdge(const size_t e_id)
@@ -562,7 +503,7 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
       const JudgePoint &jpt = *jpt_itr;
       Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-pt);
       assert((A*ans-(jpt.pt_-pt)).norm()<zsw::const_val::eps);
-      //if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) {std::cerr << "[WARNING] : Solve error!" << std::endl;continue;}
+      if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) { continue; }
       if(ans[0]<0 || ans[1]<0 || ans[2]<0 || ans[0]+ans[1]+ans[2]>1) { continue; } // not in tet
       zsw::Scalar jpt_val_cur=pt_val+ans.dot(nv);
       if(fabs(jpt_val_cur-jpt.val_exp_) > 1.0+zsw::const_val::eps) { return false; }
@@ -586,7 +527,7 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
     size_t bt_i=0;
     size_t target_bt_i=0;
     zsw::Scalar squared_dis = (jpt_itr->pt_-pt).squaredNorm();
-    Eigen::Matrix<size_t,3,1> target_face;
+    Eigen::Matrix<size_t,3,1> target_face = bound_tris.front();
     for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
       UPDATE_MIN_JPT_DIS2FACE(b_tr[0], b_tr[1], b_tr[2], vertices_[b_tr[0]].pt_, vertices_[b_tr[1]].pt_, vertices_[b_tr[2]].pt_);
       UPDATE_MIN_JPT_DIS2FACE(-1, b_tr[0], b_tr[1], pt, vertices_[b_tr[0]].pt_, vertices_[b_tr[1]].pt_);
@@ -595,6 +536,7 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
       ++bt_i;
     }
 
+    std::cout << __FILE__ << __LINE__ << std::endl;
     zsw::Scalar val0;
     Eigen::Matrix<zsw::Scalar,3,1> tri_v[3];
     if(target_face[0] == -1) { tri_v[0]=pt; val0=pt_val; }
@@ -613,6 +555,7 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
     else if(vertices_[target_face[2]].pt_type_==zsw::ZERO_POINT) { nv[1]=-val0; }
     else { nv[1]=1.0-val0; }
 
+    std::cout << __FILE__ << __LINE__ << std::endl;
     // calc jpt's update data
     Eigen::Matrix<zsw::Scalar,3,2> A;
     A.block<3,1>(0,0)=tri_v[1] - tri_v[0];
@@ -928,7 +871,6 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
   for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : candicate_pts) {
     if(isKeepJpts(0, pt, bound_tris, all_jpts, jpts_update)) {  merge_pt_ptr = &pt; break;  }
   }
-
   if(merge_pt_ptr != nullptr) {
     NZSWLOG("zsw_info")  << "zc: collapse edge!!!" << std::endl;
     edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
