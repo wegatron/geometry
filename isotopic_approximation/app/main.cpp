@@ -37,17 +37,20 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
 
-  std::cerr << "tris fine after init" << std::endl;
   tr.simpTolerance();
-  CALL_FUNC(tr.isGood(), abort());
-  std::cerr << "tris fine after simpTolerance" << std::endl;
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
-  tr.mutualTessellation();
   CALL_FUNC(tr.isGood(), abort());
-  std::cerr << "tris fine after mutualTessellation" << std::endl;
-  tr.writeSurface(output_prefix+"_simp_tol_after_zero_mt.obj", zsw::ZERO_POINT);
-  tr.simpZeroSurface();
-  tr.writeSurface(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
+
+  tr.mutualTessellation();
+  tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
+  CALL_FUNC(tr.isGood(), abort());
+
+  // tr.simpZeroSurface();
+  // tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
+  // tr.writeSurface(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
+
+  // CALL_FUNC(tr.isGood(), abort());
+  // std::cerr << "tris fine after simpZeroSurface" << std::endl;
 }
 
 int main(int argc, char *argv[])

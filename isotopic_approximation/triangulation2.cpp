@@ -273,6 +273,7 @@ void zsw::Triangulation::addZeroPoints(std::map<std::pair<size_t,size_t>, size_t
   const size_t edges_size = edges_.size();
   for(size_t e_id=0; e_id<edges_size; ++e_id) {
     Edge &e = edges_[e_id];
+    if(!e.valid_) { continue; }
     if(e.valid_ && vertices_[e.vid_[0]].pt_type_==OUTER_POINT && vertices_[e.vid_[1]].pt_type_==INNER_POINT ||
        vertices_[e.vid_[0]].pt_type_==INNER_POINT && vertices_[e.vid_[1]].pt_type_==OUTER_POINT) {
       size_t vid = vertices_.size();
@@ -311,17 +312,17 @@ void zsw::Triangulation::mutualTessellation()
     // bo : bi = 3 : 1
     if(vo_cnt==3 && vi_cnt==1) {
       tessellation3v1(vo[0],vo[1],vo[2],vi[0],tet,ev_map);
-      if(isGood()!=0) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+      //if(isGood()!=0) { std::cout << ""_FILE__ << __LINE__ << std::endl; abort(); }
     }
     // bo : bi = 2 : 2
     else if(vo_cnt==2 && vi_cnt==2) {
       tessellation2v2(vo[0],vo[1],vi[0],vi[1],tet, ev_map);
-      if(isGood()!=0) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+      //if(isGood()!=0) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
     }
     // bo : bi = 1 : 3
     else if(vo_cnt==1 && vi_cnt==3) {
       tessellation1v3(vo[0],vi[0],vi[1],vi[2],tet, ev_map);
-      if(isGood()!=0) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+      //if(isGood()!=0) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
     }
   }
 
@@ -655,11 +656,11 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
     arround_v.insert(b_tr[2]);
   }
 
-  std::cerr << inv_edge_ids.size() << " :: " << arround_v.size() << std::endl;
+  //std::cerr << inv_edge_ids.size() << " :: " << arround_v.size() << std::endl;
   assert(inv_edge_ids.size() > arround_v.size());
-  if(inv_edge_ids.size() < arround_v.size()) {
-    std::cerr << "isGood ret_code:" <<  isGood() << std::endl;
-  }
+  // if(inv_edge_ids.size() < arround_v.size()) {
+  //   std::cerr << "isGood ret_code:" <<  isGood() << std::endl;
+  // }
   auto e_itr=inv_edge_ids.begin();
   for(const size_t v_id : arround_v) {
     const size_t tmp_eid=*e_itr;
@@ -1016,6 +1017,23 @@ size_t zsw::Triangulation::isGood() const
     e_set_check.insert(std::pair<size_t,size_t>(vids[1], vids[3]));
     e_set_check.insert(std::pair<size_t,size_t>(vids[2], vids[3]));
   }
+
+  {
+    auto it_tr = e_set_tr.begin();
+    auto it_check = e_set_check.begin();
+    while(it_tr!=e_set_tr.end() && it_check!=e_set_check.end()) {
+      if(it_tr->first != it_check->first || it_tr->second!=it_check->second) {
+        writeTetMeshAdjVs("/home/wegatron/tmp/debug_adj.vtk", {it_tr->first});
+        std::cerr << "it_tr:" << it_tr->first << " " << it_tr->second << std::endl;
+        std::cerr << "it_check:" << it_check->first << " " << it_check->second << std::endl;
+        std::cerr << "it_tr_type:" << vertices_[it_tr->first].pt_type_ << " " << vertices_[it_tr->second].pt_type_ << std::endl;
+        std::cerr << "it_check_type:" << vertices_[it_check->first].pt_type_ << " " << vertices_[it_check->second].pt_type_ << std::endl;
+        std::abort();
+      }
+      ++it_tr; ++it_check;
+    }
+  }
+
   if(e_set_check.size() != ev_cnt) {
     NZSWLOG("zsw_err") << "e_set_size error:" << "e_set_tr=" << e_set_tr.size() << ", e_set_check=" << e_set_check.size() << std::endl;
     return __LINE__;
