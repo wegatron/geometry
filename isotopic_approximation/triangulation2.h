@@ -23,7 +23,7 @@
 #include "basic_data_structure.h"
 #include "constraint.h"
 
-#define ZSW_DEBUG
+//#define ZSW_DEBUG
 
 #define NORMAL_CONT_TOL 0.9
 
@@ -34,14 +34,15 @@ namespace zsw
   class Triangulation final
   {
   public:
-#ifdef ZSW_DEBUG
+
+    // functions for debug start{
     std::vector<Vertex>& getVertices() { return vertices_; }
     std::vector<Tet>& getTets()  { return tets_; }
     std::vector<Edge>& getEdges() { return edges_; }
     bool testLinkCondition(const Edge &e) const { return linkCondition(e); }
     void testCollapseDebug(const size_t vid0, const size_t vid1);
     void checkTetEdgeExist(const size_t n0, const size_t n1, const size_t n2, const size_t n3);
-#endif
+    // functions for debug end }
 
     Triangulation() {}
 
@@ -57,14 +58,22 @@ namespace zsw
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
                   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
 
+    /// \brief check triangulation is valid(we can use the triangulation to get a result)
+    ///
+    /// check there is no edge link inner vertex and bbox vertex, if there exist,
+    /// we cant generate no zero surface. Also check no valid tet include invalid vertex
+    ///
+    /// \note check error using error code, not use bool as return value
+    /// \warning
+    /// \return 0 if the triangulation is good, error line number otherwise.
+    size_t isGood() const;
+
     void simpTolerance();
     void simpZeroSurface();
     void mutualTessellation();
     void writeTetMeshAdjVs(const std::string &filepath, const std::vector<size_t> &vids) const;
     void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;
-    /* void writeTetMesh(const std::string &filepath, size_t mask) const; */
     void writeSurface(const std::string &filepath, PointType pt_type) const;
-
 
     /// \brief a funtion for debug or check.
     ///
@@ -102,15 +111,6 @@ namespace zsw
     /// \param r the sample radius in bi and bo surface
     /// \param Delaunay cgal's delaunay triangulation
     void init(const zsw::Scalar r, Delaunay &delaunay);
-
-    /// \brief check triangulation is valid(we can use the triangulation to get a result)
-    ///
-    /// check there is no edge link inner vertex and bbox vertex, if there exist,
-    /// we cant generate no zero surface
-    ///
-    /// \warning
-    /// \return true if the triangulation is good, false otherwise.
-    bool isGoodTriangulation() const;
 
     void initQem(const size_t vid0, const size_t vid1, const size_t vid2);
 
@@ -158,7 +158,6 @@ namespace zsw
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
   };
-
 }
 
 #endif /* TRIANGULATION2_H */

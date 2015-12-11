@@ -12,13 +12,13 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   zsw::mesh::TriMesh input_mesh;
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     std::cerr << "[ERROR] can't read mesh!" << std::endl;
+    abort();
   }
 
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bo_points;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
   zsw::genPoints(thick_dis, input_mesh, bo_points, bi_points);
 
-  // judge points is 10 times dense as the basic mesh points
   zsw::Triangulation tr;
   CALL_FUNC(tr.construct(sample_r, bo_points, bi_points), abort());
 
@@ -37,9 +37,14 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
 
+  std::cerr << "tris fine after init" << std::endl;
   tr.simpTolerance();
+  CALL_FUNC(tr.isGood(), abort());
+  std::cerr << "tris fine after simpTolerance" << std::endl;
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.mutualTessellation();
+  CALL_FUNC(tr.isGood(), abort());
+  std::cerr << "tris fine after mutualTessellation" << std::endl;
   tr.writeSurface(output_prefix+"_simp_tol_after_zero_mt.obj", zsw::ZERO_POINT);
   tr.simpZeroSurface();
   tr.writeSurface(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);

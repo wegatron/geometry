@@ -113,9 +113,8 @@ size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Mat
   removeSliverTet(delaunay, vertices_);
   haveSliverTet(delaunay, vertices_);
   init(r, delaunay);
-  if(isGoodTriangulation()) { return 0; }
-  NZSWLOG("zsw_error")  << "isGoodTriangulation() failed!!!" << std::endl;
-  return __LINE__;
+  CALL_FUNC(isGood(), return __LINE__);
+  return 0;
 }
 
 void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
@@ -312,14 +311,17 @@ void zsw::Triangulation::mutualTessellation()
     // bo : bi = 3 : 1
     if(vo_cnt==3 && vi_cnt==1) {
       tessellation3v1(vo[0],vo[1],vo[2],vi[0],tet,ev_map);
+      if(isGood()!=0) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
     }
     // bo : bi = 2 : 2
     else if(vo_cnt==2 && vi_cnt==2) {
       tessellation2v2(vo[0],vo[1],vi[0],vi[1],tet, ev_map);
+      if(isGood()!=0) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
     }
     // bo : bi = 1 : 3
     else if(vo_cnt==1 && vi_cnt==3) {
       tessellation1v3(vo[0],vi[0],vi[1],vi[2],tet, ev_map);
+      if(isGood()!=0) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
     }
   }
 
@@ -574,7 +576,6 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
       ++bt_i;
     }
 
-    std::cout << __FILE__ << __LINE__ << std::endl;
     zsw::Scalar val0;
     Eigen::Matrix<zsw::Scalar,3,1> tri_v[3];
     if(target_face[0] == -1) { tri_v[0]=pt; val0=pt_val; }
@@ -593,7 +594,6 @@ bool zsw::Triangulation::isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::M
     else if(vertices_[target_face[2]].pt_type_==zsw::ZERO_POINT) { nv[1]=-val0; }
     else { nv[1]=1.0-val0; }
 
-    std::cout << __FILE__ << __LINE__ << std::endl;
     // calc jpt's update data
     Eigen::Matrix<zsw::Scalar,3,2> A;
     A.block<3,1>(0,0)=tri_v[1] - tri_v[0];
@@ -627,7 +627,7 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
   for(size_t t_id : tet_ids) { invalidTet(tets_[t_id]); }
   for(size_t e_id : inv_edge_ids) { invalidEdge(e_id); }
 
-  // add new vertex
+  // new vertex
   REUSE_VERTEX(pt, pt_type, e.vid_[0]);
   // add new tets
   assert(tet_ids.size()>=bound_tris.size());
@@ -657,18 +657,13 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
 
   std::cerr << inv_edge_ids.size() << " :: " << arround_v.size() << std::endl;
   assert(inv_edge_ids.size() > arround_v.size());
+  if(inv_edge_ids.size() < arround_v.size()) {
+    std::cerr << "isGood ret_code:" <<  isGood() << std::endl;
+  }
   auto e_itr=inv_edge_ids.begin();
   for(const size_t v_id : arround_v) {
     const size_t tmp_eid=*e_itr;
     REUSE_EDGE(e.vid_[0], v_id, tmp_eid); ++e_itr;
-
-    const zsw::PointType tmp_pt_type[2]={
-      vertices_[edges_[tmp_eid].vid_[0]].pt_type_,
-      vertices_[edges_[tmp_eid].vid_[1]].pt_type_
-    };
-    // if( tmp_pt_type[0] != tmp_pt_type[1] ||
-    //     (tmp_pt_type[0]!=OUTER_POINT && tmp_pt_type[1]!=INNER_POINT) ||
-    //     eids_set.find(*e_itr) != eids_set.end() ) {      continue;    }
     eb_func(tmp_eid);
   }
 }
@@ -917,7 +912,6 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
                      && vertices_[edges_[e_id].vid_[0]].pt_type_==ZERO_POINT
                       && eids_set.find(e_id)!=eids_set.end()){
                      eids.push(e_id); eids_set.insert(e_id);} });
-    std::cout << __FILE__ << __LINE__ << std::endl;
   } else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
 }
 
@@ -977,20 +971,99 @@ void zsw::Triangulation::initNormalCond(NormalConditionJudger &ncj, const Edge &
   ADD_NORMAL_CONSTRAINT(e.vid_[1], e.vid_[0]);
 }
 
-bool zsw::Triangulation::isGoodTriangulation() const
+size_t zsw::Triangulation::isGood() const
 {
+  // tet is good
   for(const Tet &tet : tets_) {
     if(!tet.valid_) { continue; }
     size_t vo_cnt=0, vi_cnt=0;
     for(size_t vid : tet.vid_) {
+      if(!vertices_[vid].valid_) {
+        NZSWLOG("zsw_err") << "There is valid tet include invalid vertex!!!" << std::endl;
+        return __LINE__;
+      }
       if(vertices_[vid].pt_type_ == OUTER_POINT) { vo_cnt++; }
       else if(vertices_[vid].pt_type_ == INNER_POINT){ vi_cnt++;  }
     }
     if(vo_cnt!=0 && vi_cnt!=0 && vo_cnt+vi_cnt!=4) {
-      return false;
+      NZSWLOG("zsw_error")  << "There is tet include inner, outer, bbox vertex!!!" << std::endl;
+      return __LINE__;
     }
   }
-  return true;
+
+  // edge is good
+  std::set<std::pair<size_t,size_t>,zsw::PairCompFunc> e_set_tr(pairComp), e_set_check(pairComp);
+  size_t ev_cnt=0;
+  for(const zsw::Edge &e : edges_) {
+    if(!e.valid_) { continue; }
+    ++ev_cnt;
+    std::pair<size_t,size_t> ep;
+    ep.first=e.vid_[0]; ep.second=e.vid_[1];
+    if(ep.first>ep.second) { std::swap(ep.first, ep.second); }
+    e_set_tr.insert(ep);
+  }
+  if(ev_cnt != e_set_tr.size()) {
+    NZSWLOG("zsw_err") << "duplicate edge in edges_!!!" << std::endl;
+    return __LINE__;
+  }
+  for(const zsw::Tet &tet : tets_) {
+    if(!tet.valid_) { continue; }
+    size_t vids[4]; std::copy(tet.vid_, tet.vid_+4, vids); std::sort(vids, vids+4);
+    e_set_check.insert(std::pair<size_t,size_t>(vids[0], vids[1]));
+    e_set_check.insert(std::pair<size_t,size_t>(vids[0], vids[2]));
+    e_set_check.insert(std::pair<size_t,size_t>(vids[0], vids[3]));
+    e_set_check.insert(std::pair<size_t,size_t>(vids[1], vids[2]));
+    e_set_check.insert(std::pair<size_t,size_t>(vids[1], vids[3]));
+    e_set_check.insert(std::pair<size_t,size_t>(vids[2], vids[3]));
+  }
+  if(e_set_check.size() != ev_cnt) {
+    NZSWLOG("zsw_err") << "e_set_size error:" << "e_set_tr=" << e_set_tr.size() << ", e_set_check=" << e_set_check.size() << std::endl;
+    return __LINE__;
+  }
+
+  // vertex(adjcent info) is good
+  std::vector<size_t> ve_cnts(vertices_.size(),0);  // vertex's adjcent edge count
+  std::vector<size_t> vt_cnts(vertices_.size(),0); // vertex's adjcent tet count
+
+  for(size_t e_id=0; e_id<edges_.size(); ++e_id) {
+    const zsw::Edge &edge = edges_[e_id];
+    if(!edge.valid_) { continue; }
+    ++ve_cnts[edge.vid_[0]];
+    ++ve_cnts[edge.vid_[1]];
+    for(size_t eei=0; eei<2; ++eei) {
+      auto it = std::find(vertices_[edge.vid_[eei]].edge_ids_.begin(), vertices_[edge.vid_[eei]].edge_ids_.end(), e_id);
+      if(it==vertices_[edge.vid_[eei]].edge_ids_.end()) {
+        NZSWLOG("zsw_err")<<"vertex " << edge.vid_[eei]
+                          << "has no adjcent info of edge"<< edge.vid_[0] << ":" << edge.vid_[1] << std::endl;
+        return __LINE__;
+      }
+    }
+  }
+  for(size_t t_id=0; t_id<tets_.size(); ++t_id) {
+    const zsw::Tet &tet = tets_[t_id];
+    if(!tet.valid_) { continue; }
+    for(size_t vid : tet.vid_) {
+      ++vt_cnts[vid];
+      auto it = std::find(vertices_[vid].tet_ids_.begin(), vertices_[vid].tet_ids_.end(), t_id);
+      if(it==vertices_[vid].tet_ids_.end()) {
+        NZSWLOG("zsw_err") << "vertex" << vid << "has no adjcent info of tet" << t_id << std::endl;
+        return __LINE__;
+      }
+    }
+  }
+
+  for(size_t i=0; i<vertices_.size(); ++i) {
+    if(!vertices_[i].valid_) { continue; }
+    if(vertices_[i].edge_ids_.size() > ve_cnts[i]) {
+      NZSWLOG("zsw_err") << "vertex" << i << "has extra info of adj edges!!!" << std::endl;
+      return __LINE__;
+    }
+    if(vertices_[i].tet_ids_.size() > vt_cnts[i]) {
+      NZSWLOG("zsw_err") << "vertex" << i << "has extra info of adj tets!!!" << std::endl;
+      return __LINE__;
+    }
+  }
+  return 0;
 }
 
 void zsw::Triangulation::checkTetEdgeExist(const size_t n0, const size_t n1, const size_t n2, const size_t n3)
