@@ -95,7 +95,6 @@ namespace zsw
                                  std::set<size_t> eids_set);
 
     void tryCollapseZeroEdge(const size_t e_id,
-                                 std::queue<size_t> &eids,
                                  std::set<size_t> eids_set);
 
     const std::vector<Vertex>& getVertices() const { return vertices_; }
