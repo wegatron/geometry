@@ -43,9 +43,8 @@ void debugSimpJpts(const std::string &filepath, const std::string &output_prefix
       if(edges[e_id].valid_ &&
          (edges[e_id].vid_[0]==v1 || edges[e_id].vid_[1]==v1)) {        target_eid=e_id; break;      }
     }
-    std::queue<size_t> eids;
     std::set<size_t> eids_set;
-    tr.tryCollapseBoundaryEdge(target_eid, eids, eids_set);
+    tr.tryCollapseBoundaryEdge(target_eid, eids_set);
   }
 }
 

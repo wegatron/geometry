@@ -92,7 +92,6 @@ namespace zsw
     bool ignoreNotWithPtType(const Tet &tet, PointType pt_type);
 
     void tryCollapseBoundaryEdge(const size_t e_id,
-                                 std::queue<size_t> &eids,
                                  std::set<size_t> eids_set);
 
     void tryCollapseZeroEdge(const size_t e_id,
