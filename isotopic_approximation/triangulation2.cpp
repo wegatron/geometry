@@ -1153,12 +1153,13 @@ void zsw::Triangulation::splitJudgePoints(std::list<zsw::JudgePoint> &jpts, cons
                       vertices_[tmp_v[2]].pt_, vertices_[tmp_v[1]].pt_);
     krj.addConstraint(vertices_[tmp_v[3]].pt_, vertices_[tmp_v[1]].pt_,
                       vertices_[tmp_v[2]].pt_, vertices_[tmp_v[0]].pt_);
-    for(auto iter=jpts.begin(); iter!=jpts.end(); ++iter) {
+    for(auto iter=jpts.begin(); iter!=jpts.end(); ) {
       auto cur_iter=iter++;
       if(krj.judge(cur_iter->pt_)) { tets_[tids[ti]].jpts_.splice(tets_[tids[ti]].jpts_.end(), jpts, cur_iter); }
     }
   }
-  for(auto iter=jpts.begin(); iter!=jpts.end(); ++iter) {
+
+  for(auto iter=jpts.begin(); iter!=jpts.end();) {
     auto cur_iter=iter++;
     size_t target_ti=0;
     zsw::Scalar min_sq_dis=(cur_iter->pt_ - vertices_[tets_[tids[0]].vid_[0]].pt_).squaredNorm();
