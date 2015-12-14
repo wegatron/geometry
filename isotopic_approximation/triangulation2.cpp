@@ -358,8 +358,18 @@ void zsw::Triangulation::tessellation3v1(const size_t vo_0,
   // invalid old tet and edges
   invalidTet(tet);
   // add tets
-  ADD_TET(vi_0, nv0, nv1, nv2); ADD_TET(nv0, vo_0, vo_2, vo_1);
-  ADD_TET(nv1, nv0, vo_2, vo_1); ADD_TET(nv2, nv1, nv0, vo_2);
+  Eigen::Matrix<size_t,4,1> tets_info[4];
+  std::vector<size_t> tids;
+  tids.push_back(tets_.size()); tids.push_back(tets_.size()+1);
+  tids.push_back(tets_.size()+2);  tids.push_back(tets_.size()+3);
+  tets_info[0] << vi_0, nv0, nv1, nv2;
+  tets_info[1] << nv0, vo_0, vo_2, vo_1;
+  tets_info[2] << nv1, nv0, vo_2, vo_1;
+  tets_info[3] << nv2, nv1, nv0, vo_2;
+  for(size_t ti=0; ti<4; ++ti) {
+    ADD_TET(tets_info[ti][0], tets_info[ti][1], tets_info[ti][2], tets_info[ti][3]);
+  }
+  spliceJudgePoints(tet.jpts_, tids);
 
   // add edges
   CHECK_ADD_EDGE(nv0,nv1); CHECK_ADD_EDGE(nv0, nv2);
@@ -385,10 +395,21 @@ void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
 
   // invalid old tet and  add new tet
   invalidTet(tet);
-  ADD_TET(nv0, nv1, nv2, vo_0);  ADD_TET(nv0, nv1, nv2, vi_0);
-  ADD_TET(nv1, nv2, vi_0, vi_1);  ADD_TET(nv1, nv2, nv3, vi_1);
-  ADD_TET(nv2, nv1, vo_0, vo_1);  ADD_TET(nv2, nv1, nv3, vo_1);
-
+  Eigen::Matrix<size_t,4,1> tets_info[6];
+  std::vector<size_t> tids;
+  tids.push_back(tets_.size());   tids.push_back(tets_.size()+1);
+  tids.push_back(tets_.size()+2);   tids.push_back(tets_.size()+3);
+  tids.push_back(tets_.size()+4);   tids.push_back(tets_.size()+5);
+  tets_info[0] <<nv0, nv1, nv2, vo_0;
+  tets_info[1] <<nv0, nv1, nv2, vi_0;
+  tets_info[2] <<nv1, nv2, vi_0, vi_1;
+  tets_info[3] <<nv1, nv2, nv3, vi_1;
+  tets_info[4] <<nv2, nv1, vo_0, vo_1;
+  tets_info[5] <<nv2, nv1, nv3, vo_1;
+  for(size_t ti=0; ti<6; ++ti) {
+    ADD_TET(tets_info[ti][0], tets_info[ti][1], tets_info[ti][2], tets_info[ti][3]);
+  }
+  spliceJudgePoints(tet.jpts_, tids);
   // add edges
   CHECK_ADD_EDGE(nv0,nv2);  CHECK_ADD_EDGE(nv0,nv1);
   CHECK_ADD_EDGE(nv1,vi_0);  CHECK_ADD_EDGE(nv1,nv3);
@@ -416,8 +437,20 @@ void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
 
   // invalid old tet and add new tets
   invalidTet(tet);
-  ADD_TET(vo_0, nv0, nv1, nv2);  ADD_TET(nv0, vi_0, vi_1, vi_2);
-  ADD_TET(nv1, nv0, vi_1, vi_2);  ADD_TET(nv2, nv0, nv1, vi_2);
+  Eigen::Matrix<size_t,4,1> tets_info[4];
+  std::vector<size_t> tids;
+  tids.push_back(tets_.size());  tids.push_back(tets_.size()+1);
+  tids.push_back(tets_.size()+2);  tids.push_back(tets_.size()+3);
+  tets_info[0]<<vo_0, nv0, nv1, nv2;
+  tets_info[1]<<nv0, vi_0, vi_1, vi_2;
+  tets_info[2]<<nv1, nv0, vi_1, vi_2;
+  tets_info[3]<<nv2, nv0, nv1, vi_2;
+  for(size_t ti=0; ti<4; ++ti) {
+    ADD_TET(tets_info[ti][0], tets_info[ti][1], tets_info[ti][2], tets_info[ti][3]);
+  }
+  spliceJudgePoints(tet.jpts_, tids);
+  // ADD_TET(vo_0, nv0, nv1, nv2);  ADD_TET(nv0, vi_0, vi_1, vi_2);
+  // ADD_TET(nv1, nv0, vi_1, vi_2);  ADD_TET(nv2, nv0, nv1, vi_2);
 
   // add edge
   CHECK_ADD_EDGE(nv0,nv1);  CHECK_ADD_EDGE(nv0,vi_1);
@@ -1103,4 +1136,44 @@ void zsw::Triangulation::checkTetEdgeExist(const size_t n0, const size_t n1, con
   }
 
   if(e_cnt!=6) { std::cout << __FILE__ << __LINE__ << std::endl; std::abort(); }
+}
+
+void zsw::Triangulation::spliceJudgePoints(std::list<zsw::JudgePoint> &jpts, const std::vector<size_t> &tids)
+{
+  // // judge points splice
+  // zsw::KernelRegionJudger krjs[4];
+  // for(size_t ki=0; ki<4; ++ki) {
+  //   krjs[ki].addConstraint(vertices_[tets_info[ki][0]].pt_, vertices_[tets_info[ki][1]].pt_,
+  //                          vertices_[tets_info[ki][2]].pt_, vertices_[tets_info[ki][3]].pt_);
+  //   krjs[ki].addConstraint(vertices_[tets_info[ki][0]].pt_, vertices_[tets_info[ki][1]].pt_,
+  //                          vertices_[tets_info[ki][3]].pt_, vertices_[tets_info[ki][2]].pt_);
+  //   krjs[ki].addConstraint(vertices_[tets_info[ki][0]].pt_, vertices_[tets_info[ki][3]].pt_,
+  //                          vertices_[tets_info[ki][2]].pt_, vertices_[tets_info[ki][1]].pt_);
+  //   krjs[ki].addConstraint(vertices_[tets_info[ki][3]].pt_, vertices_[tets_info[ki][1]].pt_,
+  //                          vertices_[tets_info[ki][2]].pt_, vertices_[tets_info[ki][0]].pt_);
+  //   for(auto iter=tet.jpts_.begin(); iter!=tet.jpts_.end(); ++iter) {
+  //     auto cur_iter=iter++;
+  //     if(krjs[ki].judge(cur_iter->pt_)) { tets_[tets_info[ki][4]].jpts_.splice(tets_[tets_info[ki][4]].jpts_.end(),
+  //                                                                              tet.jpts_, cur_iter); }
+  //   }
+  // }
+  // for(auto iter=tet.jpts_.begin(); iter!=tet.jpts_.end(); ++iter) {
+  //   auto cur_iter=iter++;
+  //   size_t target_ti=0;
+  //   zsw::Scalar min_sq_dis=(cur_iter->pt_-vertices_[tet.vid_[0]].pt_).squaredNorm();
+  //   for(size_t ti=0; ti<4; ++ti) {
+  //     zsw::Scalar tmp_s_dis = calcPoint2TriSquaredDis(cur_iter->pt_, vertices_[tets_info[0][1]].pt_,
+  //                                                     vertices_[tets_info[0][2]].pt_, vertices_[tets_info[0][3]].pt_);
+  //     tmp_s_dis = std::min(tmp_s_dis, calcPoint2TriSquaredDis(cur_iter->pt_, vertices_[tets_info[0][0]].pt_,
+  //                                                             vertices_[tets_info[0][2]].pt_, vertices_[tets_info[0][3]].pt_) );
+  //     tmp_s_dis = std::min(tmp_s_dis, calcPoint2TriSquaredDis(cur_iter->pt_, vertices_[tets_info[0][0]].pt_,
+  //                                                             vertices_[tets_info[0][1]].pt_, vertices_[tets_info[0][3]].pt_) );
+  //     tmp_s_dis = std::min(tmp_s_dis, calcPoint2TriSquaredDis(cur_iter->pt_, vertices_[tets_info[0][0]].pt_,
+  //                                                             vertices_[tets_info[0][1]].pt_, vertices_[tets_info[0][2]].pt_) );
+  //     if(min_sq_dis > tmp_s_dis) { target_ti=ti; min_sq_dis = tmp_s_dis; }
+  //   }
+  //   tets_[tets_info[target_ti][4]].jpts_.splice(tets_[tets_info[target_ti][4]].jpts_.end(),
+  //                                               tet.jpts_, cur_iter);
+  // }
+  //std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }

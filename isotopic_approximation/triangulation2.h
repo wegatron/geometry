@@ -153,6 +153,8 @@ namespace zsw
     void invalidEdge(const size_t e_id);
 
     void invalidTet(Tet &tet);
+
+    void spliceJudgePoints(std::list<zsw::JudgePoint> &jpts, const std::vector<size_t> &tids);
     zsw::Scalar tet_sample_r_;
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
