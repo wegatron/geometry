@@ -34,6 +34,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   std::function<bool(const zsw::Tet&)> ignore_not_with_zero_point
     = std::bind(&zsw::Triangulation::ignoreNotWithPtType, &tr, std::placeholders::_1, zsw::ZERO_POINT);
 
+  tr.writeTetMesh(output_prefix+"tol_total_ori.vtk", {});
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
 
@@ -51,33 +52,9 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   //     ++real_ti;
   //   }
   // }
-
-  // check jpts size
-  {
-    const std::vector<zsw::Tet> &tets = tr.getTets();
-    size_t total=0;
-    for(const zsw::Tet &tet : tets) {
-      if(!tet.valid_) { continue; }
-      total += tet.jpts_.size();
-    }
-    std::cerr << "total jpts:" << total << std::endl;
-  }
-
   tr.simpTolerance();
-
-  // check jpts size
-  {
-    const std::vector<zsw::Tet> &tets = tr.getTets();
-    size_t total=0;
-    for(const zsw::Tet &tet : tets) {
-      if(!tet.valid_) { continue; }
-      total += tet.jpts_.size();
-    }
-    std::cerr << "total jpts:" << total << std::endl;
-  }
-
+  tr.writeTetMesh(output_prefix+"_smp_tol_total_before_mt.vtk", {});
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
-
   {
     const std::vector<zsw::Tet> &tets = tr.getTets();
     size_t real_ti=0;

@@ -83,32 +83,30 @@ size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Mat
 {
   assert(bo_pts.size()!=0 && bi_pts.size()!=0);
   tet_sample_r_ = r;
-
   Eigen::Matrix<zsw::Scalar,3,2> bbox;
   calcBBOX(bo_pts, bbox);
   zsw::Scalar scale = 0.5*(bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1)).norm();
   Eigen::Matrix<zsw::Scalar,3,1> transform = 0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
   zsw::BoundSphere bs(BOUND_SPHERE_MODEL_FILE, scale, transform);
-
   size_t pt_id=0;
   std::vector<std::pair<Point, size_t>> tet_points;
-  for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bo_pts) {
-    tet_points.push_back({Point(tmp[0], tmp[1], tmp[2]), pt_id++});
-    vertices_.push_back({true, OUTER_POINT, tmp, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
-  }
-
-  for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bi_pts) {
-    tet_points.push_back({Point(tmp[0],tmp[1],tmp[2]), pt_id++});
-    vertices_.push_back({true, INNER_POINT, tmp, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
-  }
-
   // add bound sphere points
   const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_vertices = bs.getVertices();
   for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bs_vertices) {
     tet_points.push_back({Point(v[0], v[1], v[2]), pt_id++});
     vertices_.push_back({true, BBOX_POINT, v, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
   }
-
+  std::cerr << "bs vertices size:" << bs_vertices.size() << std::endl;
+  // add bo points
+  for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bo_pts) {
+    tet_points.push_back({Point(tmp[0], tmp[1], tmp[2]), pt_id++});
+    vertices_.push_back({true, OUTER_POINT, tmp, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
+  }
+  // add bi points
+  for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bi_pts) {
+    tet_points.push_back({Point(tmp[0],tmp[1],tmp[2]), pt_id++});
+    vertices_.push_back({true, INNER_POINT, tmp, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
+  }
   Delaunay delaunay(tet_points.begin(), tet_points.end());
   removeSliverTet(delaunay, vertices_);
   haveSliverTet(delaunay, vertices_);
@@ -147,8 +145,6 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
     vertices_[tmp_tet.vid_[0]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[1]].tet_ids_.push_back(t_id);
     vertices_[tmp_tet.vid_[2]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[3]].tet_ids_.push_back(t_id++);
   }
-
-  // jpts_ptr_.reset(new zsw::Flann2<zsw::Scalar, 2>(all_jpts_[0].pt_.data(), all_jpts_.size()));
 
   // edge info
   size_t e_id=0;
@@ -219,18 +215,28 @@ bool zsw::Triangulation::linkCondition(const Edge &e) const
 
 void zsw::Triangulation::simpTolerance()
 {
-  std::queue<size_t> eids;
-  std::set<size_t> eids_set;
+  // std::queue<size_t> eids;
+  // std::set<size_t> eids_set;
+  std::vector<bool> istry_collapse(edges_.size(), false);
   for(size_t i=0; i<edges_.size(); ++i) {
     const Edge &e=edges_[i];
     if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_ ||
        (vertices_[e.vid_[0]].pt_type_!=OUTER_POINT && vertices_[e.vid_[0]].pt_type_!=INNER_POINT) )
       { continue; }
-    eids.push(i); eids_set.insert(i);
+    istry_collapse[i] = true;
+    //eids.push(i); eids_set.insert(i);
+  }
+  for(size_t i=0; i<edges_.size(); ++i) {
+
   }
   while(!eids.empty()) {
     size_t cur_eid=eids.front(); eids_set.erase(cur_eid); eids.pop();
     if(!edges_[cur_eid].valid_) { continue; }
+    if(edges_[cur_eid].vid_[0]<42 || edges_[cur_eid].vid_[1]<42) {
+      std::cerr << vertices_[edges_[cur_eid].vid_[0]].pt_type_ << " " << vertices_[edges_[cur_eid].vid_[1]].pt_type_ << std::endl;
+      std::cout << __FILE__ << __LINE__ << std::endl;
+      abort();
+    }
     tryCollapseBoundaryEdge(cur_eid, eids, eids_set);
   }
 }
@@ -586,7 +592,7 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
       else {  up_itr->first=bt_i; up_itr->second=jpt_val_cur;  ++update_cnt; }
     }
   }
-  std::cerr << "left jpts size:" << all_jpts.size()-update_cnt << std::endl;
+  //std::cerr << "left jpts size:" << all_jpts.size()-update_cnt << std::endl;
   return (update_cnt==all_jpts.size()) || isKeepJptsLeft(pt_val, pt, bound_tris, all_jpts, jpts_update);
 }
 
@@ -680,7 +686,7 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
     assert(jpt_update.first < reuse_tet_ids.size());
     std::list<JudgePoint> &cur_tet_jpts = tets_[reuse_tet_ids[jpt_update.first]].jpts_;
     jpt_itr->val_cur_=jpt_update.second;
-    auto tmp_jpt_itr = jpt_itr; ++jpt_itr;
+    auto tmp_jpt_itr = jpt_itr++;
     cur_tet_jpts.splice(cur_tet_jpts.end(), all_jpts, tmp_jpt_itr);
   }
 
@@ -873,6 +879,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
     if(step_info %100 == 0) {
       NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
     }
+    // std::cerr << "collapse edge:" << e.vid_[0] << "," << e.vid_[1] << std::endl;
     edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update, e, all_jpts,
                  [&eids, &eids_set, this](const size_t e_id){
                    if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
@@ -880,6 +887,9 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
                       && eids_set.find(e_id)!=eids_set.end()) {
                      eids.push(e_id); eids_set.insert(e_id); }
                  });
+    // static size_t collapse_i = 0;
+    // writeJptsInTet("/home/wegatron/tmp/jpts_"+std::to_string(collapse_i++)+".vtk", 0);
+    // writeTet("/home/wegatron/tmp/tet0_"+std::to_string(collapse_i++)+".vtk", 0);
     vertices_[e.vid_[0]].qem_ = cur_qem;
   } else if(step_info %100 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
 #endif
