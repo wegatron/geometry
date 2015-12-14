@@ -45,7 +45,6 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface(output_prefix+"_zero_surf_before_simp.obj", zsw::ZERO_POINT);
   CALL_FUNC(tr.isGood(), abort());
-  std::cout << __FILE__ << __LINE__ << std::endl;
   tr.simpZeroSurface();
   tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);

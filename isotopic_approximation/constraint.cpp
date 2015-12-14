@@ -4,25 +4,29 @@
 #include <zswlib/const_val.h>
 
 void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
-                       const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
+                                            const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
 {
-    vec_v0.push_back(v0);
-    Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
-    Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
-    Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
+  if(!isgood_) { return; }
+  vec_v0.push_back(v0);
+  Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
+  Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
+  Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
 
-    if(vn.norm()<zsw::const_val::eps) {
-      std::cerr << "nv norm too small:" << vn.norm();
-    }
-    //assert(vn.norm()>zsw::const_val::eps)
-    vn.normalize();
-    if(vn.dot(vr-v0) < 0) { vn=-vn; }
-    vec_vn.push_back(vn);
+  if(vn.norm()<zsw::const_val::eps) {
+    std::cerr << "nv norm too small:" << vn.norm();
+    isgood_=false;
+    return;
+  }
+  //assert(vn.norm()>zsw::const_val::eps)
+  vn.normalize();
+  if(vn.dot(vr-v0) < 0) { vn=-vn; }
+  vec_vn.push_back(vn);
 }
 
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
 #if 1
+  if(!isgood_) { return false; }
   for(size_t i=0; i<vec_v0.size(); ++i) {
     if(vec_vn[i].dot(pt-vec_v0[i]) < 10*zsw::const_val::eps) {
       return false;

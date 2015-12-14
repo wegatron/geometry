@@ -230,6 +230,7 @@ void zsw::Triangulation::simpTolerance()
   }
   while(!eids.empty()) {
     size_t cur_eid=eids.front(); eids_set.erase(cur_eid); eids.pop();
+    if(!edges_[cur_eid].valid_) { continue; }
     tryCollapseBoundaryEdge(cur_eid, eids, eids_set);
   }
 }
@@ -263,6 +264,7 @@ void zsw::Triangulation::simpZeroSurface()
 
   while(!eids.empty()) {
     size_t cur_eid = eids.front(); eids_set.erase(cur_eid); eids.pop();
+    if(!edges_[cur_eid].valid_) { continue; }
     tryCollapseZeroEdge(cur_eid, eids, eids_set);
   }
   std::cout << __FILE__ << __LINE__ << std::endl;
@@ -689,11 +691,7 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
     arround_v.insert(b_tr[2]);
   }
 
-  //std::cerr << inv_edge_ids.size() << " :: " << arround_v.size() << std::endl;
   assert(inv_edge_ids.size() > arround_v.size());
-  // if(inv_edge_ids.size() < arround_v.size()) {
-  //   std::cerr << "isGood ret_code:" <<  isGood() << std::endl;
-  // }
   auto e_itr=inv_edge_ids.begin();
   for(const size_t v_id : arround_v) {
     const size_t tmp_eid=*e_itr;
@@ -939,13 +937,15 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
     if(isKeepJpts(0, pt, bound_tris, all_jpts, jpts_update)) {  merge_pt_ptr = &pt; break;  }
   }
   if(merge_pt_ptr != nullptr) {
-    NZSWLOG("zsw_info")  << "zc: collapse edge!!!" << std::endl;
+    NZSWLOG("zsw_info")  << "zc: collapse edge " << e.vid_[0] << " " << e.vid_[1]
+                         << "to " << merge_pt_ptr->transpose() << std::endl;
     edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
                  e, all_jpts, [&eids, &eids_set,this](const size_t e_id) {
                    if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
                      && vertices_[edges_[e_id].vid_[0]].pt_type_==ZERO_POINT
                       && eids_set.find(e_id)!=eids_set.end()){
                      eids.push(e_id); eids_set.insert(e_id);} });
+    if(isGood()!=0) { abort(); }
   } else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
 }
 
