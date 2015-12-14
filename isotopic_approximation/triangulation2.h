@@ -71,6 +71,7 @@ namespace zsw
     void simpTolerance();
     void simpZeroSurface();
     void mutualTessellation();
+    void writeJptsInTet(const std::string &filepath, const size_t tid) const;
     void writeTetMeshAdjVs(const std::string &filepath, const std::vector<size_t> &vids) const;
     void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;
     void writeSurface(const std::string &filepath, PointType pt_type) const;

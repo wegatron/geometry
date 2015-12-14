@@ -1,5 +1,7 @@
 #include "basic_op.h"
 
+#include <iostream>
+
 #if 0
 zsw::Scalar zsw::calcPoint2TriSquaredDis(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                          const Eigen::Matrix<zsw::Scalar,3,1> &v0,

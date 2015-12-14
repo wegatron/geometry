@@ -37,13 +37,83 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
 
+  // {
+  //   const std::vector<zsw::Tet> &tets = tr.getTets();
+  //   size_t real_ti=0;
+  //   for(size_t ti=0; ti<tets.size(); ++ti) {
+  //     const zsw::Tet &tet=tets[ti];
+  //     if(!tet.valid_) { continue; }
+  //     if(tet.jpts_.size()>0) {
+  //       std::cerr << "tet " << real_ti << " has " << tet.jpts_.size() << " judge points!" << std::endl;
+  //       tr.writeJptsInTet("/home/wegatron/tmp/jpts.vtk", ti);
+  //       abort();
+  //     }
+  //     ++real_ti;
+  //   }
+  // }
+
+  // check jpts size
+  {
+    const std::vector<zsw::Tet> &tets = tr.getTets();
+    size_t total=0;
+    for(const zsw::Tet &tet : tets) {
+      if(!tet.valid_) { continue; }
+      total += tet.jpts_.size();
+    }
+    std::cerr << "total jpts:" << total << std::endl;
+  }
+
   tr.simpTolerance();
+
+  // check jpts size
+  {
+    const std::vector<zsw::Tet> &tets = tr.getTets();
+    size_t total=0;
+    for(const zsw::Tet &tet : tets) {
+      if(!tet.valid_) { continue; }
+      total += tet.jpts_.size();
+    }
+    std::cerr << "total jpts:" << total << std::endl;
+  }
+
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
+
+  {
+    const std::vector<zsw::Tet> &tets = tr.getTets();
+    size_t real_ti=0;
+    for(size_t ti=0; ti<tets.size(); ++ti) {
+      const zsw::Tet &tet=tets[ti];
+      if(!tet.valid_) { continue; }
+      if(tet.jpts_.size()>0) {
+        std::cerr << "tet " << real_ti << " has " << tet.jpts_.size() << " judge points!" << std::endl;
+        tr.writeJptsInTet("/home/wegatron/tmp/jpts.vtk", ti);
+        abort();
+      }
+      ++real_ti;
+    }
+  }
+
   CALL_FUNC(tr.isGood(), abort());
-  std::cout << __FILE__ << __LINE__ << std::endl;
   tr.mutualTessellation();
+
   tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface(output_prefix+"_zero_surf_before_simp.obj", zsw::ZERO_POINT);
+
+  {
+    const std::vector<zsw::Tet> &tets = tr.getTets();
+    size_t real_ti=0;
+    for(size_t ti=0; ti<tets.size(); ++ti) {
+      const zsw::Tet &tet=tets[ti];
+      if(!tet.valid_) { continue; }
+      if(tet.jpts_.size()>0) {
+        std::cerr << "tet " << real_ti << " has " << tet.jpts_.size() << " judge points!" << std::endl;
+        tr.writeJptsInTet("/home/wegatron/tmp/jpts.vtk", ti);
+        abort();
+      }
+      ++real_ti;
+    }
+  }
+
   CALL_FUNC(tr.isGood(), abort());
   tr.simpZeroSurface();
   tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});

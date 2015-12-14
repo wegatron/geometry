@@ -13,7 +13,7 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
   Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
 
   if(vn.norm()<zsw::const_val::eps) {
-    std::cerr << "nv norm too small:" << vn.norm();
+    std::cerr << "nv norm too small:" << vn.norm() << std::endl;;
     isgood_=false;
     return;
   }

@@ -553,9 +553,9 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
                                     const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts,
                                     std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const
 {
-  int bt_i=-1;
-  size_t update_cnt=0;
   jpts_update.assign(all_jpts.size(), std::pair<size_t,zsw::Scalar>(-1, 0.0));
+  size_t update_cnt=0;
+  int bt_i=-1;
   for(const Eigen::Matrix<size_t,3,1> &b_tr  : bound_tris) {
     ++bt_i;
     Eigen::Matrix<zsw::Scalar,3,3> A;
@@ -586,7 +586,7 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
       else {  up_itr->first=bt_i; up_itr->second=jpt_val_cur;  ++update_cnt; }
     }
   }
-  //std::cerr << "left jpts size:" << all_jpts.size()-update_cnt << std::endl;
+  std::cerr << "left jpts size:" << all_jpts.size()-update_cnt << std::endl;
   return (update_cnt==all_jpts.size()) || isKeepJptsLeft(pt_val, pt, bound_tris, all_jpts, jpts_update);
 }
 
@@ -822,30 +822,32 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
 #endif
   //-- find the best point in the candicate_pts--
 #if 0
-  // sort by fabs(val_exp-val_cur) by decrease order
-  std::sort(candicate_pts.begin(), candicate_pts.end(),
-            [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
-  const JudgePoint *merge_pt_ptr=nullptr;
-  std::vector<std::pair<size_t,zsw::Scalar>> jpts_update;
-  int step_info=0;
-  for(const JudgePoint &jpt : candicate_pts) {
-    if((++step_info)%100==0) { NZSWLOG("zsw_info") << step_info << " - "; }
-    if(isKeepJpts(pt_val, jpt.pt_, bound_tris, all_jpts, jpts_update)) {
-      merge_pt_ptr= &jpt; break;
+  {
+    // sort by fabs(val_exp-val_cur) by decrease order
+    std::sort(candicate_pts.begin(), candicate_pts.end(),
+              [](const JudgePoint &a, const JudgePoint &b){ return fabs(a.val_cur_-a.val_exp_)>fabs(b.val_cur_-b.val_exp_); });
+    const JudgePoint *merge_pt_ptr=nullptr;
+    std::vector<std::pair<size_t,zsw::Scalar>> jpts_update;
+    int step_info=0;
+    for(const JudgePoint &jpt : candicate_pts) {
+      if((++step_info)%100==0) { NZSWLOG("zsw_info") << step_info << " - "; }
+      if(isKeepJpts(pt_val, jpt.pt_, bound_tris, all_jpts, jpts_update)) {
+        merge_pt_ptr= &jpt; break;
+      }
     }
+    if(merge_pt_ptr != nullptr) {
+      if(step_info %100 == 0) {
+        NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
+      }
+      edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update, e, all_jpts,
+                   [&eids, &eids_set,this](const size_t e_id){
+                     if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
+                        && (vertices_[edges_[e_id].vid_[0]].pt_type_==OUTER_POINT || vertices_[edges_[e_id].vid_[0]].pt_type_==INNER_POINT)
+                        && eids_set.find(e_id)!=eids_set.end()) {
+                       eids.push(e_id); eids_set.insert(e_id); }
+                   });
+    } else if(step_info %100 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
   }
-  if(merge_pt_ptr != nullptr) {
-    if(step_info %100 == 0) {
-      NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
-    }
-    edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update, e, all_jpts,
-                 [&eids, &eids_set,this](const size_t e_id){
-                   if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
-                      && (vertices_[edges_[e_id].vid_[0]].pt_type_==OUTER_POINT || vertices_[edges_[e_id].vid_[0]].pt_type_==INNER_POINT)
-                      && eids_set.find(e_id)!=eids_set.end()) {
-                     eids.push(e_id); eids_set.insert(e_id); }
-                 });
-  } else if(step_info %100 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
 #else
   // using qem in accending order
   Eigen::Matrix<zsw::Scalar,4,4> cur_qem = vertices_[e.vid_[0]].qem_ + vertices_[e.vid_[1]].qem_;
@@ -863,7 +865,6 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   //int step_info=0;
   for(const std::pair<zsw::Scalar, size_t> &qe : q_error) {
     const JudgePoint &jpt = candicate_pts[qe.second];
-    //    if((++step_info)%100==0) { NZSWLOG("zsw_info") << step_info << " - "; }
     if(isKeepJpts(pt_val, jpt.pt_, bound_tris, all_jpts, jpts_update)) {
       merge_pt_ptr= &jpt; break;
     }
@@ -889,6 +890,8 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
                                              std::set<size_t> eids_set)
 {
   Edge &e = edges_[e_id];
+  if(!e.valid_) { return; }
+  if(!linkCondition(e)) { return; }
   std::vector<size_t> tet_ids;
   for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.push_back(tid); }
   for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.push_back(tid); }
@@ -1057,6 +1060,7 @@ size_t zsw::Triangulation::isGood() const
     while(it_tr!=e_set_tr.end() && it_check!=e_set_check.end()) {
       if(it_tr->first != it_check->first || it_tr->second!=it_check->second) {
         writeTetMeshAdjVs("/home/wegatron/tmp/debug_adj.vtk", {it_tr->first});
+        writeTetMesh("/home/wegatron/tmp/debug.vtk", {});
         std::cerr << "it_tr:" << it_tr->first << " " << it_tr->second << std::endl;
         std::cerr << "it_check:" << it_check->first << " " << it_check->second << std::endl;
         std::cerr << "it_tr_type:" << vertices_[it_tr->first].pt_type_ << " " << vertices_[it_tr->second].pt_type_ << std::endl;
@@ -1177,4 +1181,22 @@ void zsw::Triangulation::splitJudgePoints(std::list<zsw::JudgePoint> &jpts, cons
     }
     tets_[target_ti].jpts_.splice(tets_[target_ti].jpts_.end(), jpts, cur_iter);
   }
+}
+
+void zsw::Triangulation::writeJptsInTet(const std::string &filepath, const size_t tid) const
+{
+  std::ofstream ofs;
+  OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+  const std::list<JudgePoint> &jpts = tets_[tid].jpts_;
+  std::vector<zsw::Scalar> pts_data;
+  std::vector<size_t> point_ids;
+  size_t pi=0;
+  for(const zsw::JudgePoint &jpt : jpts) {
+    pts_data.push_back(jpt.pt_[0]);
+    pts_data.push_back(jpt.pt_[1]);
+    pts_data.push_back(jpt.pt_[2]);
+    point_ids.push_back(pi++);
+  }
+  std::cerr << "jpts size:" << jpts.size() << std::endl;
+  point2vtk(ofs, &pts_data[0], jpts.size(), &point_ids[0], jpts.size());
 }
