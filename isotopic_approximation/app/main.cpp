@@ -40,13 +40,15 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.simpTolerance();
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_total_before_mt.vtk", {});
+  tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj80.vtk", {80});
+  tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj124.vtk", {124});
   CALL_FUNC(tr.isGood(), abort());
   tr.mutualTessellation();
 
   tr.writeTetMesh(output_prefix+"tol_total_after_mt.vtk", {});
   tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
-  tr.writeSurface(output_prefix+"_zero_surf_before_simp.obj", zsw::ZERO_POINT);
-
+  tr.writeSurface2(output_prefix+"_zero_surf_before_simp.obj", zsw::ZERO_POINT);
+  tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj201.vtk", {201});
   // {
   //   const std::vector<zsw::Tet> &tets = tr.getTets();
   //   size_t real_ti=0;
@@ -64,18 +66,16 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   //     ++real_ti;
   //   }
   // }
-
   CALL_FUNC(tr.isGood(), abort());
   tr.simpZeroSurface();
   tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
-  std::cout << __FILE__ << __LINE__ << std::endl;
   CALL_FUNC(tr.isGood(), abort());
   std::cerr << "tris fine after simpZeroSurface" << std::endl;
 }
 
 int main(int argc, char *argv[])
 {
-  test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/approximate/sphere/sphere", 0.1, 0.03);
+  test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/approximate/sphere/sphere", 0.05, 0.025);
   return 0;
 }

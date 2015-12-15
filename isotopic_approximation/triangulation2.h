@@ -75,6 +75,7 @@ namespace zsw
     void writeTetMeshAdjVs(const std::string &filepath, const std::vector<size_t> &vids) const;
     void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;
     void writeSurface(const std::string &filepath, PointType pt_type) const;
+    void writeSurface2(const std::string &filepath, PointType pt_type) const;
 
     /// \brief a funtion for debug or check.
     ///

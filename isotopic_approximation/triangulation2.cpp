@@ -398,6 +398,19 @@ void zsw::Triangulation::simpZeroSurface()
     FIND_ZERO_VERTEX_ID(vo_1,vi_0,nv2);
     FIND_ZERO_VERTEX_ID(vo_1,vi_1,nv3);
 
+    // {
+    //   size_t debug_cnt=0;
+    //   if(nv0==213 || nv0==143 || nv0==201) {debug_cnt++; }
+    //   if(nv1==213 || nv1==143 || nv1==201) {debug_cnt++; }
+    //   if(nv2==213 || nv2==143 || nv2==201) {debug_cnt++; }
+    //   if(nv3==213 || nv3==143 || nv3==201) {debug_cnt++; }
+    //   if(debug_cnt == 3) {
+    //     std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << std::endl;
+    //     std::copy(&tet.vid_[0], &tet.vid_[0]+4, std::ostream_iterator<size_t>(std::cerr, " "));
+    //     std::cerr << std::endl;
+    //   }
+    // }
+
     // invalid old tet and  add new tet
     invalidTet(tet);
     Eigen::Matrix<size_t,4,1> tets_info[6];
@@ -548,6 +561,28 @@ void zsw::Triangulation::simpZeroSurface()
     }
     for(const Eigen::Matrix<size_t,3,1> &f : faces) {
       ofs << "f " << vv_map[f[0]] << " " << vv_map[f[1]] << " " << vv_map[f[2]] << std::endl;
+    }
+  }
+
+  void zsw::Triangulation::writeSurface2(const std::string &filepath, PointType pt_type) const
+  {
+    std::ofstream ofs(filepath);
+    std::cerr << "pt size:" << vertices_.size() << std::endl;
+    for(const zsw::Vertex &vertex : vertices_) {
+      ofs << "v " << vertex.pt_.transpose() << std::endl;
+    }
+    Eigen::Matrix<size_t,4,1> zv_id;
+    for(const Tet &tet : tets_) {
+      if(!tet.valid_) { continue; }
+      size_t id_cnt=0;
+      for(size_t v_id : tet.vid_) {
+        if(vertices_[v_id].pt_type_ == pt_type) {
+          zv_id[id_cnt++]=v_id;
+        }
+      }
+      if(id_cnt==3) {
+        ofs << "f " << zv_id[0]+1 << " " << zv_id[1]+1 << " " << zv_id[2]+1 << std::endl;
+      }
     }
   }
 
@@ -929,7 +964,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       std::list<Eigen::Matrix<zsw::Scalar,3,1>> tmp_candicate_pts;
       sampleTet(vertices_[vid[0]].pt_, vertices_[vid[1]].pt_,
                 vertices_[vid[2]].pt_, vertices_[vid[3]].pt_, tet_sample_r_, tmp_candicate_pts);
-      tmp_candicate_pts.remove_if(std::bind(&KernelRegionJudger::judge, &krj, std::placeholders::_1));
+      tmp_candicate_pts.remove_if([&krj](const Eigen::Matrix<zsw::Scalar,3,1> &pt){ return !krj.judge(pt); });
 
       // omp_set_lock(&data_lock);
       candicate_pts.splice(candicate_pts.end(), tmp_candicate_pts);
