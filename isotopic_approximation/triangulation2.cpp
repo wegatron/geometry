@@ -136,7 +136,7 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
       } else if(vertices_[tvid].pt_type_==INNER_POINT) {
         bi_vids[bi_cnt] = tvid;
         bi_points.block<3,1>(0,bi_cnt++)=vertices_[tvid].pt_;
-      } else {        bo_cnt=0; bi_cnt=0;        break;      }
+      }
     }
 
     if(bo_cnt==3) { sampleTriangle(bo_points.block<3,3>(0,0), r, 1, tmp_tet.jpts_); initQem(bo_vids[0], bo_vids[1], bo_vids[2]); }
@@ -353,7 +353,6 @@ void zsw::Triangulation::simpZeroSurface()
     FIND_ZERO_VERTEX_ID(vo_0,vi_0,nv0);
     FIND_ZERO_VERTEX_ID(vo_1,vi_0,nv1);
     FIND_ZERO_VERTEX_ID(vo_2,vi_0,nv2);
-
     // invalid old tet and edges
     invalidTet(tet);
     // add tets
@@ -375,7 +374,6 @@ void zsw::Triangulation::simpZeroSurface()
     // std::cerr << "tet 1 jpts size:" << tets_[1].jpts_.size() << std::endl;
     splitJudgePoints(tet.jpts_, tids);
     // std::cerr << "tet 1 jpts size:" << tets_[1].jpts_.size() << std::endl;
-
     // add edges
     CHECK_ADD_EDGE(nv0,nv1); CHECK_ADD_EDGE(nv0, nv2);
     CHECK_ADD_EDGE(nv1,nv2); CHECK_ADD_EDGE(nv0, vo_1);
@@ -700,6 +698,13 @@ void zsw::Triangulation::simpZeroSurface()
     for(size_t t_id : tet_ids) { invalidTet(tets_[t_id]); }
     for(size_t e_id : inv_edge_ids) { invalidEdge(e_id); }
 
+    // {
+    //   for(size_t t_id : tet_ids) {
+    //     writeTet("/home/wegatron/tmp/before_tmp_tet"+std::to_string(t_id)+".vtk", t_id);
+    //     writeJptsInTet("/home/wegatron/tmp/before_tmp_jpt"+std::to_string(t_id)+".vtk", t_id);
+    //   }
+    // }
+
     // new vertex
     REUSE_VERTEX(pt, pt_type, e.vid_[0]);
     // add new tets
@@ -720,6 +725,14 @@ void zsw::Triangulation::simpZeroSurface()
       auto tmp_jpt_itr = jpt_itr++;
       cur_tet_jpts.splice(cur_tet_jpts.end(), all_jpts, tmp_jpt_itr);
     }
+
+    // {
+    //   for(size_t t_id : reuse_tet_ids) {
+    //     writeTet("/home/wegatron/tmp/after_tmp_tet"+std::to_string(t_id)+".vtk", t_id);
+    //     writeJptsInTet("/home/wegatron/tmp/after_tmp_jpt"+std::to_string(t_id)+".vtk", t_id);
+    //   }
+    // }
+    // abort();
 
     // add new edges
     std::set<size_t> arround_v;
@@ -907,7 +920,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
     }
   }
   if(merge_pt_ptr != nullptr) {
-    if(step_info %100 == 0) {
+    if(step_info %10 == 0) {
       NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
     }
     // std::cerr << "collapse edge:" << e.vid_[0] << "," << e.vid_[1] << std::endl;
@@ -920,7 +933,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
                    }
                  });
     vertices_[e.vid_[0]].qem_ = cur_qem;
-  } else if(step_info %100 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
+  } else if(step_info %10 == 0) {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
 #endif
 }
 
@@ -978,8 +991,9 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       if(isKeepJpts(0, pt, bound_tris, all_jpts, jpts_update)) {  merge_pt_ptr = &pt; break;  }
     }
     if(merge_pt_ptr != nullptr) {
-      NZSWLOG("zsw_info")  << "zc: collapse edge " << e.vid_[0] << " " << e.vid_[1]
-                           << "to " << merge_pt_ptr->transpose() << std::endl;
+      static size_t jpti=0;
+      writeTet("/home/wegatron/tmp/tet_925_"+std::to_string(jpti)+".vtk", 1340);
+      writeJptsInTet("/home/wegatron/tmp/jpts_925_"+std::to_string(jpti++)+".vtk", 1340);
       edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
                    e, all_jpts, [&eids_set,this](const size_t e_id) {
                      if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
@@ -1200,10 +1214,9 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
         if(krj.judge(cur_iter->pt_)) { tets_[tids[ti]].jpts_.splice(tets_[tids[ti]].jpts_.end(), jpts, cur_iter); }
       }
     }
-
     for(auto iter=jpts.begin(); iter!=jpts.end();) {
       auto cur_iter=iter++;
-      size_t target_ti=0;
+      size_t target_ti=tids[0];
       zsw::Scalar min_sq_dis=(cur_iter->pt_ - vertices_[tets_[tids[0]].vid_[0]].pt_).squaredNorm();
       for(size_t ti=0; ti<tsize; ++ti) {
         const size_t * tmp_v = tets_[tids[ti]].vid_;
