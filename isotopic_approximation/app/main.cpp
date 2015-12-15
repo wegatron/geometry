@@ -38,18 +38,21 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
 
   tr.simpTolerance();
+  tr.writeAllJpts("/home/wegatron/tmp/all_jpts_after_simp_tol.vtk");
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_total_before_mt.vtk", {});
   tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj80.vtk", {80});
   tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj124.vtk", {124});
   CALL_FUNC(tr.isGood(), abort());
   tr.mutualTessellation();
+  tr.writeAllJpts("/home/wegatron/tmp/all_jpts_after_mt.vtk");
   tr.writeTetMesh(output_prefix+"tol_total_after_mt.vtk", {});
   tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface2(output_prefix+"_zero_surf_before_simp.obj", zsw::ZERO_POINT);
 
   CALL_FUNC(tr.isGood(), abort());
   tr.simpZeroSurface();
+  tr.writeAllJpts("/home/wegatron/tmp/all_jpts_after_simp_zero.vtk");
   tr.writeTetMesh(output_prefix+"tol_total_last.vtk", {});
   tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface2(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
@@ -67,33 +70,34 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
           ++cnt;
         }
       }
-      if(cnt==3) {        std::cerr << "!!!!tid=" << ti << " real_tid=" << real_ti << std::endl;      }
+      if(cnt==3) {        std::cerr << "!!!!tid=" << ti << " real_tid=" << real_ti << std::endl; }
       ++real_ti;
     }
-    std::cerr << "vertex 123 pt_type=" << tr.getVertices()[123].pt_type_ << std::endl;
-    tr.writeJptsInTet("/home/wegatron/tmp/jpts_925.vtk", 925);
+    tr.writeJptsInTet("/home/wegatron/tmp/jpts_925.vtk", 1340);
+    tr.reAssignJpts();
+    tr.writeJptsInTet("/home/wegatron/tmp/jpts_925_reAssigned.vtk", 1340);
   }
 
-  {
-    const std::vector<zsw::Tet> &tets = tr.getTets();
-    size_t real_ti=0;
-    std::default_random_engine generator;
-    std::uniform_int_distribution<int> distribution(0,tets.size()/2);
-    int dice_roll = distribution(generator);  // generates number in the range 1..6
-    for(size_t ti=0; ti<tets.size(); ++ti) {
-      const zsw::Tet &tet=tets[ti];
-      if(!tet.valid_) { continue; }
-      if(tet.jpts_.size()>15) {
-        static size_t si=0;
-        if(si++==dice_roll) {
-          std::cerr << "tet real_ti=" << real_ti << ", ti= " << ti << "has " << tet.jpts_.size() << " judge points!" << std::endl;
-          tr.writeJptsInTet("/home/wegatron/tmp/jpts.vtk", ti);
-          abort();
-        }
-      }
-      ++real_ti;
-    }
-  }
+  // {
+  //   const std::vector<zsw::Tet> &tets = tr.getTets();
+  //   size_t real_ti=0;
+  //   std::default_random_engine generator;
+  //   std::uniform_int_distribution<int> distribution(0,tets.size()/2);
+  //   int dice_roll = distribution(generator);  // generates number in the range 1..6
+  //   for(size_t ti=0; ti<tets.size(); ++ti) {
+  //     const zsw::Tet &tet=tets[ti];
+  //     if(!tet.valid_) { continue; }
+  //     if(tet.jpts_.size()>15) {
+  //       static size_t si=0;
+  //       if(si++==dice_roll) {
+  //         std::cerr << "tet real_ti=" << real_ti << ", ti= " << ti << "has " << tet.jpts_.size() << " judge points!" << std::endl;
+  //         tr.writeJptsInTet("/home/wegatron/tmp/jpts.vtk", ti);
+  //         abort();
+  //       }
+  //     }
+  //     ++real_ti;
+  //   }
+  // }
 
   CALL_FUNC(tr.isGood(), abort());
   std::cerr << "tris fine after simpZeroSurface" << std::endl;

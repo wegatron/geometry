@@ -111,6 +111,7 @@ size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Mat
   removeSliverTet(delaunay, vertices_);
   haveSliverTet(delaunay, vertices_);
   init(r, delaunay);
+  //reAssignJpts();
   CALL_FUNC(isGood(), return __LINE__);
   return 0;
 }
@@ -991,8 +992,8 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
     }
     if(merge_pt_ptr != nullptr) {
       static size_t jpti=0;
-      writeTet("/home/wegatron/tmp/tet_925_"+std::to_string(jpti)+".vtk", 1340);
-      writeJptsInTet("/home/wegatron/tmp/jpts_925_"+std::to_string(jpti++)+".vtk", 1340);
+      // writeTet("/home/wegatron/tmp/tet_925_"+std::to_string(jpti)+".vtk", 1340);
+      // writeJptsInTet("/home/wegatron/tmp/jpts_925_"+std::to_string(jpti++)+".vtk", 1340);
       edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
                    e, all_jpts, [&eids_set,this](const size_t e_id) {
                      if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
@@ -1197,18 +1198,18 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   void zsw::Triangulation::splitJudgePoints(std::list<zsw::JudgePoint> &jpts, const std::vector<size_t> &tids)
   {
     for(size_t tid : tids) {
-      zsw::KernelRegionJudger krj(-zsw::const_val::eps);
-      const size_t * tmp_v = tets_[tid].vid_;
-      krj.addConstraint(vertices_[tmp_v[0]].pt_, vertices_[tmp_v[1]].pt_,
-                        vertices_[tmp_v[2]].pt_, vertices_[tmp_v[3]].pt_);
-      krj.addConstraint(vertices_[tmp_v[0]].pt_, vertices_[tmp_v[1]].pt_,
-                        vertices_[tmp_v[3]].pt_, vertices_[tmp_v[2]].pt_);
-      krj.addConstraint(vertices_[tmp_v[0]].pt_, vertices_[tmp_v[3]].pt_,
-                        vertices_[tmp_v[2]].pt_, vertices_[tmp_v[1]].pt_);
-      krj.addConstraint(vertices_[tmp_v[3]].pt_, vertices_[tmp_v[1]].pt_,
-                        vertices_[tmp_v[2]].pt_, vertices_[tmp_v[0]].pt_);
-      for(auto iter=jpts.begin(); iter!=jpts.end(); iter++) {
-        if(krj.judge(iter->pt_)) { tets_[tid].jpts_.push_back(*iter); }
+      Eigen::Matrix<zsw::Scalar,3,1> v0=vertices_[tets_[tid].vid_[0]].pt_;
+      Eigen::Matrix<zsw::Scalar,3,3> A;
+      A.block<3,1>(0,0) = vertices_[tets_[tid].vid_[1]].pt_-v0;
+      A.block<3,1>(0,1) = vertices_[tets_[tid].vid_[2]].pt_-v0;
+      A.block<3,1>(0,2) = vertices_[tets_[tid].vid_[3]].pt_-v0;
+      Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
+      pplu.compute(A);
+      for(auto itr=jpts.begin(); itr!=jpts.end(); itr++) {
+        Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(itr->pt_-v0);
+        if((A*ans-(itr->pt_-v0)).norm()>zsw::const_val::eps) { continue; }
+        if(ans[0]<-zsw::const_val::eps || ans[1]<-zsw::const_val::eps || ans[2]<-zsw::const_val::eps || ans[0]+ans[1]+ans[2]>1+zsw::const_val::eps) { continue; } // not in tet
+        tets_[tid].jpts_.push_back(*itr);
       }
     }
   }
@@ -1228,5 +1229,61 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       point_ids.push_back(pi++);
     }
     std::cerr << "jpts size:" << jpts.size() << std::endl;
+    std::cerr << "tet pt type:" << vertices_[tets_[tid].vid_[0]].pt_type_ << " "
+              << vertices_[tets_[tid].vid_[1]].pt_type_ << " " << vertices_[tets_[tid].vid_[2]].pt_type_ << " "
+              << vertices_[tets_[tid].vid_[3]].pt_type_ << std::endl;
     point2vtk(ofs, &pts_data[0], jpts.size(), &point_ids[0], jpts.size());
   }
+
+void zsw::Triangulation::writeAllJpts(const std::string &filepath) const
+{
+  std::ofstream ofs;
+  OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+  std::vector<zsw::Scalar> pts_data;
+  std::vector<size_t> point_ids;
+  size_t pi=0;
+  for(size_t tid=0; tid<tets_.size(); ++tid) {
+    const std::list<JudgePoint> &jpts = tets_[tid].jpts_;
+    for(const zsw::JudgePoint &jpt : jpts) {
+      pts_data.push_back(jpt.pt_[0]);
+      pts_data.push_back(jpt.pt_[1]);
+      pts_data.push_back(jpt.pt_[2]);
+      point_ids.push_back(pi++);
+    }
+  }
+  size_t size = pts_data.size()/3;
+  point2vtk(ofs, &pts_data[0], size, &point_ids[0], size);
+}
+
+void zsw::Triangulation::reAssignJpts()
+{
+  std::list<JudgePoint> all_jpts;
+  for(size_t tid=0; tid<tets_.size(); ++tid) {
+    if(!tets_[tid].valid_) { continue; }
+    all_jpts.insert(all_jpts.end(), tets_[tid].jpts_.begin(), tets_[tid].jpts_.end());
+  }
+  for(zsw::Tet &tet : tets_) {
+    if(!tet.valid_) { continue; }
+    tet.jpts_.clear();
+    size_t bi_cnt=0;
+    size_t bo_cnt=0;
+    for(size_t i=0; i<4; ++i) {
+      if(vertices_[tet.vid_[i]].pt_type_==zsw::INNER_POINT) { ++bi_cnt; }
+      if(vertices_[tet.vid_[i]].pt_type_==zsw::OUTER_POINT) { ++bo_cnt; }
+    }
+    if(bi_cnt==0 && bo_cnt==0) { continue; }
+    Eigen::Matrix<zsw::Scalar,3,1> v0=vertices_[tet.vid_[0]].pt_;
+    Eigen::Matrix<zsw::Scalar,3,3> A;
+    A.block<3,1>(0,0) = vertices_[tet.vid_[1]].pt_-v0;
+    A.block<3,1>(0,1) = vertices_[tet.vid_[2]].pt_-v0;
+    A.block<3,1>(0,2) = vertices_[tet.vid_[3]].pt_-v0;
+    Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
+    pplu.compute(A);
+    for(const JudgePoint &jpt : all_jpts) {
+      Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-v0);
+      if((A*ans-(jpt.pt_-v0)).norm()>zsw::const_val::eps) { continue; }
+      if(ans[0]<-zsw::const_val::eps || ans[1]<-zsw::const_val::eps || ans[2]<-zsw::const_val::eps || ans[0]+ans[1]+ans[2]>1+zsw::const_val::eps) { continue; } // not in tet
+      tet.jpts_.push_back(jpt);
+    }
+  }
+}

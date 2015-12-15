@@ -71,6 +71,7 @@ namespace zsw
     void simpTolerance();
     void simpZeroSurface();
     void mutualTessellation();
+    void writeAllJpts(const std::string &filepath) const;
     void writeJptsInTet(const std::string &filepath, const size_t tid) const;
     void writeTetMeshAdjVs(const std::string &filepath, const std::vector<size_t> &vids) const;
     void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;
@@ -97,6 +98,8 @@ namespace zsw
 
     void tryCollapseZeroEdge(const size_t e_id,
                                  std::set<size_t> eids_set);
+
+    void reAssignJpts();
 
     const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<Tet>& getTets() const { return tets_; }
