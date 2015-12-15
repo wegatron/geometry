@@ -28,7 +28,7 @@ bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 #if 1
   if(!isgood_) { return false; }
   for(size_t i=0; i<vec_v0.size(); ++i) {
-    if(vec_vn[i].dot(pt-vec_v0[i]) < 10*zsw::const_val::eps) {
+    if(vec_vn[i].dot(pt-vec_v0[i]) < precision_) {
       return false;
     }
   }

@@ -4,6 +4,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include <zswlib/config.h>
+#include <zswlib/const_val.h>
 
 namespace zsw
 {
@@ -15,11 +16,12 @@ namespace zsw
   class KernelRegionJudger final
   {
   public:
-    KernelRegionJudger() { isgood_=true; }
+    KernelRegionJudger(const zsw::Scalar precision=10*zsw::const_val::eps) { precision_=precision; isgood_=true; }
     void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr);
     bool judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt);
   private:
+    zsw::Scalar precision_;
     bool isgood_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v0;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vn;

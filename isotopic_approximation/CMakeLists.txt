@@ -12,6 +12,7 @@ link_directories($ENV{HOME}/usr/lib)
 #include_directories(CMAKE_CURRENT_SOURCE_DIR/include)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp -fPIC")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS} -std=c++11 -fopenmp -fPIC -O3 -ggdb")
 
 ###
 ##FIND_PACKAGE

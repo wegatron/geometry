@@ -120,18 +120,18 @@ namespace zsw
 
     bool isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                     const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts,
-                    std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const;
+                    std::vector<std::vector<std::pair<bool, zsw::Scalar>>> &jpts_update) const;
 
-    bool isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                        const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
-                        const std::list<JudgePoint> &jpts_left,
-                        std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const;
+    /* bool isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt, */
+    /*                     const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, */
+    /*                     const std::list<JudgePoint> &jpts_left, */
+    /*                     std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const; */
 
     void edgeCollapse(const std::vector<size_t> &tet_ids,
                       const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                       const zsw::PointType pt_type,
-                      const std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update,
+                      const std::vector<std::vector<std::pair<bool, zsw::Scalar>>> &jpts_update,
                       Edge &e,
                       std::list<JudgePoint> &all_jpts,
                       std::function<void(const size_t e_id)> eb_func);
