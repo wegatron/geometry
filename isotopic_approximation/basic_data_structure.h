@@ -42,7 +42,7 @@ namespace zsw{
   {
     bool valid_;
     size_t vid_[4];
-    std::list<JudgePoint> jpts_;
+    // std::list<JudgePoint> jpts_;
   };
 
   class BoundSphere

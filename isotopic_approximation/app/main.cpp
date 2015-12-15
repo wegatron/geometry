@@ -57,54 +57,12 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface2(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
 
-  // find the tet
-  {
-    const std::vector<zsw::Tet> &tets = tr.getTets();
-    size_t real_ti=0;
-    for(size_t ti=0; ti<tets.size(); ++ti) {
-      const zsw::Tet &tet = tets[ti];
-      if(!tet.valid_) { continue; }
-      size_t cnt=0;
-      for(size_t vid : tet.vid_) {
-        if(vid==140 || vid == 160 || vid==238) {
-          ++cnt;
-        }
-      }
-      if(cnt==3) {        std::cerr << "!!!!tid=" << ti << " real_tid=" << real_ti << std::endl; }
-      ++real_ti;
-    }
-    tr.writeJptsInTet("/home/wegatron/tmp/jpts_925.vtk", 1340);
-    tr.reAssignJpts();
-    tr.writeJptsInTet("/home/wegatron/tmp/jpts_925_reAssigned.vtk", 1340);
-  }
-
-  // {
-  //   const std::vector<zsw::Tet> &tets = tr.getTets();
-  //   size_t real_ti=0;
-  //   std::default_random_engine generator;
-  //   std::uniform_int_distribution<int> distribution(0,tets.size()/2);
-  //   int dice_roll = distribution(generator);  // generates number in the range 1..6
-  //   for(size_t ti=0; ti<tets.size(); ++ti) {
-  //     const zsw::Tet &tet=tets[ti];
-  //     if(!tet.valid_) { continue; }
-  //     if(tet.jpts_.size()>15) {
-  //       static size_t si=0;
-  //       if(si++==dice_roll) {
-  //         std::cerr << "tet real_ti=" << real_ti << ", ti= " << ti << "has " << tet.jpts_.size() << " judge points!" << std::endl;
-  //         tr.writeJptsInTet("/home/wegatron/tmp/jpts.vtk", ti);
-  //         abort();
-  //       }
-  //     }
-  //     ++real_ti;
-  //   }
-  // }
-
   CALL_FUNC(tr.isGood(), abort());
   std::cerr << "tris fine after simpZeroSurface" << std::endl;
 }
 
 int main(int argc, char *argv[])
 {
-  test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/approximate/sphere/sphere", 0.05, 0.02);
+  test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/approximate/sphere/sphere", 0.1, 0.03);
   return 0;
 }

@@ -72,7 +72,7 @@ namespace zsw
     void simpZeroSurface();
     void mutualTessellation();
     void writeAllJpts(const std::string &filepath) const;
-    void writeJptsInTet(const std::string &filepath, const size_t tid) const;
+    /* void writeJptsInTet(const std::string &filepath, const size_t tid) const; */
     void writeTetMeshAdjVs(const std::string &filepath, const std::vector<size_t> &vids) const;
     void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;
     void writeSurface(const std::string &filepath, PointType pt_type) const;
@@ -122,21 +122,15 @@ namespace zsw
     void initNormalCond(NormalConditionJudger &ncj, const Edge &e) const;
 
     bool isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                    const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, const std::list<JudgePoint> &all_jpts,
-                    std::vector<std::vector<std::pair<bool, zsw::Scalar>>> &jpts_update) const;
-
-    /* bool isKeepJptsLeft(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt, */
-    /*                     const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris, */
-    /*                     const std::list<JudgePoint> &jpts_left, */
-    /*                     std::vector<std::pair<size_t, zsw::Scalar>> &jpts_update) const; */
+                    const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,
+                    std::map<size_t,zsw::Scalar> &jpts_update) const;
 
     void edgeCollapse(const std::vector<size_t> &tet_ids,
-                      const std::list<Eigen::Matrix<size_t,3,1>> &bound_tris,
+                      const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,
                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                       const zsw::PointType pt_type,
-                      const std::vector<std::vector<std::pair<bool, zsw::Scalar>>> &jpts_update,
+                      const std::map<size_t, zsw::Scalar> &jpts_update,
                       Edge &e,
-                      std::list<JudgePoint> &all_jpts,
                       std::function<void(const size_t e_id)> eb_func);
 
     void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
@@ -157,11 +151,12 @@ namespace zsw
 
     void invalidTet(Tet &tet);
 
-    void splitJudgePoints(std::list<zsw::JudgePoint> &jpts, const std::vector<size_t> &tids);
+    /* void splitJudgePoints(std::list<zsw::JudgePoint> &jpts, const std::vector<size_t> &tids); */
     zsw::Scalar tet_sample_r_;
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
+    std::vector<JudgePoint> jpts_;
   };
 }
 
