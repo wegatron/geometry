@@ -72,7 +72,6 @@ namespace zsw
     void simpZeroSurface();
     void mutualTessellation();
     void writeAllJpts(const std::string &filepath) const;
-    /* void writeJptsInTet(const std::string &filepath, const size_t tid) const; */
     void writeTetMeshAdjVs(const std::string &filepath, const std::vector<size_t> &vids) const;
     void writeTetMesh(const std::string &filepath, std::vector<std::function<bool(const Tet &tet)>> ignore_tet_funcs) const;
     void writeSurface(const std::string &filepath, PointType pt_type) const;
@@ -94,10 +93,10 @@ namespace zsw
     bool ignoreNotWithPtType(const Tet &tet, PointType pt_type);
 
     void tryCollapseBoundaryEdge(const size_t e_id,
-                                 std::set<size_t> eids_set);
+                                 std::set<size_t> &eids_set);
 
     void tryCollapseZeroEdge(const size_t e_id,
-                                 std::set<size_t> eids_set);
+                                 std::set<size_t> &eids_set);
 
     void reAssignJpts();
 
@@ -151,12 +150,15 @@ namespace zsw
 
     void invalidTet(Tet &tet);
 
-    /* void splitJudgePoints(std::list<zsw::JudgePoint> &jpts, const std::vector<size_t> &tids); */
     zsw::Scalar tet_sample_r_;
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
     std::vector<JudgePoint> jpts_;
+    std::vector<JudgePoint> bi_jpts_;
+    std::vector<JudgePoint> bo_jpts_;
+    std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_bi_;
+    std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_bo_;
   };
 }
 

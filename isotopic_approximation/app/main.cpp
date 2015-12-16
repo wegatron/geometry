@@ -36,23 +36,21 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
 
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
+  tr.writeTetMesh(output_prefix+"tol_total_ori.vtk", {});
 
   tr.simpTolerance();
-  tr.writeAllJpts("/home/wegatron/tmp/all_jpts_after_simp_tol.vtk");
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_total_before_mt.vtk", {});
   tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj80.vtk", {80});
   tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj124.vtk", {124});
   CALL_FUNC(tr.isGood(), abort());
   tr.mutualTessellation();
-  tr.writeAllJpts("/home/wegatron/tmp/all_jpts_after_mt.vtk");
   tr.writeTetMesh(output_prefix+"tol_total_after_mt.vtk", {});
   tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface2(output_prefix+"_zero_surf_before_simp.obj", zsw::ZERO_POINT);
 
   CALL_FUNC(tr.isGood(), abort());
   tr.simpZeroSurface();
-  tr.writeAllJpts("/home/wegatron/tmp/all_jpts_after_simp_zero.vtk");
   tr.writeTetMesh(output_prefix+"tol_total_last.vtk", {});
   tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface2(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
@@ -63,6 +61,6 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
 
 int main(int argc, char *argv[])
 {
-  test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/approximate/sphere/sphere", 0.1, 0.03);
+  test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/approximate/sphere/sphere", 0.1, 0.01);
   return 0;
 }

@@ -1,7 +1,9 @@
 #include "constraint.h"
 
 #include <iostream>
+#include <fstream>
 #include <zswlib/const_val.h>
+#include <zswlib/mesh/vtk.h>
 
 void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                                             const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
@@ -59,6 +61,81 @@ bool zsw::NormalConditionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
     Eigen::Matrix<zsw::Scalar,3,1> cur_normal = (bev_[0][i]-pt).cross(bev_[1][i]-pt);
     cur_normal.normalize();
     if(cur_normal.dot(normals_[i]) < tol_) { return false; }
+  }
+  return true;
+}
+
+bool zsw::normalCondition(
+                          const std::vector<zsw::Vertex> &vertices,
+                          const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,
+                          const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                          const zsw::Scalar pt_val,
+                          const std::vector<zsw::JudgePoint> &bi_jpts,
+                          const std::vector<zsw::JudgePoint> &bo_jpts,
+                          std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_bi,
+                          std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_bo)
+{
+  // for each tet
+  for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
+    Eigen::Matrix<zsw::Scalar,3,1> nv;
+    for(size_t i=0; i<3; ++i) {
+      if(vertices[b_tr[i]].pt_type_==zsw::INNER_POINT) { nv[i]=-1.0-pt_val; }
+      else if(vertices[b_tr[i]].pt_type_==zsw::ZERO_POINT) { nv[i]=0.0-pt_val; }
+      else { nv[i]=1.0-pt_val; }
+    }
+
+    Eigen::Matrix<zsw::Scalar,3,Eigen::Dynamic> tet_pts(3,4);
+    tet_pts.block<3,1>(0,0)=pt; tet_pts.block<3,1>(0,1)=vertices[b_tr[0]].pt_;
+    tet_pts.block<3,1>(0,2)=vertices[b_tr[1]].pt_; tet_pts.block<3,1>(0,3)=vertices[b_tr[2]].pt_;
+    Eigen::Matrix<zsw::Scalar,3,Eigen::Dynamic> ori_tet_pts=tet_pts;
+    const Eigen::Matrix<zsw::Scalar,3,1> v0=pt;
+    Eigen::Matrix<zsw::Scalar,3,3> A;
+    A.block<3,1>(0,0)=tet_pts.block<3,1>(0,1)-v0;
+    A.block<3,1>(0,1)=tet_pts.block<3,1>(0,2)-v0;
+    A.block<3,1>(0,2)=tet_pts.block<3,1>(0,3)-v0;
+    Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu; pplu.compute(A);
+
+    // scale 70%
+    Eigen::Matrix<zsw::Scalar,3,1> center=tet_pts.block<3,1>(0,0);
+    center+=tet_pts.block<3,1>(0,1); center+=tet_pts.block<3,1>(0,2);
+    center+=tet_pts.block<3,1>(0,3); center*=0.25;
+    tet_pts*=0.1;
+    tet_pts+= 0.9*center*Eigen::Matrix<zsw::Scalar,1,4>::Ones();
+
+    {
+      std::vector<size_t> bi_indices;
+      std::vector<zsw::Scalar> bi_dist;
+      jpts_ptr_bi->queryNearest(tet_pts, bi_indices, bi_dist);
+      for(size_t ind : bi_indices) {
+        Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bi_jpts[ind].pt_-v0);
+        if((A*ans-(bi_jpts[ind].pt_-v0)).norm()>zsw::const_val::eps) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+        if(pt_val+ans.dot(nv)>0.5) {
+          // size_t tet_data[]={0,1,2,3};
+          // std::cerr << "ans:" << ans.transpose() << std::endl;
+          // std::cerr << "bi judge point:" << bi_jpts[ind].pt_.transpose() << std::endl;
+          // std::cerr << "val calculated:" << pt_val+ans.dot(nv) << std::endl;
+          // std::cerr << "bound_tri:" << b_tr.transpose() << std::endl;
+          // std::cerr << "ptval:" << pt_val << " " << nv[0]+pt_val << " " << nv[1]+pt_val << " " << nv[2]+pt_val << std::endl;
+          // std::ofstream ofs("/home/wegatron/tmp/debug_tet.vtk");
+          // std::cerr << ori_tet_pts.transpose() << std::endl;
+          // tet2vtk(ofs, ori_tet_pts.data(), 4, tet_data, 1);
+          // ofs.close();
+          // abort();
+          return false;
+        }
+      }
+    }
+
+    {
+      std::vector<size_t> bo_indices;
+      std::vector<zsw::Scalar> bo_dist;
+      jpts_ptr_bi->queryNearest(tet_pts, bo_indices, bo_dist);
+      for(size_t ind : bo_indices) {
+        Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bo_jpts[ind].pt_-v0);
+        if((A*ans-(bo_jpts[ind].pt_-v0)).norm()>zsw::const_val::eps) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+        if(pt_val+ans.dot(nv)<-0.5) { return false; }
+      }
+    }
   }
   return true;
 }
