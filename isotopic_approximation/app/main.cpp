@@ -38,12 +38,22 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
   tr.writeTetMesh(output_prefix+"tol_total_ori.vtk", {});
 
-  tr.simpTolerance();
+  //tr.simpTolerance();
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_total_before_mt.vtk", {});
   tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj80.vtk", {80});
   tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj124.vtk", {124});
   CALL_FUNC(tr.isGood(), abort());
+
+  const std::vector<zsw::Tet> &tets=tr.getTets();
+  size_t tcnt=0;
+  for(size_t ti=0; ti<tets.size(); ++ti) {
+    if(!tets[ti].valid_) { continue; }
+    size_t cnt=0;
+    for(size_t vid : tets[ti].vid_) {      if(vid==78 || vid==120) { ++cnt; }    }
+    if(cnt==2) {      tr.writeTet("/home/wegatron/tmp/e78_120_"+std::to_string(tcnt++)+".vtk", ti);    }
+  }
+
   tr.mutualTessellation();
   tr.writeTetMesh(output_prefix+"tol_total_after_mt.vtk", {});
   tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
