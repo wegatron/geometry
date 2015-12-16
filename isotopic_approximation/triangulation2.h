@@ -134,18 +134,6 @@ namespace zsw
 
     void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
 
-    void tessellation3v1(const size_t vo_0, const size_t vo_1, const size_t vo_2, const size_t vi_0,
-                         Tet &tet, std::map<std::pair<size_t,size_t>,
-                         size_t, PairCompFunc> &ev_map);
-
-    void tessellation2v2(const size_t vo_0, const size_t vo_1, const size_t vi_0, const size_t vi_1,
-                         Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
-                         PairCompFunc> &ev_map );
-
-    void tessellation1v3(const size_t vo_0, const size_t vi_0, const size_t vi_1, const size_t vi_2,
-                         Tet &tet, std::map<std::pair<size_t,size_t>, size_t,
-                         PairCompFunc> &ev_map);
-
     void invalidEdge(const size_t e_id);
 
     void invalidTet(Tet &tet);

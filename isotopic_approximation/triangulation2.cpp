@@ -255,8 +255,7 @@ void zsw::Triangulation::simpZeroSurface()
       tryCollapseZeroEdge(cur_eid, eids_set);
     }
   }
-
-  std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!----------------------------" << std::endl;
+#if 0
   {
     for(size_t cur_eid=0; cur_eid<edges_.size(); ++cur_eid) {
       if(edges_[cur_eid].valid_ &&
@@ -274,6 +273,7 @@ void zsw::Triangulation::simpZeroSurface()
       }
     }
   }
+#endif
 }
 
   void zsw::Triangulation::testCollapseDebug(const size_t vid0, const size_t vid1)
@@ -316,168 +316,36 @@ void zsw::Triangulation::simpZeroSurface()
     return false;
   }
 
-  void zsw::Triangulation::mutualTessellation()
-  {
-    // add zero point with edge
-    std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> ev_map(pairComp); // bi bo edge to vertex index map
-    addZeroPoints(ev_map);
-    size_t tet_size=tets_.size();
-    for(size_t t_id=0; t_id<tet_size; ++t_id) {
-      Tet &tet=tets_[t_id];
-      if(!tet.valid_) { continue; }
-      size_t vo_cnt=0, vi_cnt=0;
-      size_t vo[4], vi[4];
-      for(size_t vid : tet.vid_) {
-        if(vertices_[vid].pt_type_ == OUTER_POINT) { vo[vo_cnt++]=vid; }
-        else if(vertices_[vid].pt_type_ == INNER_POINT){ vi[vi_cnt++]=vid; }
-      }
-      // bo : bi = 3 : 1
-      if(vo_cnt==3 && vi_cnt==1) {
-        tessellation3v1(vo[0],vo[1],vo[2],vi[0],tet,ev_map);
-      }
-      // bo : bi = 2 : 2
-      else if(vo_cnt==2 && vi_cnt==2) {
-        tessellation2v2(vo[0],vo[1],vi[0],vi[1],tet, ev_map);
-      }
-      // bo : bi = 1 : 3
-      else if(vo_cnt==1 && vi_cnt==3) {
-        tessellation1v3(vo[0],vi[0],vi[1],vi[2],tet, ev_map);
-      }
-    }
+void zsw::Triangulation::mutualTessellation()
+{
+  const size_t e_size=edges_.size();
+  for(size_t ei=0; ei<e_size; ++ei) {
+    zsw::Edge &e=edges_[ei];
+    if(!e.valid_) { continue; }
+    if(vertices_[e.vid_[0]].pt_type_!=zsw::INNER_POINT && vertices_[e.vid_[1]].pt_type_!=zsw::INNER_POINT) { continue; }
+    if(vertices_[e.vid_[0]].pt_type_!=zsw::OUTER_POINT && vertices_[e.vid_[1]].pt_type_!=zsw::OUTER_POINT) { continue; }
+    Eigen::Matrix<zsw::Scalar,3,1> midpt = (vertices_[e.vid_[0]].pt_+vertices_[e.vid_[1]].pt_)/2;
+    invalidEdge(ei); size_t nv_id=vertices_.size();
+    ADD_VERTEX(zsw::ZERO_POINT,midpt);
+    ADD_EDGE(e.vid_[0], nv_id); ADD_EDGE(e.vid_[1], nv_id);
 
-#ifdef ZSW_DEBUG
-    size_t ntet_size = tets_.size();
-    std::cerr << "size_old:" << tet_size << std::endl;
-    for(size_t t_id=0; t_id<ntet_size; ++t_id) {
-      Tet &tet=tets_[t_id];
-      if(!tet.valid_) { continue; }
-      size_t vo_cnt=0, vi_cnt=0;
-      for(size_t vid : tet.vid_) {
-        if(vertices_[vid].pt_type_ == OUTER_POINT) { vo_cnt++; }
-        else if(vertices_[vid].pt_type_ == INNER_POINT){ vi_cnt++;  }
-      }
-      if(vo_cnt!=0 && vi_cnt!=0) {
-        std::cerr << "error " << t_id << std::endl;
-        abort();
-      }
+    // split adj tets
+    std::set<size_t> id_set;
+    for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { id_set.insert(tid); }
+    std::vector<size_t> split_tid;
+    for(size_t tid : vertices_[e.vid_[1]].tet_ids_) {  if(id_set.find(tid)!=id_set.end()) { split_tid.push_back(tid); }    }
+
+    std::set<size_t> e_vid;
+    for(size_t tid : split_tid) {
+      assert(tets_[tid].valid_); invalidTet(tets_[tid]);
+      size_t vids[2], vi_cnt=0;
+      for(size_t vi : tets_[tid].vid_) {        if(vi!=e.vid_[0] && vi!=e.vid_[1]) { vids[vi_cnt++]=vi; }      }
+      ADD_TET(vids[0],vids[1], e.vid_[0], nv_id); ADD_TET(vids[0],vids[1], e.vid_[1], nv_id);
+      e_vid.insert(vids[0]); e_vid.insert(vids[1]);
     }
-#endif
+    for(size_t vid : e_vid) {      ADD_EDGE(vid, nv_id);    }
   }
-
-  void zsw::Triangulation::tessellation3v1(const size_t vo_0,
-                                           const size_t vo_1, const size_t vo_2, const size_t vi_0,
-                                           Tet &tet, std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
-  {
-    // find the zero point
-    size_t nv0, nv1, nv2;
-    FIND_ZERO_VERTEX_ID(vo_0,vi_0,nv0);
-    FIND_ZERO_VERTEX_ID(vo_1,vi_0,nv1);
-    FIND_ZERO_VERTEX_ID(vo_2,vi_0,nv2);
-    // invalid old tet and edges
-    invalidTet(tet);
-    // add tets
-    Eigen::Matrix<size_t,4,1> tets_info[4];
-    std::vector<size_t> tids;
-    tids.push_back(tets_.size()); tids.push_back(tets_.size()+1);
-    tids.push_back(tets_.size()+2);  tids.push_back(tets_.size()+3);
-    tets_info[0] << vi_0, nv0, nv1, nv2;
-    tets_info[1] << nv0, vo_0, vo_2, vo_1;
-    tets_info[2] << nv1, nv0, vo_2, vo_1;
-    tets_info[3] << nv2, nv1, nv0, vo_2;
-    for(size_t ti=0; ti<4; ++ti) {
-      ADD_TET(tets_info[ti][0], tets_info[ti][1], tets_info[ti][2], tets_info[ti][3]);
-    }
-
-    // add edges
-    CHECK_ADD_EDGE(nv0,nv1); CHECK_ADD_EDGE(nv0, nv2);
-    CHECK_ADD_EDGE(nv1,nv2); CHECK_ADD_EDGE(nv0, vo_1);
-    CHECK_ADD_EDGE(nv0, vo_2); CHECK_ADD_EDGE(nv1,vo_2);
-
-#ifdef ZSW_DEBUG
-    checkTetEdgeExist(vi_0, nv0, nv1, nv2); checkTetEdgeExist(nv0, vo_0, vo_2, vo_1);
-    checkTetEdgeExist(nv1, nv0, vo_2, vo_1); checkTetEdgeExist(nv2, nv1, nv0, vo_2);
-#endif
-  }
-
-  void zsw::Triangulation::tessellation2v2(const size_t vo_0, const size_t vo_1,
-                                           const size_t vi_0, const size_t vi_1,
-                                           Tet &tet,
-                                           std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
-  {
-    size_t nv0, nv1, nv2, nv3;
-    FIND_ZERO_VERTEX_ID(vo_0,vi_0,nv0);
-    FIND_ZERO_VERTEX_ID(vo_0, vi_1,nv1);
-    FIND_ZERO_VERTEX_ID(vo_1,vi_0,nv2);
-    FIND_ZERO_VERTEX_ID(vo_1,vi_1,nv3);
-
-    // invalid old tet and  add new tet
-    invalidTet(tet);
-    Eigen::Matrix<size_t,4,1> tets_info[6];
-    std::vector<size_t> tids;
-    tids.push_back(tets_.size());   tids.push_back(tets_.size()+1);
-    tids.push_back(tets_.size()+2);   tids.push_back(tets_.size()+3);
-    tids.push_back(tets_.size()+4);   tids.push_back(tets_.size()+5);
-    tets_info[0] <<nv0, nv1, nv2, vo_0;
-    tets_info[1] <<nv0, nv1, nv2, vi_0;
-    tets_info[2] <<nv1, nv2, vi_0, vi_1;
-    tets_info[3] <<nv1, nv2, nv3, vi_1;
-    tets_info[4] <<nv2, nv1, vo_0, vo_1;
-    tets_info[5] <<nv2, nv1, nv3, vo_1;
-    for(size_t ti=0; ti<6; ++ti) {
-      ADD_TET(tets_info[ti][0], tets_info[ti][1], tets_info[ti][2], tets_info[ti][3]);
-    }
-
-    // add edges
-    CHECK_ADD_EDGE(nv0,nv2);  CHECK_ADD_EDGE(nv0,nv1);
-    CHECK_ADD_EDGE(nv1,vi_0);  CHECK_ADD_EDGE(nv1,nv3);
-    CHECK_ADD_EDGE(nv1,nv2);  CHECK_ADD_EDGE(nv1,vo_1);
-    CHECK_ADD_EDGE(nv2,nv3); CHECK_ADD_EDGE(nv2,vo_0);
-    CHECK_ADD_EDGE(nv2,vi_1);
-
-#ifdef ZSW_DEBUG
-    checkTetEdgeExist(nv0, nv1, nv2, vo_0);  checkTetEdgeExist(nv0, nv1, nv2, vi_0);
-    checkTetEdgeExist(nv1, nv2, vi_0, vi_1);  checkTetEdgeExist(nv1, nv2, nv3, vi_1);
-    checkTetEdgeExist(nv2, nv1, vo_0, vo_1);  checkTetEdgeExist(nv2, nv1, nv3, vo_1);
-#endif
-  }
-
-  void zsw::Triangulation::tessellation1v3(const size_t vo_0, const size_t vi_0,
-                                           const size_t vi_1, const size_t vi_2,
-                                           Tet &tet,
-                                           std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map)
-  {
-    // find zero points
-    size_t nv0, nv1, nv2;
-    FIND_ZERO_VERTEX_ID(vo_0,vi_0,nv0);
-    FIND_ZERO_VERTEX_ID(vo_0,vi_1,nv1);
-    FIND_ZERO_VERTEX_ID(vo_0,vi_2,nv2);
-
-    // invalid old tet and add new tets
-    invalidTet(tet);
-    Eigen::Matrix<size_t,4,1> tets_info[4];
-    std::vector<size_t> tids;
-    tids.push_back(tets_.size());  tids.push_back(tets_.size()+1);
-    tids.push_back(tets_.size()+2);  tids.push_back(tets_.size()+3);
-    tets_info[0]<<vo_0, nv0, nv1, nv2;
-    tets_info[1]<<nv0, vi_0, vi_1, vi_2;
-    tets_info[2]<<nv1, nv0, vi_1, vi_2;
-    tets_info[3]<<nv2, nv0, nv1, vi_2;
-    for(size_t ti=0; ti<4; ++ti) {
-      ADD_TET(tets_info[ti][0], tets_info[ti][1], tets_info[ti][2], tets_info[ti][3]);
-    }
-
-    // ADD_TET(vo_0, nv0, nv1, nv2);  ADD_TET(nv0, vi_0, vi_1, vi_2);
-    // ADD_TET(nv1, nv0, vi_1, vi_2);  ADD_TET(nv2, nv0, nv1, vi_2);
-
-    // add edge
-    CHECK_ADD_EDGE(nv0,nv1);  CHECK_ADD_EDGE(nv0,vi_1);
-    CHECK_ADD_EDGE(nv0,vi_2);  CHECK_ADD_EDGE(nv1,vi_2);
-    CHECK_ADD_EDGE(nv1,nv2);  CHECK_ADD_EDGE(nv0,nv2);
-#ifdef ZSW_DEBUG
-    checkTetEdgeExist(vo_0, nv0, nv1, nv2);  checkTetEdgeExist(nv0, vi_0, vi_1, vi_2);
-    checkTetEdgeExist(nv1, nv0, vi_1, vi_2);  checkTetEdgeExist(nv2, nv0, nv1, vi_2);
-#endif
-  }
+}
 
   void zsw::Triangulation::invalidEdge(const size_t e_id)
   {
@@ -853,8 +721,8 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
   }
   if(merge_pt_ptr != nullptr) {
     NZSWLOG("zsw_info") << "zc: edge collapse: " << e.vid_[0] << " " << e.vid_[1] << std::endl;
-    size_t collapse_eid[2] = {e.vid_[0], e.vid_[1]};
-    writeTetMeshAdjVs("/home/wegatron/tmp/debug_adj_before.vtk",{collapse_eid[0]});
+    //size_t collapse_eid[2] = {e.vid_[0], e.vid_[1]};
+    //writeTetMeshAdjVs("/home/wegatron/tmp/debug_adj_before.vtk",{collapse_eid[0]});
     edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
                  e, [&eids_set,this](const size_t e_id) {
                    if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
@@ -862,26 +730,26 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
                       && eids_set.find(e_id)==eids_set.end()) {
                      eids_set.insert(e_id);}
                  });
-    {
-      std::function<bool(const zsw::Tet&)> ignore_bbox
-        = std::bind(&zsw::Triangulation::ignoreWithPtType, this, std::placeholders::_1, zsw::BBOX_POINT);
-      std::function<bool(const zsw::Tet&)> ignore_out
-        = std::bind(&zsw::Triangulation::ignoreWithPtType, this, std::placeholders::_1, zsw::OUTER_POINT);
-      std::function<bool(const zsw::Tet&)> ignore_self_out
-        = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, this, std::placeholders::_1, zsw::OUTER_POINT);
-      std::function<bool(const zsw::Tet&)> ignore_self_in
-        = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, this, std::placeholders::_1, zsw::INNER_POINT);
+    // {
+    //   std::function<bool(const zsw::Tet&)> ignore_bbox
+    //     = std::bind(&zsw::Triangulation::ignoreWithPtType, this, std::placeholders::_1, zsw::BBOX_POINT);
+    //   std::function<bool(const zsw::Tet&)> ignore_out
+    //     = std::bind(&zsw::Triangulation::ignoreWithPtType, this, std::placeholders::_1, zsw::OUTER_POINT);
+    //   std::function<bool(const zsw::Tet&)> ignore_self_out
+    //     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, this, std::placeholders::_1, zsw::OUTER_POINT);
+    //   std::function<bool(const zsw::Tet&)> ignore_self_in
+    //     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, this, std::placeholders::_1, zsw::INNER_POINT);
 
-      std::function<bool(const zsw::Tet&)> ignore_not_with_zero_point
-        = std::bind(&zsw::Triangulation::ignoreNotWithPtType, this, std::placeholders::_1, zsw::ZERO_POINT);
-      writeTetMesh("/home/wegatron/tmp/debug_zc.vtk",{ignore_bbox, ignore_self_out, ignore_self_in});
-      writeTetMeshAdjVs("/home/wegatron/tmp/debug_adj_after.vtk",{collapse_eid[0]});
-      size_t pointid=0;
-      std::ofstream ofs("/home/wegatron/tmp/debug_pt.vtk");
-      point2vtk(ofs, merge_pt_ptr->data(), 1, &pointid, 1);      ofs.close();
-      abort();
-    }
-    if(isGood()!=0) { abort(); }
+    //   std::function<bool(const zsw::Tet&)> ignore_not_with_zero_point
+    //     = std::bind(&zsw::Triangulation::ignoreNotWithPtType, this, std::placeholders::_1, zsw::ZERO_POINT);
+    //   writeTetMesh("/home/wegatron/tmp/debug_zc.vtk",{ignore_bbox, ignore_self_out, ignore_self_in});
+    //   writeTetMeshAdjVs("/home/wegatron/tmp/debug_adj_after.vtk",{collapse_eid[0]});
+    //   size_t pointid=0;
+    //   std::ofstream ofs("/home/wegatron/tmp/debug_pt.vtk");
+    //   point2vtk(ofs, merge_pt_ptr->data(), 1, &pointid, 1);      ofs.close();
+    //   abort();
+    // }
+    assert(isGood()==0);
   } else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
 }
 
