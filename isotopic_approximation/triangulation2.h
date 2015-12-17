@@ -18,7 +18,7 @@
 #include <unordered_set>
 #include <Eigen/Dense>
 #include <zswlib/config.h>
-#include <zswlib/mesh/zsw_flann2.h>
+#include <zswlib/mesh/zsw_flann.h>
 #include "cgal_common.h"
 #include "basic_data_structure.h"
 #include "constraint.h"
@@ -98,8 +98,6 @@ namespace zsw
     void tryCollapseZeroEdge(const size_t e_id,
                                  std::set<size_t> &eids_set);
 
-    void reAssignJpts();
-
     const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<Tet>& getTets() const { return tets_; }
     const std::vector<Edge>& getEdges() const { return edges_; }
@@ -143,10 +141,10 @@ namespace zsw
     std::vector<Vertex> vertices_;
     std::vector<Tet> tets_;
     std::vector<JudgePoint> jpts_;
-    std::vector<JudgePoint> bi_jpts_;
-    std::vector<JudgePoint> bo_jpts_;
-    std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_bi_;
-    std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_bo_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_jpts_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bo_jpts_;
+    std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bi_;
+    std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bo_;
   };
 }
 

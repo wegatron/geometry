@@ -23,6 +23,13 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
   vn.normalize();
   if(vn.dot(vr-v0) < 0) { vn=-vn; }
   vec_vn.push_back(vn);
+
+  #if 1
+  if(debug_) {
+    std::cerr << "add krj:" << v0.transpose() << "#" << v1.transpose() << "#" << v2.transpose() << "#" << vr.transpose() << std::endl;
+    std::cerr << "normal:" << vn.transpose() << std::endl;
+  }
+  #endif
 }
 
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
@@ -70,10 +77,10 @@ bool zsw::normalCondition(
                           const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,
                           const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                           const zsw::Scalar pt_val,
-                          const std::vector<zsw::JudgePoint> &bi_jpts,
-                          const std::vector<zsw::JudgePoint> &bo_jpts,
-                          std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_bi,
-                          std::shared_ptr<zsw::Flann2<zsw::Scalar,2>> jpts_ptr_bo)
+                          const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_jpts,
+                          const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_jpts,
+                          std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bi,
+                          std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bo)
 {
   // for each tet
   for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
@@ -99,28 +106,17 @@ bool zsw::normalCondition(
     Eigen::Matrix<zsw::Scalar,3,1> center=tet_pts.block<3,1>(0,0);
     center+=tet_pts.block<3,1>(0,1); center+=tet_pts.block<3,1>(0,2);
     center+=tet_pts.block<3,1>(0,3); center*=0.25;
-    tet_pts*=0.1;
-    tet_pts+= 0.9*center*Eigen::Matrix<zsw::Scalar,1,4>::Ones();
+    tet_pts*=0.3;
+    tet_pts+= 0.7*center*Eigen::Matrix<zsw::Scalar,1,4>::Ones();
 
     {
       std::vector<size_t> bi_indices;
       std::vector<zsw::Scalar> bi_dist;
       jpts_ptr_bi->queryNearest(tet_pts, bi_indices, bi_dist);
       for(size_t ind : bi_indices) {
-        Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bi_jpts[ind].pt_-v0);
-        if((A*ans-(bi_jpts[ind].pt_-v0)).norm()>zsw::const_val::eps) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+        Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bi_jpts[ind]-v0);
+        if((A*ans-(bi_jpts[ind]-v0)).norm()>zsw::const_val::eps) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
         if(pt_val+ans.dot(nv)>0.5) {
-          // size_t tet_data[]={0,1,2,3};
-          // std::cerr << "ans:" << ans.transpose() << std::endl;
-          // std::cerr << "bi judge point:" << bi_jpts[ind].pt_.transpose() << std::endl;
-          // std::cerr << "val calculated:" << pt_val+ans.dot(nv) << std::endl;
-          // std::cerr << "bound_tri:" << b_tr.transpose() << std::endl;
-          // std::cerr << "ptval:" << pt_val << " " << nv[0]+pt_val << " " << nv[1]+pt_val << " " << nv[2]+pt_val << std::endl;
-          // std::ofstream ofs("/home/wegatron/tmp/debug_tet.vtk");
-          // std::cerr << ori_tet_pts.transpose() << std::endl;
-          // tet2vtk(ofs, ori_tet_pts.data(), 4, tet_data, 1);
-          // ofs.close();
-          // abort();
           return false;
         }
       }
@@ -131,8 +127,8 @@ bool zsw::normalCondition(
       std::vector<zsw::Scalar> bo_dist;
       jpts_ptr_bi->queryNearest(tet_pts, bo_indices, bo_dist);
       for(size_t ind : bo_indices) {
-        Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bo_jpts[ind].pt_-v0);
-        if((A*ans-(bo_jpts[ind].pt_-v0)).norm()>zsw::const_val::eps) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+        Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bo_jpts[ind]-v0);
+        if((A*ans-(bo_jpts[ind]-v0)).norm()>zsw::const_val::eps) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
         if(pt_val+ans.dot(nv)<-0.5) { return false; }
       }
     }

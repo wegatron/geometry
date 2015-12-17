@@ -112,7 +112,7 @@ size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Mat
   removeSliverTet(delaunay, vertices_);
   haveSliverTet(delaunay, vertices_);
   init(r, delaunay);
-  CALL_FUNC(isGood(), return __LINE__);
+  assert(isGood()==0);
   return 0;
 }
 
@@ -140,15 +140,18 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
       } else { bo_cnt=bi_cnt=0; break; }
     }
 
-    if(bo_cnt==3) { sampleTriangle(bo_points.block<3,3>(0,0), r, 1, bo_jpts_); initQem(bo_vids[0], bo_vids[1], bo_vids[2]); }
-    else if(bi_cnt==3) { sampleTriangle(bi_points.block<3,3>(0,0), r, -1, bi_jpts_); initQem(bi_vids[0], bi_vids[1], bi_vids[2]); }
+    if(bo_cnt==3) { sampleTriangle(bo_points.block<3,3>(0,0), r, 1, jpts_); }
+    else if(bi_cnt==3) { sampleTriangle(bi_points.block<3,3>(0,0), r, -1, jpts_); }
     // vertex info
     vertices_[tmp_tet.vid_[0]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[1]].tet_ids_.push_back(t_id);
     vertices_[tmp_tet.vid_[2]].tet_ids_.push_back(t_id);  vertices_[tmp_tet.vid_[3]].tet_ids_.push_back(t_id++);
   }
-  jpts_.insert(jpts_.end(), bi_jpts_.begin(), bi_jpts_.end());   jpts_.insert(jpts_.end(), bo_jpts_.begin(), bo_jpts_.end());
-  // jpts_ptr_bi_.reset(new zsw::Flann2<zsw::Scalar, 2>(bi_jpts_[0].pt_.data(), bi_jpts_.size()));
-  // jpts_ptr_bo_.reset(new zsw::Flann2<zsw::Scalar, 2>(bo_jpts_[0].pt_.data(), bo_jpts_.size()));
+  for(const zsw::JudgePoint &jpt : jpts_) {
+    if(jpt.val_exp_>0) { bo_jpts_.push_back(jpt.pt_); }
+    else {bi_jpts_.push_back(jpt.pt_); }
+  }
+  jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
+  jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
 
   // edge info
   size_t e_id=0;
@@ -257,6 +260,7 @@ void zsw::Triangulation::simpZeroSurface()
   }
 #if 0
   {
+    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!--------------" << std::endl;
     for(size_t cur_eid=0; cur_eid<edges_.size(); ++cur_eid) {
       if(edges_[cur_eid].valid_ &&
          vertices_[edges_[cur_eid].vid_[0]].pt_type_==vertices_[edges_[cur_eid].vid_[1]].pt_type_
@@ -326,6 +330,7 @@ void zsw::Triangulation::mutualTessellation()
     if(vertices_[e.vid_[0]].pt_type_!=zsw::OUTER_POINT && vertices_[e.vid_[1]].pt_type_!=zsw::OUTER_POINT) { continue; }
     Eigen::Matrix<zsw::Scalar,3,1> midpt = (vertices_[e.vid_[0]].pt_+vertices_[e.vid_[1]].pt_)/2;
     invalidEdge(ei); size_t nv_id=vertices_.size();
+    //if(nv_id==126) { std::cerr << "****nv_id=126, edge:" << e.vid_[0] << " " << e.vid_[1] << std::endl; }
     ADD_VERTEX(zsw::ZERO_POINT,midpt);
     ADD_EDGE(e.vid_[0], nv_id); ADD_EDGE(e.vid_[1], nv_id);
 
@@ -618,7 +623,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   // if e is invalid or is not bi and bo edge, if is bi bo edge is checked when push into the queue
   if(!e.valid_)   { return; }
   if(!linkCondition(e)) { return; }
-  NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
+  //NZSWLOG("zsw_info") << "edge:" << e.vid_[0] << " : "  << e.vid_[1] << std::endl;
   std::vector<size_t> tet_ids;
   for(size_t tid : vertices_[e.vid_[0]].tet_ids_) { tet_ids.push_back(tid); }
   for(size_t tid : vertices_[e.vid_[1]].tet_ids_) { tet_ids.push_back(tid); }
@@ -644,11 +649,12 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   // find the candicate points :  jpt in kernel region
   std::vector<JudgePoint> candicate_pts;
   for(const JudgePoint &jpt : jpts_) {
-    if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)) {
+    if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)
+       && normalCondition(vertices_, bound_tris, jpt.pt_, pt_val, bi_jpts_, bo_jpts_, jpts_ptr_bi_, jpts_ptr_bo_)) {
       candicate_pts.push_back(jpt);
     }
   }
-  NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
+  //NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
   //-- find the best point in the candicate_pts--
   {
     // sort by fabs(val_exp-val_cur) by decrease order
@@ -662,7 +668,10 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       }
     }
     if(merge_pt_ptr != nullptr) {
-      NZSWLOG("zsw_info")  << "bc: collapse edge!!!" << std::endl;
+      static size_t bc_cnt=0;
+      if(++bc_cnt%10==0) {
+        NZSWLOG("zsw_info")  << "bc: collapsed edge number:" << bc_cnt << std::endl;
+      }
       edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update, e,
                    [&eids_set, this](const size_t e_id) {
                      if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
@@ -671,7 +680,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
                        eids_set.insert(e_id);
                      }
                    });
-    } else {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
+    } //else {      NZSWLOG("zsw_info")  << "bc: no poper merge point!"<< std::endl;    }
   }
 }
 
@@ -690,6 +699,10 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
 
   std::vector<Eigen::Matrix<size_t,3,1>> bound_tris;
   KernelRegionJudger krj;
+#if 0
+  {    krj.debug_=e.vid_[0]==129 && e.vid_[1]==266;  }
+#endif
+
   for(size_t tid : tet_ids) {
     // bound tri
     size_t vcnt=0;
@@ -704,6 +717,19 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
       bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
     }
   }
+
+#if 0
+  {
+    if(krj.debug_) {
+      std::cerr << "bound_tris:" << std::endl;
+      for(const Eigen::Matrix<size_t,3,1> &b_tr : bound_tris) {
+        std::cerr << b_tr.transpose() << std::endl;
+      }
+      writeTetMesh("/home/wegatron/tmp/tmp_debug0.vtk",{});
+    }
+  }
+#endif
+
   std::list<Eigen::Matrix<zsw::Scalar,3,1>> candicate_pts;
   for(size_t i=0; i<tet_ids.size(); ++i) {
     const size_t *vid = tets_[tet_ids[i]].vid_;
@@ -720,7 +746,8 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
     if(isKeepJpts(0, pt, bound_tris, jpts_update)) {  merge_pt_ptr = &pt; break;  }
   }
   if(merge_pt_ptr != nullptr) {
-    NZSWLOG("zsw_info") << "zc: edge collapse: " << e.vid_[0] << " " << e.vid_[1] << std::endl;
+    static size_t zc_cnt=0;
+    if(++zc_cnt%40==0) {      NZSWLOG("zsw_info") << "zc: edge collapsed number: " << zc_cnt << std::endl;    }
     //size_t collapse_eid[2] = {e.vid_[0], e.vid_[1]};
     //writeTetMeshAdjVs("/home/wegatron/tmp/debug_adj_before.vtk",{collapse_eid[0]});
     edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
@@ -750,7 +777,7 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
     //   abort();
     // }
     assert(isGood()==0);
-  } else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
+  } //else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
 }
 
 
@@ -980,37 +1007,4 @@ void zsw::Triangulation::writeAllJpts(const std::string &filepath) const
 
   size_t size = pts_data.size()/3;
   point2vtk(ofs, &pts_data[0], size, &point_ids[0], size);
-}
-
-void zsw::Triangulation::reAssignJpts()
-{
-  // std::list<JudgePoint> all_jpts;
-  // for(size_t tid=0; tid<tets_.size(); ++tid) {
-  //   if(!tets_[tid].valid_) { continue; }
-  //   all_jpts.insert(all_jpts.end(), tets_[tid].jpts_.begin(), tets_[tid].jpts_.end());
-  // }
-  // for(zsw::Tet &tet : tets_) {
-  //   if(!tet.valid_) { continue; }
-  //   tet.jpts_.clear();
-  //   size_t bi_cnt=0;
-  //   size_t bo_cnt=0;
-  //   for(size_t i=0; i<4; ++i) {
-  //     if(vertices_[tet.vid_[i]].pt_type_==zsw::INNER_POINT) { ++bi_cnt; }
-  //     if(vertices_[tet.vid_[i]].pt_type_==zsw::OUTER_POINT) { ++bo_cnt; }
-  //   }
-  //   if(bi_cnt==0 && bo_cnt==0) { continue; }
-  //   Eigen::Matrix<zsw::Scalar,3,1> v0=vertices_[tet.vid_[0]].pt_;
-  //   Eigen::Matrix<zsw::Scalar,3,3> A;
-  //   A.block<3,1>(0,0) = vertices_[tet.vid_[1]].pt_-v0;
-  //   A.block<3,1>(0,1) = vertices_[tet.vid_[2]].pt_-v0;
-  //   A.block<3,1>(0,2) = vertices_[tet.vid_[3]].pt_-v0;
-  //   Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu;
-  //   pplu.compute(A);
-  //   for(const JudgePoint &jpt : all_jpts) {
-  //     Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(jpt.pt_-v0);
-  //     if((A*ans-(jpt.pt_-v0)).norm()>zsw::const_val::eps) { continue; }
-  //     if(ans[0]<-zsw::const_val::eps || ans[1]<-zsw::const_val::eps || ans[2]<-zsw::const_val::eps || ans[0]+ans[1]+ans[2]>1+zsw::const_val::eps) { continue; } // not in tet
-  //     tet.jpts_.push_back(jpt);
-  //   }
-  //}
 }

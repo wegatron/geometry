@@ -30,7 +30,6 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, &tr, std::placeholders::_1, zsw::OUTER_POINT);
   std::function<bool(const zsw::Tet&)> ignore_self_in
     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, &tr, std::placeholders::_1, zsw::INNER_POINT);
-
   std::function<bool(const zsw::Tet&)> ignore_not_with_zero_point
     = std::bind(&zsw::Triangulation::ignoreNotWithPtType, &tr, std::placeholders::_1, zsw::ZERO_POINT);
 
@@ -41,36 +40,25 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.simpTolerance();
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_total_before_mt.vtk", {});
-  tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj80.vtk", {80});
-  tr.writeTetMeshAdjVs("/home/wegatron/tmp/tet_adj124.vtk", {124});
-  CALL_FUNC(tr.isGood(), abort());
-
-  const std::vector<zsw::Tet> &tets=tr.getTets();
-  size_t tcnt=0;
-  for(size_t ti=0; ti<tets.size(); ++ti) {
-    if(!tets[ti].valid_) { continue; }
-    size_t cnt=0;
-    for(size_t vid : tets[ti].vid_) {      if(vid==78 || vid==120) { ++cnt; }    }
-    if(cnt==2) {      tr.writeTet("/home/wegatron/tmp/e78_120_"+std::to_string(tcnt++)+".vtk", ti);    }
-  }
+  assert(tr.isGood()==0);
 
   tr.mutualTessellation();
   tr.writeTetMesh(output_prefix+"tol_total_after_mt.vtk", {});
   tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface2(output_prefix+"_zero_surf_before_simp.obj", zsw::ZERO_POINT);
 
-  CALL_FUNC(tr.isGood(), abort());
+  assert(tr.isGood()==0);
   tr.simpZeroSurface();
   tr.writeTetMesh(output_prefix+"tol_total_last.vtk", {});
   tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeSurface2(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
 
-  CALL_FUNC(tr.isGood(), abort());
-  std::cerr << "tris fine after simpZeroSurface" << std::endl;
+  assert(tr.isGood()==0);
 }
 
 int main(int argc, char *argv[])
 {
-  test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/approximate/sphere/sphere", 0.1, 0.01);
+  test(argv[1], argv[2], atof(argv[3]), atof(argv[4]));
+  //test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/approximate/sphere2/sphere", 0.1, 0.01);
   return 0;
 }
