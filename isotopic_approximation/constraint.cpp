@@ -15,7 +15,7 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
   Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
 
   if(vn.norm()<zsw::const_val::eps) {
-    std::cerr << "nv norm too small:" << vn.norm() << std::endl;;
+    //std::cerr << "nv norm too small:" << vn.norm() << std::endl;;
     isgood_=false;
     return;
   }
@@ -24,7 +24,7 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
   if(vn.dot(vr-v0) < 0) { vn=-vn; }
   vec_vn.push_back(vn);
 
-  #if 1
+  #if 0
   if(debug_) {
     std::cerr << "add krj:" << v0.transpose() << "#" << v1.transpose() << "#" << v2.transpose() << "#" << vr.transpose() << std::endl;
     std::cerr << "normal:" << vn.transpose() << std::endl;
@@ -34,22 +34,12 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
 
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
-#if 1
   if(!isgood_) { return false; }
   for(size_t i=0; i<vec_v0.size(); ++i) {
     if(vec_vn[i].dot(pt-vec_v0[i]) < precision_) {
       return false;
     }
   }
-#else
-  std::cerr << "only judge for condition " << condition_i_ << std::endl;
-  std::cerr << "vec_vn:" <<  vec_vn[condition_i_].transpose() << std::endl;
-  std::cerr << "vec_v0:" << vec_v0[condition_i_].transpose() << std::endl;
-  std::cerr << "pt:" << pt.transpose() << std::endl;
-  if(condition_i_!=-1 && vec_vn[condition_i_].dot(pt-vec_v0[condition_i_]) < zsw::const_val::eps) {
-    return false;
-  }
-#endif
   return true;
 }
 
