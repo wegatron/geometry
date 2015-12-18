@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_SUITE(link_condition)
 
 BOOST_AUTO_TEST_CASE(fake_triangulation)
 {
-  zsw::Triangulation tr;
+  zsw::Triangulation tr("/home/wegatron/tmp/");
   std::vector<zsw::Vertex> &vertices=tr.getVertices();
   std::vector<zsw::Tet> &tets=tr.getTets();
   std::vector<zsw::Edge> &edges=tr.getEdges();
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(real_triangulation)
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
   zsw::genPoints(0.5, input_mesh, bo_points, bi_points);
   // init triangulation
-  zsw::Triangulation tr;
+  zsw::Triangulation tr("/home/wegatron/tmp/");
   CALL_FUNC(tr.construct(0.1, bo_points, bi_points), abort());
   const std::vector<zsw::Edge> &edges=tr.getEdges();
   const std::vector<zsw::Vertex> &vertices=tr.getVertices();

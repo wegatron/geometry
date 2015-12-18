@@ -97,7 +97,7 @@ size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Mat
     tet_points.push_back({Point(v[0], v[1], v[2]), pt_id++});
     vertices_.push_back({true, BBOX_POINT, v, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
   }
-  std::cerr << "bs vertices size:" << bs_vertices.size() << std::endl;
+  //std::cerr << "bs vertices size:" << bs_vertices.size() << std::endl;
   // add bo points
   for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bo_pts) {
     tet_points.push_back({Point(tmp[0], tmp[1], tmp[2]), pt_id++});
@@ -150,6 +150,7 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
     if(jpt.val_exp_>0) { bo_jpts_.push_back(jpt.pt_); }
     else {bi_jpts_.push_back(jpt.pt_); }
   }
+  NZSWLOG("zsw_info") << "judge points size:" << jpts_.size() << std::endl;
   jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
   jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
 
@@ -654,7 +655,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       candicate_pts.push_back(jpt);
     }
   }
-  NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
+  //NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
   //-- find the best point in the candicate_pts--
   {
     // sort by fabs(val_exp-val_cur) by decrease order
@@ -671,6 +672,15 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       static size_t bc_cnt=0;
       if(++bc_cnt%10==0) {
         NZSWLOG("zsw_info")  << "bc: collapsed edge number:" << bc_cnt << std::endl;
+      }
+      if(bc_cnt%400==0) {
+        std::function<bool(const zsw::Tet&)> ignore_bbox
+          = std::bind(&zsw::Triangulation::ignoreWithPtType, this, std::placeholders::_1, zsw::BBOX_POINT);
+        std::function<bool(const zsw::Tet&)> ignore_self_out
+          = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, this, std::placeholders::_1, zsw::OUTER_POINT);
+        std::function<bool(const zsw::Tet&)> ignore_self_in
+          = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, this, std::placeholders::_1, zsw::INNER_POINT);
+        writeTetMesh(tmp_output_dir_+"bound_tmp_"+std::to_string(bc_cnt)+".vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
       }
       edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update, e,
                    [&eids_set, this](const size_t e_id) {
@@ -748,6 +758,7 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
   if(merge_pt_ptr != nullptr) {
     static size_t zc_cnt=0;
     if(++zc_cnt%40==0) {      NZSWLOG("zsw_info") << "zc: edge collapsed number: " << zc_cnt << std::endl;    }
+    if(zc_cnt%800==0) {      writeSurface(tmp_output_dir_+"zc_tmp_"+std::to_string(zc_cnt)+".obj", zsw::ZERO_POINT);    }
     //size_t collapse_eid[2] = {e.vid_[0], e.vid_[1]};
     //writeTetMeshAdjVs("/home/wegatron/tmp/debug_adj_before.vtk",{collapse_eid[0]});
     edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,

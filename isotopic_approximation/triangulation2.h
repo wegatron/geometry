@@ -44,7 +44,7 @@ namespace zsw
     void checkTetEdgeExist(const size_t n0, const size_t n1, const size_t n2, const size_t n3);
     // functions for debug end }
 
-    Triangulation() {}
+  Triangulation(const std::string &tmp_output_dir): tmp_output_dir_(tmp_output_dir) {}
 
     /// \brief construct
     ///
@@ -55,8 +55,8 @@ namespace zsw
     /// \param bo_points points in outer boundary
     /// \param bi_points points in inner boundary
     size_t construct(const zsw::Scalar r,
-                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
-                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
+                     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
+                     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
 
     /// \brief check triangulation is valid(we can use the triangulation to get a result)
     ///
@@ -96,7 +96,7 @@ namespace zsw
                                  std::set<size_t> &eids_set);
 
     void tryCollapseZeroEdge(const size_t e_id,
-                                 std::set<size_t> &eids_set);
+                             std::set<size_t> &eids_set);
 
     void debugTryCollapseBoundaryEdge(const size_t vid0, const size_t vid1);
 
@@ -138,6 +138,7 @@ namespace zsw
 
     void invalidTet(Tet &tet);
 
+    std::string tmp_output_dir_;
     zsw::Scalar tet_sample_r_;
     std::vector<Edge> edges_;
     std::vector<Vertex> vertices_;

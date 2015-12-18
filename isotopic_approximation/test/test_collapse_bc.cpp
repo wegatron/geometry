@@ -12,13 +12,13 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   zsw::mesh::TriMesh input_mesh;
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     std::cerr << "[ERROR] can't read mesh!" << std::endl;
+    abort();
   }
 
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bo_points;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
   zsw::genPoints(thick_dis, input_mesh, bo_points, bi_points);
 
-  // judge points is 10 times dense as the basic mesh points
   zsw::Triangulation tr("/home/wegatron/tmp/");
   CALL_FUNC(tr.construct(sample_r, bo_points, bi_points), abort());
 
@@ -30,38 +30,39 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, &tr, std::placeholders::_1, zsw::OUTER_POINT);
   std::function<bool(const zsw::Tet&)> ignore_self_in
     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, &tr, std::placeholders::_1, zsw::INNER_POINT);
-
   std::function<bool(const zsw::Tet&)> ignore_not_with_zero_point
     = std::bind(&zsw::Triangulation::ignoreNotWithPtType, &tr, std::placeholders::_1, zsw::ZERO_POINT);
 
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
-  tr.writeTetMesh(output_prefix+"tol_ori_all.vtk", {});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
-#if 0
-  std::cout << "input two vid:" << std::endl;
-  vector<size_t> vids(2,0);
-  std::cin >> vids[0] >> vids[1];
-  tr.writeTetMeshAdjVs("/home/wegatron/tmp/simp_tol/debug/adj.vtk", vids);
-  tr.writeBoundTris("/home/wegatron/tmp/simp_tol/debug/bound_tri.obj", vids[0], vids[1]);
-  tr.testCollapseDebug(vids[0], vids[1]);
-  exit(__LINE__);
-#endif
+  tr.writeTetMesh(output_prefix+"tol_total_ori.vtk", {});
 
-  tr.simpTolerance();
+  size_t vid0,vid1;
+  std::cout << "input edge vids:" << std::endl;
+  cin >> vid0 >> vid1;
+  tr.debugTryCollapseBoundaryEdge(vid0, vid1);
 
-  tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
-  // tr.writeTetMeshAdjV(output_prefix+"_simp_tol_before_mt_adjv4", 4);
-  tr.mutualTessellation();
-  tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_not_with_zero_point});
-  tr.writeSurface(output_prefix+"_simp_tol_after_zero_mt.obj", zsw::ZERO_POINT);
-  // tr.writeSurface(output_prefix+"_simp_tol_after_inner_mt.obj", zsw::INNER_POINT);
-  // tr.writeSurface(output_prefix+"_simp_tol_after_outer_mt.obj", zsw::OUTER_POINT);
+  // tr.simpTolerance();
+  // tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
+  // tr.writeTetMesh(output_prefix+"tol_total_before_mt.vtk", {});
+  // assert(tr.isGood()==0);
+
+  // tr.mutualTessellation();
+  // tr.writeTetMesh(output_prefix+"tol_total_after_mt.vtk", {});
+  // tr.writeTetMesh(output_prefix+"_simp_tol_after_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
+  // tr.writeSurface2(output_prefix+"_zero_surf_before_simp.obj", zsw::ZERO_POINT);
+
+  // assert(tr.isGood()==0);
+  // tr.simpZeroSurface();
+  // tr.writeTetMesh(output_prefix+"tol_total_last.vtk", {});
+  // tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
+  // tr.writeSurface2(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
+
+  assert(tr.isGood()==0);
 }
 
 int main(int argc, char *argv[])
 {
-  test(argv[1], argv[2], atof(argv[3]), atof(argv[4]));
-  //test("/home/wegatron/workspace/geometry/data/sphere.stl", "/home/wegatron/tmp/simp_tol/sphere/sphere", 0.1, 0.01);
-  //test("/home/wegatron/workspace/geometry/data/fandisk.obj", "/home/wegatron/tmp/simp_tol/fandisk/fandisk", 0.006, 0.003);
+  test("/home/wegatron/workspace/geometry/data/fertility.stl", "/home/wegatron/tmp/approximate/fertility_debug/fertility_debug", 0.5, 0.12);
   return 0;
 }

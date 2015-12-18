@@ -114,8 +114,8 @@ bool zsw::normalCondition(
     Eigen::Matrix<zsw::Scalar,3,1> center=tet_pts.block<3,1>(0,0);
     center+=tet_pts.block<3,1>(0,1); center+=tet_pts.block<3,1>(0,2);
     center+=tet_pts.block<3,1>(0,3); center*=0.25;
-    tet_pts*=0.3;
-    tet_pts+= 0.7*center*Eigen::Matrix<zsw::Scalar,1,4>::Ones();
+    tet_pts*=0.7;
+    tet_pts+= 0.3*center*Eigen::Matrix<zsw::Scalar,1,4>::Ones();
 
     {
       std::vector<size_t> bi_indices;
@@ -124,7 +124,7 @@ bool zsw::normalCondition(
       for(size_t ind : bi_indices) {
         Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bi_jpts[ind]-v0);
         assert((A*ans-(bi_jpts[ind]-v0)).norm()<zsw::const_val::eps);
-        if(pt_val+ans.dot(nv)>0.5) {
+        if(pt_val+ans.dot(nv)>0) {
 #if 0
           {
             static size_t npo=0;
@@ -165,7 +165,7 @@ bool zsw::normalCondition(
       for(size_t ind : bo_indices) {
         Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bo_jpts[ind]-v0);
         assert((A*ans-(bo_jpts[ind]-v0)).norm()<zsw::const_val::eps);
-        if(pt_val+ans.dot(nv)<-0.5) {
+        if(pt_val+ans.dot(nv)<0) {
 #if 0
           {
             static size_t npo=0;
