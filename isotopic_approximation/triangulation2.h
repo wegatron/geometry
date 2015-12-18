@@ -98,6 +98,8 @@ namespace zsw
     void tryCollapseZeroEdge(const size_t e_id,
                                  std::set<size_t> &eids_set);
 
+    void debugTryCollapseBoundaryEdge(const size_t vid0, const size_t vid1);
+
     const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<Tet>& getTets() const { return tets_; }
     const std::vector<Edge>& getEdges() const { return edges_; }

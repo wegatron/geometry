@@ -654,7 +654,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       candicate_pts.push_back(jpt);
     }
   }
-  //NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
+  NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
   //-- find the best point in the candicate_pts--
   {
     // sort by fabs(val_exp-val_cur) by decrease order
@@ -1007,4 +1007,16 @@ void zsw::Triangulation::writeAllJpts(const std::string &filepath) const
 
   size_t size = pts_data.size()/3;
   point2vtk(ofs, &pts_data[0], size, &point_ids[0], size);
+}
+
+void zsw::Triangulation::debugTryCollapseBoundaryEdge(const size_t vid0, const size_t vid1)
+{
+  std::set<size_t> eids_set;
+  for(size_t ei=0; ei<edges_.size(); ++ei) {
+    if(!edges_[ei].valid_) { continue; }
+    if((edges_[ei].vid_[0]==vid0 && edges_[ei].vid_[1]==vid1) || (edges_[ei].vid_[0]==vid1 && edges_[ei].vid_[1]==vid0)) {
+      std::cerr << "try collapse bc:" << edges_[ei].vid_[0] << " " << edges_[ei].vid_[1] << std::endl;
+      tryCollapseBoundaryEdge(ei, eids_set);
+    }
+  }
 }

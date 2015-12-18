@@ -94,7 +94,15 @@ bool zsw::normalCondition(
     Eigen::Matrix<zsw::Scalar,3,Eigen::Dynamic> tet_pts(3,4);
     tet_pts.block<3,1>(0,0)=pt; tet_pts.block<3,1>(0,1)=vertices[b_tr[0]].pt_;
     tet_pts.block<3,1>(0,2)=vertices[b_tr[1]].pt_; tet_pts.block<3,1>(0,3)=vertices[b_tr[2]].pt_;
-    Eigen::Matrix<zsw::Scalar,3,Eigen::Dynamic> ori_tet_pts=tet_pts;
+
+    {
+      {
+        size_t tet_id[4]={0,1,2,3};
+        std::ofstream ofs("/home/wegatron/tmp/debug_no_scale_tet.vtk");
+        tet2vtk(ofs, tet_pts.data(), 4, tet_id, 1);
+      }
+    }
+
     const Eigen::Matrix<zsw::Scalar,3,1> v0=pt;
     Eigen::Matrix<zsw::Scalar,3,3> A;
     A.block<3,1>(0,0)=tet_pts.block<3,1>(0,1)-v0;
@@ -110,13 +118,30 @@ bool zsw::normalCondition(
     tet_pts+= 0.7*center*Eigen::Matrix<zsw::Scalar,1,4>::Ones();
 
     {
+      size_t tet_id[4]={0,1,2,3};
+      std::ofstream ofs("/home/wegatron/tmp/debug_scaled_tet.vtk");
+      tet2vtk(ofs, tet_pts.data(), 4, tet_id, 1);
+    }
+
+    {
       std::vector<size_t> bi_indices;
       std::vector<zsw::Scalar> bi_dist;
       jpts_ptr_bi->queryNearest(tet_pts, bi_indices, bi_dist);
+      {
+        Eigen::Matrix<zsw::Scalar,3,4> nti;
+        nti.block<3,1>(0,0)=bi_jpts[bi_indices[0]];
+        nti.block<3,1>(0,1)=bi_jpts[bi_indices[1]];
+        nti.block<3,1>(0,2)=bi_jpts[bi_indices[2]];
+        nti.block<3,1>(0,3)=bi_jpts[bi_indices[3]];
+        size_t tet_id[4]={0,1,2,3};
+        std::ofstream ofs("/home/wegatron/tmp/debug_nti.vtk");
+        tet2vtk(ofs, nti.data(), 4, tet_id, 1);
+      }
       for(size_t ind : bi_indices) {
         Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bi_jpts[ind]-v0);
-        if((A*ans-(bi_jpts[ind]-v0)).norm()>zsw::const_val::eps) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+        assert((A*ans-(bi_jpts[ind]-v0)).norm()<zsw::const_val::eps);
         if(pt_val+ans.dot(nv)>0.5) {
+          std::cerr << "nti ret!!!" << std::endl;
           return false;
         }
       }
@@ -126,10 +151,24 @@ bool zsw::normalCondition(
       std::vector<size_t> bo_indices;
       std::vector<zsw::Scalar> bo_dist;
       jpts_ptr_bi->queryNearest(tet_pts, bo_indices, bo_dist);
+      {
+        Eigen::Matrix<zsw::Scalar,3,4> nto;
+        nto.block<3,1>(0,0)=bo_jpts[bo_indices[0]];
+        nto.block<3,1>(0,1)=bo_jpts[bo_indices[1]];
+        nto.block<3,1>(0,2)=bo_jpts[bo_indices[2]];
+        nto.block<3,1>(0,3)=bo_jpts[bo_indices[3]];
+        size_t tet_id[4]={0,1,2,3};
+        std::ofstream ofs("/home/wegatron/tmp/debug_nto.vtk");
+        tet2vtk(ofs, nto.data(), 4, tet_id, 1);
+      }
       for(size_t ind : bo_indices) {
         Eigen::Matrix<zsw::Scalar,3,1> ans = pplu.solve(bo_jpts[ind]-v0);
-        if((A*ans-(bo_jpts[ind]-v0)).norm()>zsw::const_val::eps) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
-        if(pt_val+ans.dot(nv)<-0.5) { return false; }
+        assert((A*ans-(bo_jpts[ind]-v0)).norm()<zsw::const_val::eps);
+
+        if(pt_val+ans.dot(nv)<-0.5) {
+          std::cerr << "nto ret!!!" << std::endl;
+          return false;
+        }
       }
     }
   }
