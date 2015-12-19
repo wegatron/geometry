@@ -1,7 +1,7 @@
 #include "triangulation_fix.h"
 
 namespace zsw{
-  void removeSliverTet(Delaunay &delaunay, const std::vector<zsw::Vertex> &vertices)
+  void removeSliverTet(const zsw::Scalar threshold, const std::vector<zsw::Vertex> &vertices, Delaunay &delaunay)
   {
     bool flipable = true;
     while(flipable) {
@@ -9,7 +9,7 @@ namespace zsw{
       for(Delaunay::Finite_cells_iterator cit=delaunay.finite_cells_begin();
           cit!=delaunay.finite_cells_end(); ++cit) {
         std::pair<size_t,size_t> e[2];
-        if(isFlatTet(vertices[cit->vertex(0)->info()].pt_, vertices[cit->vertex(1)->info()].pt_,
+        if(isFlatTet(threshold, vertices[cit->vertex(0)->info()].pt_, vertices[cit->vertex(1)->info()].pt_,
                        vertices[cit->vertex(2)->info()].pt_, vertices[cit->vertex(3)->info()].pt_, e[0], e[1])) {
           if(delaunay.flip(cit, e[0].first, e[0].second) || delaunay.flip(cit, e[1].first, e[1].second)) {
             flipable = true;
@@ -20,7 +20,7 @@ namespace zsw{
     }
   }
 
-  bool isFlatTet(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+  bool isFlatTet(const zsw::Scalar threshold, const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                    const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &v3,
                    std::pair<size_t,size_t> &e0, std::pair<size_t,size_t> &e1)
   {
@@ -33,7 +33,7 @@ namespace zsw{
     // sliver tet not flat tet
     if(van<10*zsw::const_val::eps || vbn<10*zsw::const_val::eps || vcn<10*zsw::const_val::eps) {      return false;    }
     va = va/van; vb=vb/vbn; vc=vc/vcn; // normalize
-    if((va.cross(vc)).dot(vc) > 0.25) { return false; } // >15 degree, not flat
+    if((va.cross(vc)).dot(vc) > threshold) { return false; } // >15 degree, not flat
     if((va.cross(vc)).dot(va.cross(vb)) < 0) {
       e0 = std::pair<size_t,size_t>(0,1);
       e1 = std::pair<size_t,size_t>(2,3);
@@ -47,12 +47,12 @@ namespace zsw{
     return true;
   }
 
-  void haveFlatTet(Delaunay &delaunay, const std::vector<zsw::Vertex> &vertices)
+  void haveFlatTet(const zsw::Scalar threshold, const std::vector<zsw::Vertex> &vertices, Delaunay &delaunay)
   {
     for(Delaunay::Finite_cells_iterator cit=delaunay.finite_cells_begin();
         cit!=delaunay.finite_cells_end(); ++cit) {
       std::pair<size_t,size_t> e[2];
-      if(isFlatTet(vertices[cit->vertex(0)->info()].pt_, vertices[cit->vertex(1)->info()].pt_,
+      if(isFlatTet(threshold, vertices[cit->vertex(0)->info()].pt_, vertices[cit->vertex(1)->info()].pt_,
                      vertices[cit->vertex(2)->info()].pt_, vertices[cit->vertex(3)->info()].pt_, e[0], e[1])) {
         std::cerr << "Have flat tet:" << cit->vertex(0)->info() << " "
                   << cit->vertex(1)->info() << " " << cit->vertex(2)->info() << " "

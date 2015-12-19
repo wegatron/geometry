@@ -54,7 +54,7 @@ namespace zsw
     /// \param r, sample triangle with r, as judge points. the S in paper.
     /// \param bo_points points in outer boundary
     /// \param bi_points points in inner boundary
-    size_t construct(const zsw::Scalar r,
+    size_t construct(const zsw::Scalar flat_threshold, const zsw::Scalar r,
                      std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
                      std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
 

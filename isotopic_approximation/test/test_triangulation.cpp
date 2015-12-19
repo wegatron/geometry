@@ -42,7 +42,7 @@ void test_init(const std::string &file_path, const std::string &output_prefix,
   std::cerr << "start triangulation init!!!" << std::endl;
   zsw::common::ClockC11 clock;
   zsw::Triangulation tr(0.3,"/home/wegatron/tmp/");
-  CALL_FUNC(tr.construct(r, bo_points, bi_points), abort());
+  CALL_FUNC(tr.construct(0.25, r, bo_points, bi_points), abort());
 
   std::cerr << "init triangulation time cost: " << clock.time() << std::endl;
   // output triangulation
@@ -92,7 +92,7 @@ void test_mutualTessellation()
   zsw::genPoints(0.5, input_mesh, bo_points, bi_points);
   // init triangulation
   zsw::Triangulation tr(0.3,"/home/wegatron/tmp/");
-  CALL_FUNC(tr.construct(0.1, bo_points, bi_points), abort());
+  CALL_FUNC(tr.construct(0.25, 0.1, bo_points, bi_points), abort());
 
   tr.mutualTessellation();
   // output triangulation

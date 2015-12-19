@@ -78,8 +78,9 @@
     if(squared_dis > tmp_s_dis) { target_face<<vid0, vid1, vid2; squared_dis=tmp_s_dis; target_bt_i=bt_i; } \
   }while(0)
 
-size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_pts,
-                                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_pts)
+size_t zsw::Triangulation::construct(const zsw::Scalar flat_threshold,const zsw::Scalar r,
+                                     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_pts,
+                                     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_pts)
 {
   assert(bo_pts.size()!=0 && bi_pts.size()!=0);
   tet_sample_r_ = r;
@@ -108,7 +109,7 @@ size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Mat
     vertices_.push_back({true, INNER_POINT, tmp, {}, {}});
   }
   Delaunay delaunay(tet_points.begin(), tet_points.end());
-  removeSliverTet(delaunay, vertices_);
+  removeSliverTet(flat_threshold, vertices_, delaunay);
   //haveFlatTet(delaunay, vertices_);
   init(r, delaunay);
   assert(isGood()==0);

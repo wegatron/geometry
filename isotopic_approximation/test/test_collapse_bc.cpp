@@ -20,7 +20,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   zsw::genPoints(thick_dis, input_mesh, bo_points, bi_points);
 
   zsw::Triangulation tr(0.3,"/home/wegatron/tmp/");
-  CALL_FUNC(tr.construct(sample_r, bo_points, bi_points), abort());
+  CALL_FUNC(tr.construct(0.25, sample_r, bo_points, bi_points), abort());
 
   std::function<bool(const zsw::Tet&)> ignore_bbox
     = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::BBOX_POINT);

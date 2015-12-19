@@ -32,7 +32,7 @@ void test(const std::string &file_path, const double thick, const double sample_
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
   zsw::genPoints(thick, in_mesh, bo_points, bi_points);
   zsw::Triangulation tr(0.3,"/home/wegatron/tmp/");
-  CALL_FUNC(tr.construct(sample_r, bo_points, bi_points), abort());
+  CALL_FUNC(tr.construct(0.25, sample_r, bo_points, bi_points), abort());
 
 #if 0
   {

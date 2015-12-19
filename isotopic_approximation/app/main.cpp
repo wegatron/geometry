@@ -8,7 +8,7 @@
 using namespace std;
 
 void test(const std::string &file_path, const string &output_prefix, const zsw::Scalar normal_cond_scale,
-          const zsw::Scalar thick_dis, const zsw::Scalar sample_r)
+          const zsw::Scalar thick_dis, const zsw::Scalar sample_r, const zsw::Scalar flat_threshold)
 {
   zsw::mesh::TriMesh input_mesh;
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
@@ -21,7 +21,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   zsw::genPoints(thick_dis, input_mesh, bo_points, bi_points);
 
   zsw::Triangulation tr(normal_cond_scale, output_prefix+"_tmp/");
-  CALL_FUNC(tr.construct(sample_r, bo_points, bi_points), abort());
+  CALL_FUNC(tr.construct(flat_threshold, sample_r, bo_points, bi_points), abort());
 
   std::function<bool(const zsw::Tet&)> ignore_bbox
     = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::BBOX_POINT);
@@ -59,6 +59,6 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
 
 int main(int argc, char *argv[])
 {
-  test(argv[1], argv[2], atof(argv[3]), atof(argv[4]), atof(argv[5]));
+  test(argv[1], argv[2], atof(argv[3]), atof(argv[4]), atof(argv[5]), atof(argv[6]));
   return 0;
 }

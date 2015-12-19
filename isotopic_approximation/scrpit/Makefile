@@ -5,6 +5,7 @@ APP_OUTPUT_DIR = /home/wegatron/tmp/approximate
 APP_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-my-debug-o3/bin/approximate
 EXPORT_LIB_DIR = /home/wegatron/workspace/geometry/isotopic_approximation/build-my-debug-o3/lib/
 NORMAL_COND_SCALE = 0.7
+FLAT_THRESHOLD = 0.25
 
 SPHERE = ${DATA_DIR}/sphere.stl
 SPHERE_OUTPUT_DIR = ${APP_OUTPUT_DIR}/sphere/
@@ -103,32 +104,32 @@ clean_sphere: clean_log
 	rm -rf ${SPHERE_OUTPUT_DIR}*; mkdir ${SPHERE_OUTPUT_PREFIX}_tmp
 .PHONY : simp_sphere
 simp_sphere: clean_sphere export
-	${APP_EXEC} ${SPHERE} ${SPHERE_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${SPHERE_THICK} ${SPHERE_SAMPLE_R}
+	${APP_EXEC} ${SPHERE} ${SPHERE_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${SPHERE_THICK} ${SPHERE_SAMPLE_R} ${FLAT_THRESHOLD}
 
 .PHONY : clean_cylinder
 clean_cylinder: clean_log
 	rm -rf ${CYLINDER_OUTPUT_DIR}*; mkdir ${CYLINDER_OUTPUT_PREFIX}_tmp
 .PHONY : simp_cylinder
 simp_cylinder: clean_cylinder export
-	${APP_EXEC} ${CYLINDER} ${CYLINDER_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${CYLINDER_THICK} ${CYLINDER_SAMPLE_R}
+	${APP_EXEC} ${CYLINDER} ${CYLINDER_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${CYLINDER_THICK} ${CYLINDER_SAMPLE_R} ${FLAT_THRESHOLD}
 
 .PHONY : clean_fertility
 clean_fertility: clean_log
 	rm -rf ${FERTILITY_OUTPUT_DIR}*; mkdir ${FERTILITY_OUTPUT_PREFIX}_tmp
 .PHONY :simp_fertility
 simp_fertility: clean_fertility  export
-	${APP_EXEC} ${FERTILITY} ${FERTILITY_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R}
-	
+	${APP_EXEC} ${FERTILITY} ${FERTILITY_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R} ${FLAT_THRESHOLD}
+
 .PHONY :clean_bunny
 clean_bunny:clean_log
 	rm -rf ${BUNNY_OUTPUT_DIR}*; mkdir ${BUNNY_OUTPUT_PREFIX}_tmp
 .PHONY : simp_bunny
 simp_bunny:clean_bunny  export
-	${APP_EXEC} ${BUNNY} ${BUNNY_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${BUNNY_THICK} ${BUNNY_SAMPLE_R}
+	${APP_EXEC} ${BUNNY} ${BUNNY_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${BUNNY_THICK} ${BUNNY_SAMPLE_R} ${FLAT_THRESHOLD}
 
 .PHONY:clean_fandisk
 clean_fandisk : clean_log
 	rm -rf ${FANDISK_OUTPUT_DIR}*; mkdir ${FANDISK_OUTPUT_PREFIX}_tmp
 .PHONY:simp_fandisk
 simp_fandisk:clean_fandisk export
-	${APP_EXEC} ${FANDISK} ${FANDISK_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${FANDISK_THICK} ${FANDISK_SAMPLE_R}
+	${APP_EXEC} ${FANDISK} ${FANDISK_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${FANDISK_THICK} ${FANDISK_SAMPLE_R} ${FLAT_THRESHOLD}
