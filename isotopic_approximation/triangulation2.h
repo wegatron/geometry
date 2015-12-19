@@ -44,7 +44,7 @@ namespace zsw
     void checkTetEdgeExist(const size_t n0, const size_t n1, const size_t n2, const size_t n3);
     // functions for debug end }
 
-  Triangulation(const std::string &tmp_output_dir): tmp_output_dir_(tmp_output_dir) {}
+  Triangulation(const zsw::Scalar normal_cond_scal, const std::string &tmp_output_dir): tmp_output_dir_(tmp_output_dir) {}
 
     /// \brief construct
     ///
@@ -113,8 +113,6 @@ namespace zsw
     /// \param r the sample radius in bi and bo surface
     /// \param Delaunay cgal's delaunay triangulation
     void init(const zsw::Scalar r, Delaunay &delaunay);
-
-    void initQem(const size_t vid0, const size_t vid1, const size_t vid2);
 
     bool linkCondition(const Edge &e) const;
 

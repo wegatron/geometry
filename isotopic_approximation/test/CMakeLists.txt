@@ -42,6 +42,7 @@ add_executable(test_tetquality test_tetquality.cpp)
 add_executable(test_point2tridis test_point2tri_sqdis.cpp)
 add_executable(test_mutual_tessellation test_mutual_tessellation.cpp)
 add_executable(test_collapse_bc test_collapse_bc.cpp)
+add_executable(debug_mut mutual_tessellation.cpp)
 
 # target_link_libraries(test_sampling2 isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 # target_link_libraries(test_gen_surf isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
@@ -67,6 +68,8 @@ ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 target_link_libraries(test_mutual_tessellation isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 
 target_link_libraries(test_collapse_bc isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
+
+target_link_libraries(debug_mut isotropic_approximate ${OPENMESH_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
 ### old unused
 # add_executable(test_optimizer test_optimizer.cpp)
 # target_link_libraries(test_optimizer ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}

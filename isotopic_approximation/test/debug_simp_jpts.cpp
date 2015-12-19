@@ -21,7 +21,7 @@ void debugSimpJpts(const std::string &filepath, const std::string &output_prefix
   zsw::genPoints(thick_dis, input_mesh, bo_points, bi_points);
 
   // judge points is 10 times dense as the basic mesh points
-  zsw::Triangulation tr(output_prefix+"_tmp/");
+  zsw::Triangulation tr(0.3, output_prefix+"_tmp/");
   CALL_FUNC(tr.construct(sample_r, bo_points, bi_points), abort());
 
   std::function<bool(const zsw::Tet&)> ignore_bbox

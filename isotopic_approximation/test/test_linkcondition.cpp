@@ -16,15 +16,15 @@ BOOST_AUTO_TEST_SUITE(link_condition)
 
 BOOST_AUTO_TEST_CASE(fake_triangulation)
 {
-  zsw::Triangulation tr("/home/wegatron/tmp/");
+  zsw::Triangulation tr(0.3,"/home/wegatron/tmp/");
   std::vector<zsw::Vertex> &vertices=tr.getVertices();
   std::vector<zsw::Tet> &tets=tr.getTets();
   std::vector<zsw::Edge> &edges=tr.getEdges();
   Eigen::Matrix<zsw::Scalar,3,1> v[5];
   v[0]<<0,0,0; v[1]<<1,0,0; v[2]<<0,1,1; v[3]<<0.5,0.5,1; v[4]=(v[1]+v[2])/2.0;
-  vertices.push_back({true, zsw::OUTER_POINT, v[0], Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {0,1}, {}});  vertices.push_back({true, zsw::OUTER_POINT, v[1], Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {0,2},{}});
-  vertices.push_back({true, zsw::OUTER_POINT, v[2], Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {1,2}, {}});  vertices.push_back({true, zsw::OUTER_POINT, v[3], Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {0,1,2}, {}});
-  vertices.push_back({true, zsw::OUTER_POINT, v[4], Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {0,1,2}, {}});
+  vertices.push_back({true, zsw::OUTER_POINT, v[0], {0,1}, {}});  vertices.push_back({true, zsw::OUTER_POINT, v[1], {0,2},{}});
+  vertices.push_back({true, zsw::OUTER_POINT, v[2], {1,2}, {}});  vertices.push_back({true, zsw::OUTER_POINT, v[3], {0,1,2}, {}});
+  vertices.push_back({true, zsw::OUTER_POINT, v[4], {0,1,2}, {}});
 
   tets.push_back({true,{0,1,3,4}}); tets.push_back({true,{0,2,3,4}}); tets.push_back({true,{1,2,3,4}});
   edges.push_back({true, 0,1}); edges.push_back({true, 0,2});
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(real_triangulation)
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
   zsw::genPoints(0.5, input_mesh, bo_points, bi_points);
   // init triangulation
-  zsw::Triangulation tr("/home/wegatron/tmp/");
+  zsw::Triangulation tr(0.3,"/home/wegatron/tmp/");
   CALL_FUNC(tr.construct(0.1, bo_points, bi_points), abort());
   const std::vector<zsw::Edge> &edges=tr.getEdges();
   const std::vector<zsw::Vertex> &vertices=tr.getVertices();

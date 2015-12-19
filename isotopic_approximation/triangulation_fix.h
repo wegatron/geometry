@@ -10,7 +10,7 @@
 namespace zsw{
   void removeSliverTet(Delaunay &delaunay, const std::vector<zsw::Vertex> &vertices);
 
-  bool isSliverTet(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+  bool isFlatTet(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                    const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &v3,
                    std::pair<size_t,size_t> &e0, std::pair<size_t,size_t> &e1);
 

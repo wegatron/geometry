@@ -9,12 +9,12 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
                                             const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr)
 {
   if(!isgood_) { return; }
-  vec_v0.push_back(v0);
+  vec_v0_.push_back(v0);
   Eigen::Matrix<zsw::Scalar,3,1> va=v1-v0;
   Eigen::Matrix<zsw::Scalar,3,1> vb=v2-v0;
   Eigen::Matrix<zsw::Scalar,3,1> vn=va.cross(vb);
 
-  if(vn.norm()<zsw::const_val::eps) {
+  if(vn.norm()<10*zsw::const_val::eps) {
     //std::cerr << "nv norm too small:" << vn.norm() << std::endl;;
     isgood_=false;
     return;
@@ -22,7 +22,7 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
   //assert(vn.norm()>zsw::const_val::eps)
   vn.normalize();
   if(vn.dot(vr-v0) < 0) { vn=-vn; }
-  vec_vn.push_back(vn);
+  vec_vn_.push_back(vn);
 
   #if 0
   if(debug_) {
@@ -35,8 +35,8 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
   if(!isgood_) { return false; }
-  for(size_t i=0; i<vec_v0.size(); ++i) {
-    if(vec_vn[i].dot(pt-vec_v0[i]) < precision_) {
+  for(size_t i=0; i<vec_v0_.size(); ++i) {
+    if(vec_vn_[i].dot(pt-vec_v0_[i]) < precision_) {
       return false;
     }
   }
@@ -104,8 +104,8 @@ bool zsw::normalCondition(
     Eigen::Matrix<zsw::Scalar,3,1> center=tet_pts.block<3,1>(0,0);
     center+=tet_pts.block<3,1>(0,1); center+=tet_pts.block<3,1>(0,2);
     center+=tet_pts.block<3,1>(0,3); center*=0.25;
-    tet_pts*=0.7;
-    tet_pts+= 0.3*center*Eigen::Matrix<zsw::Scalar,1,4>::Ones();
+    tet_pts*=0.3;
+    tet_pts+= 0.7*center*Eigen::Matrix<zsw::Scalar,1,4>::Ones();
 
     {
       std::vector<size_t> bi_indices;
@@ -184,6 +184,39 @@ bool zsw::normalCondition(
         }
       }
     }
+  }
+  return true;
+}
+
+bool zsw::isSliverTirangle(const zsw::Scalar cos_threshold,
+                           const Eigen::Matrix<zsw::Scalar,3,1> &v0,
+                      const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+                      const Eigen::Matrix<zsw::Scalar,3,1> &v2)
+{
+  Eigen::Matrix<zsw::Scalar,3,1> va = v1-v0;
+  Eigen::Matrix<zsw::Scalar,3,1> vb = v2-v0;
+  Eigen::Matrix<zsw::Scalar,3,1> vc = v2-v1;
+  if(va.norm() < 10*zsw::const_val::eps) { return true; }
+  if(vb.norm() < 10*zsw::const_val::eps) { return true; }
+  if(vc.norm() < 10*zsw::const_val::eps) { return true; }
+  va.normalize(); vb.normalize(); vc.normalize();
+  if(fabs(va.dot(vb)) > cos_threshold) { return true; }
+  if(fabs(va.dot(vc)) > cos_threshold) { return true; }
+  if(fabs(vb.dot(vc)) > cos_threshold) { return true; }
+  return false;
+}
+
+void zsw::BoundTriQualityJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1)
+{
+  Eigen::Matrix<zsw::Scalar,3,2> tmp_ev;
+  tmp_ev.block<3,1>(0,0)=v0;  tmp_ev.block<3,1>(0,1)=v1;
+  vec_ev_.push_back(tmp_ev);
+}
+
+bool zsw::BoundTriQualityJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
+{
+  for(Eigen::Matrix<zsw::Scalar,3,2> &tmp_ev : vec_ev_) {
+    if(isSliverTirangle(cos_threshold_, pt, tmp_ev.block<3,1>(0,0), tmp_ev.block<3,1>(0,1))) return false;
   }
   return true;
 }

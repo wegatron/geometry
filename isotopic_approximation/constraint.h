@@ -27,10 +27,25 @@ namespace zsw
   private:
     bool isgood_;
     zsw::Scalar precision_;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v0;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vn;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_v0_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vn_;
   };
 
+  bool isSliverTirangle(const zsw::Scalar cos_threshold,
+                        const Eigen::Matrix<zsw::Scalar,3,1> &v0,
+                        const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+                        const Eigen::Matrix<zsw::Scalar,3,1> &v2);
+
+  class BoundTriQualityJudger final
+  {
+  public:
+    BoundTriQualityJudger(const zsw::Scalar cos_threshold) { cos_threshold_=cos_threshold; }
+    void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1);
+    bool judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt);
+  private:
+    zsw::Scalar cos_threshold_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,2>> vec_ev_; // two vertex of a edge
+  };
 
   /// \brief Normal Condition Judger
   ///

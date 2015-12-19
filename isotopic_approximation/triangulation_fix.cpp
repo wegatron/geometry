@@ -9,7 +9,7 @@ namespace zsw{
       for(Delaunay::Finite_cells_iterator cit=delaunay.finite_cells_begin();
           cit!=delaunay.finite_cells_end(); ++cit) {
         std::pair<size_t,size_t> e[2];
-        if(isSliverTet(vertices[cit->vertex(0)->info()].pt_, vertices[cit->vertex(1)->info()].pt_,
+        if(isFlatTet(vertices[cit->vertex(0)->info()].pt_, vertices[cit->vertex(1)->info()].pt_,
                        vertices[cit->vertex(2)->info()].pt_, vertices[cit->vertex(3)->info()].pt_, e[0], e[1])) {
           if(delaunay.flip(cit, e[0].first, e[0].second) || delaunay.flip(cit, e[1].first, e[1].second)) {
             flipable = true;
@@ -20,16 +20,20 @@ namespace zsw{
     }
   }
 
-
-  bool isSliverTet(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+  bool isFlatTet(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                    const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &v3,
                    std::pair<size_t,size_t> &e0, std::pair<size_t,size_t> &e1)
   {
     Eigen::Matrix<zsw::Scalar,3,1> va = v1 - v0;
     Eigen::Matrix<zsw::Scalar,3,1> vb = v2 - v0;
     Eigen::Matrix<zsw::Scalar,3,1> vc = v3 - v0;
-    Eigen::Matrix<zsw::Scalar,3,1> vn = va.cross(vb); vn.normalize();
-    if(fabs(vc.dot(vn)) > 10*zsw::const_val::eps) { return false; }
+    const zsw::Scalar van=va.norm();
+    const zsw::Scalar vbn=vb.norm();
+    const zsw::Scalar vcn=vc.norm();
+    // sliver tet not flat tet
+    if(van<10*zsw::const_val::eps || vbn<10*zsw::const_val::eps || vcn<10*zsw::const_val::eps) {      return false;    }
+    va = va/van; vb=vb/vbn; vc=vc/vcn; // normalize
+    if((va.cross(vc)).dot(vc) > 0.25) { return false; } // >15 degree, not flat
     if((va.cross(vc)).dot(va.cross(vb)) < 0) {
       e0 = std::pair<size_t,size_t>(0,1);
       e1 = std::pair<size_t,size_t>(2,3);
@@ -48,9 +52,9 @@ namespace zsw{
     for(Delaunay::Finite_cells_iterator cit=delaunay.finite_cells_begin();
         cit!=delaunay.finite_cells_end(); ++cit) {
       std::pair<size_t,size_t> e[2];
-      if(isSliverTet(vertices[cit->vertex(0)->info()].pt_, vertices[cit->vertex(1)->info()].pt_,
+      if(isFlatTet(vertices[cit->vertex(0)->info()].pt_, vertices[cit->vertex(1)->info()].pt_,
                      vertices[cit->vertex(2)->info()].pt_, vertices[cit->vertex(3)->info()].pt_, e[0], e[1])) {
-        std::cerr << "Have sliver Tet:" << cit->vertex(0)->info() << " "
+        std::cerr << "Have flat tet:" << cit->vertex(0)->info() << " "
                   << cit->vertex(1)->info() << " " << cit->vertex(2)->info() << " "
                   << cit->vertex(3)->info() << std::endl;
       }

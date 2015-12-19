@@ -19,7 +19,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
   zsw::genPoints(thick_dis, input_mesh, bo_points, bi_points);
 
-  zsw::Triangulation tr("/home/wegatron/tmp/");
+  zsw::Triangulation tr(0.3,"/home/wegatron/tmp/");
   CALL_FUNC(tr.construct(sample_r, bo_points, bi_points), abort());
 
   std::function<bool(const zsw::Tet&)> ignore_bbox

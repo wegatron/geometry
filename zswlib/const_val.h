@@ -6,7 +6,7 @@ namespace zsw{
     const double pi=3.1415926;
     const double e=2.7182818284590;
     const double eps=1e-6;
-    const double small_eps=1e-9;
+    const double app_zero=1e-3;
   }
 }
 

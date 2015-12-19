@@ -2,6 +2,7 @@
 #define ZSW_FLANN_H
 
 #include <vector>
+#include <memory>
 #include <flann/flann.hpp>
 #include <Eigen/Dense>
 

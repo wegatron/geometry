@@ -11,10 +11,9 @@
 #include "basic_op.h"
 #include "triangulation_fix.h"
 #include "debug.h"
-#include "config.h"
 
 #define ADD_VERTEX(pt_type, pt) do{                                     \
-    vertices_.push_back({true, pt_type, pt, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}}); \
+    vertices_.push_back({true, pt_type, pt, {}, {}}); \
   }while(0)
 
 #define ADD_TET(v0, v1, v2, v3) do{                                     \
@@ -88,25 +87,25 @@ size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Mat
   calcBBOX(bo_pts, bbox);
   zsw::Scalar scale = 0.5*(bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1)).norm();
   Eigen::Matrix<zsw::Scalar,3,1> transform = 0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
-  zsw::BoundSphere bs(BOUND_SPHERE_MODEL_FILE, scale, transform);
+  zsw::BoundSphere bs("bound_sphere.obj", scale, transform);
   size_t pt_id=0;
   std::vector<std::pair<Point, size_t>> tet_points;
   // add bound sphere points
   const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_vertices = bs.getVertices();
   for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bs_vertices) {
     tet_points.push_back({Point(v[0], v[1], v[2]), pt_id++});
-    vertices_.push_back({true, BBOX_POINT, v, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
+    vertices_.push_back({true, BBOX_POINT, v, {}, {}});
   }
   //std::cerr << "bs vertices size:" << bs_vertices.size() << std::endl;
   // add bo points
   for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bo_pts) {
     tet_points.push_back({Point(tmp[0], tmp[1], tmp[2]), pt_id++});
-    vertices_.push_back({true, OUTER_POINT, tmp, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
+    vertices_.push_back({true, OUTER_POINT, tmp, {}, {}});
   }
   // add bi points
   for(const Eigen::Matrix<zsw::Scalar,3,1> &tmp : bi_pts) {
     tet_points.push_back({Point(tmp[0],tmp[1],tmp[2]), pt_id++});
-    vertices_.push_back({true, INNER_POINT, tmp, Eigen::Matrix<zsw::Scalar,4,4>::Zero(), {}, {}});
+    vertices_.push_back({true, INNER_POINT, tmp, {}, {}});
   }
   Delaunay delaunay(tet_points.begin(), tet_points.end());
   removeSliverTet(delaunay, vertices_);
@@ -164,20 +163,6 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
     vertices_[tmp_edge.vid_[1]].edge_ids_.push_back(e_id++);
   }
   std::cerr << "tol edge size:" << e_id << std::endl;
-}
-
-void zsw::Triangulation::initQem(const size_t vid0, const size_t vid1, const size_t vid2)
-{
-  Eigen::Matrix<zsw::Scalar,3,1> v0 = vertices_[vid0].pt_;
-  Eigen::Matrix<zsw::Scalar,3,1> v1 = vertices_[vid1].pt_;
-  Eigen::Matrix<zsw::Scalar,3,1> v2 = vertices_[vid2].pt_;
-  Eigen::Matrix<zsw::Scalar,3,1> vn = (v1-v0).cross(v2-v0); vn.normalize();
-  Eigen::Matrix<zsw::Scalar,4,1> p;
-  p.block<3,1>(0,0) = vn; p[3] = -vn.dot(v0);
-  Eigen::Matrix<zsw::Scalar, 4,4> q = p * p.transpose();
-  vertices_[vid0].qem_+=q;
-  vertices_[vid1].qem_+=q;
-  vertices_[vid2].qem_+=q;
 }
 
 bool zsw::Triangulation::linkCondition(const Edge &e) const
@@ -332,6 +317,9 @@ void zsw::Triangulation::mutualTessellation()
     Eigen::Matrix<zsw::Scalar,3,1> midpt = (vertices_[e.vid_[0]].pt_+vertices_[e.vid_[1]].pt_)/2;
     invalidEdge(ei); size_t nv_id=vertices_.size();
     //if(nv_id==126) { std::cerr << "****nv_id=126, edge:" << e.vid_[0] << " " << e.vid_[1] << std::endl; }
+    if(nv_id==51297 || nv_id==52416) {
+      std::cerr << "nv_id=" << nv_id << "edge:" << e.vid_[0] << " " << e.vid_[1] << std::endl;
+    }
     ADD_VERTEX(zsw::ZERO_POINT,midpt);
     ADD_EDGE(e.vid_[0], nv_id); ADD_EDGE(e.vid_[1], nv_id);
 
@@ -632,6 +620,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   auto unq_end = std::unique(tet_ids.begin(), tet_ids.end());
   tet_ids.resize(std::distance(tet_ids.begin(), unq_end));
   KernelRegionJudger krj;
+  BoundTriQualityJudger btqj(0.906307787037); // cos 25*
   std::vector<Eigen::Matrix<size_t,3,1>> bound_tris;
   for(size_t tid : tet_ids) {
     // add kernel region constraint
@@ -642,6 +631,17 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       else {          tmp_bound_tri[vcnt++]=tvid;        }
     }
     if(vcnt==3) {
+      size_t tbtr_cnt=0;
+      size_t tbtr_vid[3];
+      for(size_t tbtr_i=0; tbtr_i<3; ++tbtr_i) {
+        if(vertices_[tmp_bound_tri[tbtr_i]].pt_type_==vertices_[e.vid_[0]].pt_type_) { tbtr_vid[tbtr_cnt++]=tmp_bound_tri[tbtr_i];}
+      }
+      if(tbtr_cnt==2) { btqj.addConstraint(vertices_[tbtr_vid[0]].pt_, vertices_[tbtr_vid[1]].pt_); }
+      else if(tbtr_cnt==3) {
+        btqj.addConstraint(vertices_[tbtr_vid[0]].pt_, vertices_[tbtr_vid[1]].pt_);
+        btqj.addConstraint(vertices_[tbtr_vid[0]].pt_, vertices_[tbtr_vid[2]].pt_);
+        btqj.addConstraint(vertices_[tbtr_vid[1]].pt_, vertices_[tbtr_vid[2]].pt_);
+      }
       krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
                         vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
       bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
@@ -651,6 +651,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   std::vector<JudgePoint> candicate_pts;
   for(const JudgePoint &jpt : jpts_) {
     if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)
+       && btqj.judge(jpt.pt_)
        && normalCondition(vertices_, bound_tris, jpt.pt_, pt_val, bi_jpts_, bo_jpts_, jpts_ptr_bi_, jpts_ptr_bo_)) {
       candicate_pts.push_back(jpt);
     }
