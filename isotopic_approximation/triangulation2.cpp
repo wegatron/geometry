@@ -109,7 +109,7 @@ size_t zsw::Triangulation::construct(const zsw::Scalar r, std::vector<Eigen::Mat
   }
   Delaunay delaunay(tet_points.begin(), tet_points.end());
   removeSliverTet(delaunay, vertices_);
-  haveSliverTet(delaunay, vertices_);
+  //haveFlatTet(delaunay, vertices_);
   init(r, delaunay);
   assert(isGood()==0);
   return 0;

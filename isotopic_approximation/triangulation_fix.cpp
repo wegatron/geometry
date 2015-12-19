@@ -47,7 +47,7 @@ namespace zsw{
     return true;
   }
 
-  void haveSliverTet(Delaunay &delaunay, const std::vector<zsw::Vertex> &vertices)
+  void haveFlatTet(Delaunay &delaunay, const std::vector<zsw::Vertex> &vertices)
   {
     for(Delaunay::Finite_cells_iterator cit=delaunay.finite_cells_begin();
         cit!=delaunay.finite_cells_end(); ++cit) {
