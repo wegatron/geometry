@@ -636,10 +636,10 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
     }
   }
-  BoundTriQualityJudger btqj(0.985); // cos 10*
-  initBoundTriQuality(e, btqj);
-  TetQualityJudger tqj(0.258); // no flat 2v2 tet, sin 15*
-  initTetQualityJudger(vertices_[e.vid_[0]].pt_type_, bound_tris, tqj);
+  //BoundTriQualityJudger btqj(0.985); // cos 10*
+  //initBoundTriQuality(e, btqj);
+  // TetQualityJudger tqj(0.07); // no flat 2v2 tet, sin 15*
+  // initTetQualityJudger(vertices_[e.vid_[0]].pt_type_, bound_tris, tqj);
   std::vector<size_t> ref_jpts; // jpts can affect this edge collapse
   CALC_REF_JPTS(ref_jpts, bound_tris);
   // find the candicate points :  jpt in kernel region
@@ -647,8 +647,8 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   for(size_t jpt_id : ref_jpts) {
     const JudgePoint &jpt = jpts_[jpt_id];
     if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)
-       && btqj.judge(jpt.pt_)
-       && tqj.judge(jpt.pt_)
+       // && btqj.judge(jpt.pt_)
+       // && tqj.judge(jpt.pt_)
        && normalCondition(vertices_, bound_tris, jpt.pt_, pt_val, bi_jpts_, bo_jpts_, jpts_ptr_bi_, jpts_ptr_bo_)) {
       candicate_pts.push_back(jpt);
     }
