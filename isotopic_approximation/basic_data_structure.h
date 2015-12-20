@@ -15,6 +15,14 @@ namespace zsw{
     INNER_POINT=8
   };
 
+  enum EdgeType
+  {
+    ZERO_EDGE=1,
+    OUTER_EDGE=2,
+    INNER_EDGE=4,
+    OTHETR_EDGE=8
+  };
+
   struct JudgePoint
   {
     Eigen::Matrix<zsw::Scalar,3,1> pt_;

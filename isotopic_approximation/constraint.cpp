@@ -43,25 +43,6 @@ bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
   return true;
 }
 
-void zsw::NormalConditionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &bev0,
-                                               const Eigen::Matrix<zsw::Scalar,3,1> &bev1,
-                                               const Eigen::Matrix<zsw::Scalar,3,1> &normal)
-{
-  bev_[0].push_back(bev0);
-  bev_[1].push_back(bev1);
-  normals_.push_back(normal);
-}
-
-bool zsw::NormalConditionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
-{
-  for(size_t i=0; i<bev_[0].size(); ++i) {
-    Eigen::Matrix<zsw::Scalar,3,1> cur_normal = (bev_[0][i]-pt).cross(bev_[1][i]-pt);
-    cur_normal.normalize();
-    if(cur_normal.dot(normals_[i]) < tol_) { return false; }
-  }
-  return true;
-}
-
 bool zsw::normalCondition(
                           const std::vector<zsw::Vertex> &vertices,
                           const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,

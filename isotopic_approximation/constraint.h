@@ -47,36 +47,6 @@ namespace zsw
     std::vector<Eigen::Matrix<zsw::Scalar,3,2>> vec_ev_; // two vertex of a edge
   };
 
-  /// \brief Normal Condition Judger
-  ///
-  /// judge the boundry or zero surface's new faces' normals is in a difference bound.
-  ///
-  class NormalConditionJudger final
-  {
-  public:
-    NormalConditionJudger(const zsw::Scalar tol) {
-      tol_=tol;
-    }
-
-    /// \brief add normal constraint
-    ///
-    /// A detailed description, it should be 2 lines at least.
-    ///
-    ///
-    /// \param be, boundary edge
-    /// \param normal, expected normal merge point with that boundary edge
-    /// \param vid, 0 or 1, the collapse edge's vertex id
-    void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &bev0,
-                       const Eigen::Matrix<zsw::Scalar,3,1> &bev1,
-                       const Eigen::Matrix<zsw::Scalar,3,1> &normal);
-
-    bool judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt);
-  private:
-    zsw::Scalar tol_;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bev_[2];
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> normals_;
-  };
-
   bool normalCondition(
                        const std::vector<zsw::Vertex> &vertices,
                        const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,

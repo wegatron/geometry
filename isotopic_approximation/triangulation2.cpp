@@ -209,27 +209,19 @@ bool zsw::Triangulation::linkCondition(const Edge &e) const
 
 void zsw::Triangulation::simpTolerance()
 {
-  std::set<size_t> eids_set;
+  std::unordered_set<size_t> eids_set;
   for(size_t cur_eid=0; cur_eid<edges_.size(); ++cur_eid) {
-    if(edges_[cur_eid].valid_ &&
-       vertices_[edges_[cur_eid].vid_[0]].pt_type_==vertices_[edges_[cur_eid].vid_[1]].pt_type_
-       && (vertices_[edges_[cur_eid].vid_[0]].pt_type_&(OUTER_POINT|INNER_POINT))) {
-      eids_set.insert(cur_eid);
-    }
+    if(isBoundaryEdge(edges_[cur_eid])) { eids_set.insert(cur_eid); }
   }
   while(!eids_set.empty()) {
     size_t cur_eid=*(eids_set.begin()); eids_set.erase(eids_set.begin());
-    if(edges_[cur_eid].valid_ &&
-       vertices_[edges_[cur_eid].vid_[0]].pt_type_==vertices_[edges_[cur_eid].vid_[1]].pt_type_
-       && (vertices_[edges_[cur_eid].vid_[0]].pt_type_&(OUTER_POINT|INNER_POINT))) {
-      tryCollapseBoundaryEdge(cur_eid, eids_set);
-    }
+    if(isBoundaryEdge(edges_[cur_eid])) { tryCollapseBoundaryEdge(cur_eid, eids_set); }
   }
 }
 
 void zsw::Triangulation::simpZeroSurface()
 {
-  std::set<size_t> eids_set;
+  std::unordered_set<size_t> eids_set;
   for(size_t cur_eid=0; cur_eid<edges_.size(); ++cur_eid) {
     if(edges_[cur_eid].valid_ &&
        vertices_[edges_[cur_eid].vid_[0]].pt_type_==vertices_[edges_[cur_eid].vid_[1]].pt_type_
@@ -277,7 +269,7 @@ void zsw::Triangulation::simpZeroSurface()
       if(vcnt == 2) { e_id=i; break; }
     }
 
-    std::set<size_t> eids_set;
+    std::unordered_set<size_t> eids_set;
     tryCollapseBoundaryEdge(e_id, eids_set);
   }
 
@@ -606,7 +598,7 @@ void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
   }
 
 void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
-                                                 std::set<size_t> &eids_set)
+                                                 std::unordered_set<size_t> &eids_set)
 {
   Edge &e = edges_[e_id];
   const zsw::Scalar pt_val = (vertices_[e.vid_[0]].pt_type_==zsw::INNER_POINT) ? -1 : 1;
@@ -621,7 +613,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   auto unq_end = std::unique(tet_ids.begin(), tet_ids.end());
   tet_ids.resize(std::distance(tet_ids.begin(), unq_end));
   KernelRegionJudger krj;
-  BoundTriQualityJudger btqj(0.906307787037); // cos 25*
+  //BoundTriQualityJudger btqj(0.985); // cos 10*
   std::vector<Eigen::Matrix<size_t,3,1>> bound_tris;
   for(size_t tid : tet_ids) {
     // add kernel region constraint
@@ -632,17 +624,6 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       else {          tmp_bound_tri[vcnt++]=tvid;        }
     }
     if(vcnt==3) {
-      size_t tbtr_cnt=0;
-      size_t tbtr_vid[3];
-      for(size_t tbtr_i=0; tbtr_i<3; ++tbtr_i) {
-        if(vertices_[tmp_bound_tri[tbtr_i]].pt_type_==vertices_[e.vid_[0]].pt_type_) { tbtr_vid[tbtr_cnt++]=tmp_bound_tri[tbtr_i];}
-      }
-      if(tbtr_cnt==2) { btqj.addConstraint(vertices_[tbtr_vid[0]].pt_, vertices_[tbtr_vid[1]].pt_); }
-      else if(tbtr_cnt==3) {
-        btqj.addConstraint(vertices_[tbtr_vid[0]].pt_, vertices_[tbtr_vid[1]].pt_);
-        btqj.addConstraint(vertices_[tbtr_vid[0]].pt_, vertices_[tbtr_vid[2]].pt_);
-        btqj.addConstraint(vertices_[tbtr_vid[1]].pt_, vertices_[tbtr_vid[2]].pt_);
-      }
       krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
                         vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
       bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
@@ -652,12 +633,12 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
   std::vector<JudgePoint> candicate_pts;
   for(const JudgePoint &jpt : jpts_) {
     if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)
-       && btqj.judge(jpt.pt_)
+       //&& btqj.judge(jpt.pt_)
        && normalCondition(vertices_, bound_tris, jpt.pt_, pt_val, bi_jpts_, bo_jpts_, jpts_ptr_bi_, jpts_ptr_bo_)) {
       candicate_pts.push_back(jpt);
     }
   }
-  //NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
+  NZSWLOG("zsw_info") << "candicate_pts:" << candicate_pts.size() << std::endl;
   //-- find the best point in the candicate_pts--
   {
     // sort by fabs(val_exp-val_cur) by decrease order
@@ -686,8 +667,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       }
       edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update, e,
                    [&eids_set, this](const size_t e_id) {
-                     if(vertices_[edges_[e_id].vid_[0]].pt_type_==vertices_[edges_[e_id].vid_[1]].pt_type_
-                        && (vertices_[edges_[e_id].vid_[0]].pt_type_&(OUTER_POINT|INNER_POINT))
+                     if(isBoundaryEdge(edges_[e_id])
                         && eids_set.find(e_id)==eids_set.end()) {
                        eids_set.insert(e_id);
                      }
@@ -697,7 +677,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
 }
 
 void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
-                                             std::set<size_t> &eids_set)
+                                             std::unordered_set<size_t> &eids_set)
 {
   Edge &e = edges_[e_id];
   if(!e.valid_) { return; }
@@ -820,33 +800,6 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
       ofs << "f " << b_tr.transpose() << std::endl;
     }
     ofs.close();
-  }
-
-#define ADD_NORMAL_CONSTRAINT(cur_vid, oth_vid) do{                     \
-    for(size_t tid : vertices_[cur_vid].tet_ids_) {                     \
-      size_t e_type_cnt=0, opposite_type_cnt=0;                         \
-      size_t tmp_vid[3];                                                \
-      for(size_t vid : tets_[tid].vid_) {                               \
-        if(vid==cur_vid || vid==oth_vid) { continue; }                  \
-        if(vertices_[vid].pt_type_ == e_pt_type) { tmp_vid[e_type_cnt]=vid; ++e_type_cnt; } \
-        else if(vertices_[vid].pt_type_ == opposite_pt_type) { ++opposite_type_cnt; } \
-      }                                                                 \
-      if(e_type_cnt==2 && opposite_type_cnt==1) {                       \
-        Eigen::Matrix<zsw::Scalar,3,1> tmp_normal =                     \
-          (vertices_[tmp_vid[0]].pt_-vertices_[cur_vid].pt_).cross(vertices_[tmp_vid[1]].pt_-vertices_[cur_vid].pt_); \
-        tmp_normal.normalize();                                         \
-        ncj.addConstraint(vertices_[tmp_vid[0]].pt_, vertices_[tmp_vid[1]].pt_, tmp_normal); \
-      }                                                                 \
-    }                                                                   \
-  }while(0)
-
-  void zsw::Triangulation::initNormalCond(NormalConditionJudger &ncj, const Edge &e) const
-  {
-    // bound faces
-    zsw::PointType e_pt_type = vertices_[e.vid_[0]].pt_type_;
-    zsw::PointType opposite_pt_type = (e_pt_type==zsw::OUTER_POINT) ? zsw::INNER_POINT : zsw::OUTER_POINT;
-    ADD_NORMAL_CONSTRAINT(e.vid_[0], e.vid_[1]);
-    ADD_NORMAL_CONSTRAINT(e.vid_[1], e.vid_[0]);
   }
 
   size_t zsw::Triangulation::isGood() const
@@ -1024,7 +977,7 @@ void zsw::Triangulation::writeAllJpts(const std::string &filepath) const
 
 void zsw::Triangulation::debugTryCollapseBoundaryEdge(const size_t vid0, const size_t vid1)
 {
-  std::set<size_t> eids_set;
+  std::unordered_set<size_t> eids_set;
   for(size_t ei=0; ei<edges_.size(); ++ei) {
     if(!edges_[ei].valid_) { continue; }
     if((edges_[ei].vid_[0]==vid0 && edges_[ei].vid_[1]==vid1) || (edges_[ei].vid_[0]==vid1 && edges_[ei].vid_[1]==vid0)) {
@@ -1032,4 +985,30 @@ void zsw::Triangulation::debugTryCollapseBoundaryEdge(const size_t vid0, const s
       tryCollapseBoundaryEdge(ei, eids_set);
     }
   }
+}
+
+bool zsw::Triangulation::isBoundaryEdge(const Edge &e) const
+{
+  if(!e.valid_ || vertices_[e.vid_[0]].pt_type_!=vertices_[e.vid_[1]].pt_type_) { return false; }
+  const  zsw::PointType e_pt_type = vertices_[e.vid_[0]].pt_type_;
+  zsw::PointType oppo_pt_type;
+  if(e_pt_type==zsw::OUTER_POINT) {    oppo_pt_type=zsw::INNER_POINT;  }
+  else if(e_pt_type==zsw::INNER_POINT) { oppo_pt_type=zsw::OUTER_POINT; }
+  else { return false; }
+
+  // judge if edge is on the boundary, link oppo pt_type vertices
+  for(const size_t eid : vertices_[e.vid_[0]].edge_ids_) {
+    if(vertices_[edges_[eid].vid_[0]].pt_type_==oppo_pt_type
+       || vertices_[edges_[eid].vid_[1]].pt_type_==oppo_pt_type) {
+      return true;
+    }
+  }
+  for(const size_t eid : vertices_[e.vid_[1]].edge_ids_) {
+    if(vertices_[edges_[eid].vid_[0]].pt_type_==oppo_pt_type
+       || vertices_[edges_[eid].vid_[1]].pt_type_==oppo_pt_type) {
+      return true;
+    }
+  }
+
+  return false;
 }

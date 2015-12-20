@@ -93,10 +93,10 @@ namespace zsw
     bool ignoreNotWithPtType(const Tet &tet, PointType pt_type);
 
     void tryCollapseBoundaryEdge(const size_t e_id,
-                                 std::set<size_t> &eids_set);
+                                 std::unordered_set<size_t> &eids_set);
 
     void tryCollapseZeroEdge(const size_t e_id,
-                             std::set<size_t> &eids_set);
+                             std::unordered_set<size_t> &eids_set);
 
     void debugTryCollapseBoundaryEdge(const size_t vid0, const size_t vid1);
 
@@ -116,7 +116,7 @@ namespace zsw
 
     bool linkCondition(const Edge &e) const;
 
-    void initNormalCond(NormalConditionJudger &ncj, const Edge &e) const;
+    bool isBoundaryEdge(const Edge &e) const;
 
     bool isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                     const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,

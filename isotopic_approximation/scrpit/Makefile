@@ -2,7 +2,7 @@ SHELL = /bin/bash
 
 DATA_DIR =  /home/wegatron/workspace/geometry/data
 APP_OUTPUT_DIR = /home/wegatron/tmp/approximate
-APP_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-my-debug-o3/bin/approximate
+APP_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/approximate
 EXPORT_LIB_DIR = /home/wegatron/workspace/geometry/isotopic_approximation/build-my-debug-o3/lib/
 NORMAL_COND_SCALE = 0.7
 FLAT_THRESHOLD = 0.25
@@ -19,12 +19,6 @@ FANDISK_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/fandisk/fandisk
 FANDISK_THICK = 0.004
 FANDISK_SAMPLE_R = 0.002
 
-BUNNY = ${DATA_DIR}/bunny.obj
-BUNNY_OUTPUT_DIR = ${APP_OUTPUT_DIR}/bunny/
-BUNNY_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/bunny/bunny
-BUNNY_THICK = 0.002
-BUNNY_SAMPLE_R = 0.0008
-
 CUBE = ${DATA_DIR}/cube.stl
 CUBE_OUTPUT_DIR = ${APP_OUTPUT_DIR}/cube
 CUBE_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/cube/cube
@@ -49,47 +43,11 @@ ARMADILLO_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/Armadillo/Armadillo
 ARMADILLO_THICK = 0.4
 ARMADILLO_SAMOKE_R = 0.16
 
-SPHERE = ${DATA_DIR}/sphere.stl
-SPHERE_OUTPUT_DIR = ${APP_OUTPUT_DIR}/sphere/
-SPHERE_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/sphere/sphere
-SPHERE_THICK = 0.1
-SPHERE_SAMPLE_R = 0.03
-
-FANDISK = ${DATA_DIR}/fandisk_smoothed.ply
-FANDISK_OUTPUT_DIR = ${APP_OUTPUT_DIR}/fandisk/
-FANDISK_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/fandisk/fandisk
-FANDISK_THICK = 0.004
-FANDISK_SAMPLE_R = 0.002
-
 BUNNY = ${DATA_DIR}/bunny.obj
 BUNNY_OUTPUT_DIR = ${APP_OUTPUT_DIR}/bunny/
 BUNNY_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/bunny/bunny
 BUNNY_THICK = 0.002
 BUNNY_SAMPLE_R = 0.0008
-
-CUBE = ${DATA_DIR}/cube.stl
-CUBE_OUTPUT_DIR = ${APP_OUTPUT_DIR}/cube
-CUBE_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/cube/cube
-CUBE_THICK = 0.06
-CUBE_SAMPLE_R = 0.03
-
-CYLINDER = ${DATA_DIR}/cylinder_smoothed.ply
-CYLINDER_OUTPUT_DIR = ${APP_OUTPUT_DIR}/cylinder/
-CYLINDER_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/cylinder/cylinder
-CYLINDER_THICK = 0.02
-CYLINDER_SAMPLE_R =  0.01
-
-FERTILITY =  ${DATA_DIR}/fertility.stl
-FERTILITY_OUTPUT_DIR = ${APP_OUTPUT_DIR}/fertility/
-FERTILITY_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/fertility/fertility
-FERTILITY_THICK = 0.5
-FERTILITY_SAMPLE_R = 0.2
-
-ARMADILLO = ${DATA_DIR}/Armadillo.obj
-ARMADILLO_OUTPUT_DIR = ${APP_OUTPUT_DIR}/Armadillo
-ARMADILLO_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/Armadillo/Armadillo
-ARMADILLO_THICK = 0.4
-ARMADILLO_SAMOKE_R = 0.16
 
 .PHONY: export
 export:
