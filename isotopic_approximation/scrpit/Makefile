@@ -3,7 +3,7 @@ SHELL = /bin/bash
 DATA_DIR =  /home/wegatron/workspace/geometry/data
 APP_OUTPUT_DIR = /home/wegatron/tmp/approximate
 APP_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/bin/approximate
-EXPORT_LIB_DIR = /home/wegatron/workspace/geometry/isotopic_approximation/build-my-debug-o3/lib/
+EXPORT_LIB_DIR = /home/wegatron/workspace/geometry/isotopic_approximation/build-release/lib/
 NORMAL_COND_SCALE = 0.7
 FLAT_THRESHOLD = 0.25
 
@@ -16,8 +16,8 @@ SPHERE_SAMPLE_R = 0.03
 FANDISK = ${DATA_DIR}/fandisk_smoothed.ply
 FANDISK_OUTPUT_DIR = ${APP_OUTPUT_DIR}/fandisk/
 FANDISK_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/fandisk/fandisk
-FANDISK_THICK = 0.004
-FANDISK_SAMPLE_R = 0.002
+FANDISK_THICK = 2
+FANDISK_SAMPLE_R = 0.6
 
 CUBE = ${DATA_DIR}/cube.stl
 CUBE_OUTPUT_DIR = ${APP_OUTPUT_DIR}/cube
