@@ -114,6 +114,8 @@ namespace zsw
     /// \param Delaunay cgal's delaunay triangulation
     void init(const zsw::Scalar r, Delaunay &delaunay);
 
+    void initBoundTriQuality(const Edge &e, BoundTriQualityJudger &btqj) const;
+
     bool linkCondition(const Edge &e) const;
 
     bool isBoundaryEdge(const Edge &e) const;
