@@ -116,12 +116,19 @@ namespace zsw
 
     void initBoundTriQuality(const Edge &e, BoundTriQualityJudger &btqj) const;
 
+    void initTetQualityJudger(const PointType cur_pt_type,
+                              const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,
+                              TetQualityJudger &tqj) const;
+
     bool linkCondition(const Edge &e) const;
+
+    bool linkCondition2(const Edge &e) const;
 
     bool isBoundaryEdge(const Edge &e) const;
 
     bool isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                     const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,
+                    const std::vector<size_t> &ref_jpts,
                     std::map<size_t,zsw::Scalar> &jpts_update) const;
 
     void edgeCollapse(const std::vector<size_t> &tet_ids,
@@ -132,11 +139,16 @@ namespace zsw
                       Edge &e,
                       std::function<void(const size_t e_id)> eb_func);
 
-    void addZeroPoints(std::map<std::pair<size_t,size_t>, size_t, PairCompFunc> &ev_map);
-
     void invalidEdge(const size_t e_id);
 
-    void invalidTet(Tet &tet);
+    void invalidTet(const size_t inv_tid);
+
+    bool isValidZeroEdge(const size_t eid) const
+    {
+      return edges_[eid].valid_ &&
+        vertices_[edges_[eid].vid_[0]].pt_type_==vertices_[edges_[eid].vid_[1]].pt_type_
+        && vertices_[edges_[eid].vid_[0]].pt_type_==ZERO_POINT;
+    }
 
     std::string tmp_output_dir_;
     zsw::Scalar tet_sample_r_;

@@ -66,7 +66,6 @@ bool zsw::normalCondition(
       else { nv[i]=1.0-pt_val; }
     }
 
-
     Eigen::Matrix<zsw::Scalar,3,Eigen::Dynamic> tet_pts(3,4);
     tet_pts.block<3,1>(0,0)=pt; tet_pts.block<3,1>(0,1)=vertices[b_tr[0]].pt_;
     tet_pts.block<3,1>(0,2)=vertices[b_tr[1]].pt_; tet_pts.block<3,1>(0,3)=vertices[b_tr[2]].pt_;
@@ -198,6 +197,39 @@ bool zsw::BoundTriQualityJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
   for(Eigen::Matrix<zsw::Scalar,3,2> &tmp_ev : vec_ev_) {
     if(isSliverTirangle(cos_threshold_, pt, tmp_ev.block<3,1>(0,0), tmp_ev.block<3,1>(0,1))) return false;
+  }
+  return true;
+}
+
+void zsw::TetQualityJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0,
+                   const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+                   const Eigen::Matrix<zsw::Scalar,3,1> &v2)
+{
+  Eigen::Matrix<zsw::Scalar,3,3> tmp_vs;
+  tmp_vs.block<3,1>(0,0)=v0;  tmp_vs.block<3,1>(0,1)=v1;
+  tmp_vs.block<3,1>(0,2)=v2;
+  vec_vs_.push_back(tmp_vs);
+}
+
+bool isFlatTet2(const zsw::Scalar threshold, const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+               const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &v3)
+{
+  Eigen::Matrix<zsw::Scalar,3,1> va = v1 - v0;
+  Eigen::Matrix<zsw::Scalar,3,1> vb = v2 - v0;
+  Eigen::Matrix<zsw::Scalar,3,1> vc = v3 - v0;
+  const zsw::Scalar van=va.norm();
+  const zsw::Scalar vbn=vb.norm();
+  const zsw::Scalar vcn=vc.norm();
+  // sliver tet not flat tet
+  if(van<10*zsw::const_val::eps || vbn<10*zsw::const_val::eps || vcn<10*zsw::const_val::eps) {      return false;    }
+  va = va/van; vb=vb/vbn; vc=vc/vcn; // normalize
+  return (va.cross(vc)).dot(vc) < threshold; // < ? degree, flat
+}
+
+bool zsw::TetQualityJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt) const
+{
+  for(const Eigen::Matrix<zsw::Scalar,3,3> &tmp_vs : vec_vs_) {
+    if(isFlatTet2(flat_threshold_, pt, tmp_vs.block<3,1>(0,0), tmp_vs.block<3,1>(0,1), tmp_vs.block<3,1>(0,2))) { return false; }
   }
   return true;
 }

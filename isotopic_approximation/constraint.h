@@ -47,6 +47,25 @@ namespace zsw
     std::vector<Eigen::Matrix<zsw::Scalar,3,2>> vec_ev_; // two vertex of a edge
   };
 
+
+
+  /// \brief judge if construct a flat tet
+  ///
+  ///  add tris three vertex, then can judge whether the point pt will construct a flat tet with one of the triangle in the vector
+  ///
+  class TetQualityJudger final
+  {
+  public:
+    TetQualityJudger(const zsw::Scalar flat_threshold) { flat_threshold_=flat_threshold; }
+    void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0,
+                       const Eigen::Matrix<zsw::Scalar,3,1> &v1,
+                       const Eigen::Matrix<zsw::Scalar,3,1> &v2);
+    bool judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt) const;
+  private:
+    zsw::Scalar flat_threshold_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,3>> vec_vs_; // construct a , 2v2 tet(2 inner 2 outer points) with pt
+  };
+
   bool normalCondition(
                        const std::vector<zsw::Vertex> &vertices,
                        const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,

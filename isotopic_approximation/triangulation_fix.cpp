@@ -33,7 +33,7 @@ namespace zsw{
     // sliver tet not flat tet
     if(van<10*zsw::const_val::eps || vbn<10*zsw::const_val::eps || vcn<10*zsw::const_val::eps) {      return false;    }
     va = va/van; vb=vb/vbn; vc=vc/vcn; // normalize
-    if((va.cross(vc)).dot(vc) > threshold) { return false; } // >15 degree, not flat
+    if((va.cross(vc)).dot(vc) > threshold) { return false; } // > ? degree, not flat
     if((va.cross(vc)).dot(va.cross(vb)) < 0) {
       e0 = std::pair<size_t,size_t>(0,1);
       e1 = std::pair<size_t,size_t>(2,3);
