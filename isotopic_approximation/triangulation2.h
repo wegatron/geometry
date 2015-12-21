@@ -31,10 +31,15 @@ namespace zsw
 {
   typedef bool(*PairCompFunc)(const std::pair<size_t,size_t>&a, const std::pair<size_t,size_t>&b);
 
+  enum Status
+  {
+    BC_STAGE=1,
+    ZC_STAGE=2
+  };
+
   class Triangulation final
   {
   public:
-
     // functions for debug start{
     std::vector<Vertex>& getVertices() { return vertices_; }
     std::vector<Tet>& getTets()  { return tets_; }
@@ -45,6 +50,10 @@ namespace zsw
     // functions for debug end }
 
   Triangulation(const zsw::Scalar normal_cond_scal, const std::string &tmp_output_dir): tmp_output_dir_(tmp_output_dir) {}
+
+    void loadStatus(const std::string &filepath, Status &status);
+
+    void saveCurStatus(const std::string &filepath, const Status status) const;
 
     /// \brief construct
     ///

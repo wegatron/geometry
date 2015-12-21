@@ -129,7 +129,7 @@ size_t zsw::Triangulation::construct(const zsw::Scalar flat_threshold,const zsw:
     vertices_.push_back({true, INNER_POINT, tmp, {}, {}});
   }
   Delaunay delaunay(tet_points.begin(), tet_points.end());
-  // removeSliverTet(flat_threshold, vertices_, delaunay);
+  removeSliverTet(flat_threshold, vertices_, delaunay);
   //haveFlatTet(delaunay, vertices_);
   init(r, delaunay);
   assert(isGood()==0);
@@ -485,7 +485,6 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
       if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) { continue; }
       if(ans[0]<-zsw::const_val::eps || ans[1]<-zsw::const_val::eps || ans[2]<-zsw::const_val::eps || ans[0]+ans[1]+ans[2]>1+zsw::const_val::eps) { continue; } // not in tet
       zsw::Scalar jpt_val_cur=pt_val+ans.dot(nv);
-      size_t a=0;
       if(fabs(jpt_val_cur-jpt.val_exp_) > 1.0+zsw::const_val::eps) {
 #pragma omp critical(ret_update)
         ret=false;
@@ -1044,4 +1043,80 @@ void zsw::Triangulation::initTetQualityJudger(const PointType cur_pt_type,
     if(vertices_[b_tr[2]].pt_type_==cur_pt_type) { ++cnt; } else if(vertices_[b_tr[2]].pt_type_==oppo_pt_type) { ++oppo_cnt; }
     if(cnt==1 && oppo_cnt==2) { tqj.addConstraint(vertices_[b_tr[0]].pt_, vertices_[b_tr[1]].pt_, vertices_[b_tr[2]].pt_); }
   }
+}
+
+void zsw::Triangulation::loadStatus(const std::string &filepath, Status &status)
+{
+  // clear all data
+  vertices_.clear(); edges_.clear();
+  tets_.clear(); jpts_.clear();
+  bi_jpts_.clear(); bo_jpts_.clear();
+  std::ifstream ifs;
+  OPEN_STREAM(filepath, ifs, std::ifstream::in, return);
+  size_t st;
+  ifs >> st >> tet_sample_r_; status = static_cast<Status>(st);
+  size_t vertices_number;
+  ifs >> vertices_number;
+  for(size_t i=0; i<vertices_number; ++i) {
+    Eigen::Matrix<zsw::Scalar,3,1> pt;
+    size_t pt_type;
+    bool valid;
+    ifs >> pt[0] >> pt[1] >> pt[2] >> pt_type >> valid;
+    vertices_.push_back({valid, static_cast<PointType>(pt_type), pt, {}, {}});
+  }
+  size_t tet_number;
+  ifs >> tet_number;
+  for(size_t i=0; i<tet_number; ++i) {
+    size_t vid[4];
+    ifs >> vid[0] >> vid[1] >> vid[2] >> vid[3];
+    ADD_TET(vid[0], vid[1], vid[2], vid[3]);
+  }
+  size_t edge_number;
+  ifs >> edge_number;
+  for(size_t i=0; i<edge_number; ++i) {
+    size_t vid[2];
+    ifs >> vid[0] >> vid[1];
+    ADD_EDGE(vid[0], vid[1]);
+  }
+  size_t jpt_number;
+  ifs >> jpt_number;
+  for(size_t i=0; i<jpt_number; ++jpt_number) {
+    Eigen::Matrix<zsw::Scalar,3,1> pt;
+    zsw::Scalar val_exp, val_cur;
+    ifs >> pt[0] >> pt[1] >> pt[2] >> val_exp >> val_cur;
+    jpts_.push_back({pt, val_exp, val_cur});
+  }
+  for(const JudgePoint &jpt : jpts_) {
+    if(jpt.val_exp_<-0.5) bi_jpts_.push_back(jpt.pt_);
+    else bo_jpts_.push_back(jpt.pt_);
+  }
+  jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
+  jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
+  ifs.close();
+  NZSWLOG("zsw_info") << "load status succ!!!" << std::endl;
+}
+
+void zsw::Triangulation::saveCurStatus(const std::string &filepath, const Status status) const
+{
+  std::ofstream ofs;
+  OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+  ofs << status << std::endl;
+  ofs << tet_sample_r_ << std::endl;
+  ofs << vertices_.size() << std::endl;
+  for(const zsw::Vertex &vertex : vertices_) {
+    ofs << vertex.pt_.transpose() << " " << vertex.pt_type_ << " " << vertex.valid_ << std::endl;
+  }
+  ofs << tets_.size() << std::endl;
+  for(const zsw::Tet &tet : tets_) {
+    if(!tet.valid_) { continue; }
+    ofs << tet.vid_[0] << " " << tet.vid_[1] << " " << tet.vid_[2] << " " << tet.vid_[3] << std::endl;
+  }
+  ofs << edges_.size() << std::endl;
+  for(const zsw::Edge &e : edges_) {
+    if(!e.valid_) continue;
+    ofs << e.vid_[0] << " " << e.vid_[1] << std::endl;
+  }
+  ofs << jpts_.size() << std::endl;
+  for(const JudgePoint &jpt : jpts_) { ofs << jpt.pt_.transpose() << " " << jpt.val_exp_ << " " << jpt.val_cur_ << std::endl; }
+  ofs.close();
 }
