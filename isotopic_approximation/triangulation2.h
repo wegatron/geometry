@@ -53,7 +53,7 @@ namespace zsw
 
     void loadStatus(const std::string &filepath, Status &status);
 
-    void saveCurStatus(const std::string &filepath, const Status status) const;
+    void saveStatus(const std::string &filepath, const Status status) const;
 
     /// \brief construct
     ///

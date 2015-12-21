@@ -1057,6 +1057,7 @@ void zsw::Triangulation::loadStatus(const std::string &filepath, Status &status)
   ifs >> st >> tet_sample_r_; status = static_cast<Status>(st);
   size_t vertices_number;
   ifs >> vertices_number;
+  NZSWLOG("zsw_info") << "vertices_number " << vertices_number << std::endl;
   for(size_t i=0; i<vertices_number; ++i) {
     Eigen::Matrix<zsw::Scalar,3,1> pt;
     size_t pt_type;
@@ -1066,6 +1067,7 @@ void zsw::Triangulation::loadStatus(const std::string &filepath, Status &status)
   }
   size_t tet_number;
   ifs >> tet_number;
+  NZSWLOG("zsw_info") << "tet number:" << tet_number << std::endl;
   for(size_t i=0; i<tet_number; ++i) {
     size_t vid[4];
     ifs >> vid[0] >> vid[1] >> vid[2] >> vid[3];
@@ -1073,6 +1075,7 @@ void zsw::Triangulation::loadStatus(const std::string &filepath, Status &status)
   }
   size_t edge_number;
   ifs >> edge_number;
+  NZSWLOG("zsw_info") << "edge number:" << edge_number << std::endl;
   for(size_t i=0; i<edge_number; ++i) {
     size_t vid[2];
     ifs >> vid[0] >> vid[1];
@@ -1080,7 +1083,8 @@ void zsw::Triangulation::loadStatus(const std::string &filepath, Status &status)
   }
   size_t jpt_number;
   ifs >> jpt_number;
-  for(size_t i=0; i<jpt_number; ++jpt_number) {
+  NZSWLOG("zsw_info") << "jpt_number:" << jpt_number << std::endl;
+  for(size_t i=0; i<jpt_number; ++i) {
     Eigen::Matrix<zsw::Scalar,3,1> pt;
     zsw::Scalar val_exp, val_cur;
     ifs >> pt[0] >> pt[1] >> pt[2] >> val_exp >> val_cur;
@@ -1090,28 +1094,33 @@ void zsw::Triangulation::loadStatus(const std::string &filepath, Status &status)
     if(jpt.val_exp_<-0.5) bi_jpts_.push_back(jpt.pt_);
     else bo_jpts_.push_back(jpt.pt_);
   }
+  NZSWLOG("zsw_info") << "all load start init flann" << std::endl;
   jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
   jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
   ifs.close();
-  NZSWLOG("zsw_info") << "load status succ!!!" << std::endl;
+  if(isGood()!=0) { NZSWLOG("zsw_error") << "Load info not valid!!!" << std::endl; }
+  else  { NZSWLOG("zsw_info") << "load status succ!!!" << std::endl; }
 }
 
-void zsw::Triangulation::saveCurStatus(const std::string &filepath, const Status status) const
+void zsw::Triangulation::saveStatus(const std::string &filepath, const Status status) const
 {
   std::ofstream ofs;
   OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
   ofs << status << std::endl;
   ofs << tet_sample_r_ << std::endl;
   ofs << vertices_.size() << std::endl;
+  NZSWLOG("zsw_info") << "vertices_size:" << vertices_.size() << std::endl;
   for(const zsw::Vertex &vertex : vertices_) {
     ofs << vertex.pt_.transpose() << " " << vertex.pt_type_ << " " << vertex.valid_ << std::endl;
   }
   ofs << tets_.size() << std::endl;
+  NZSWLOG("zsw_info") << "tet_size:" << tets_.size() << std::endl;
   for(const zsw::Tet &tet : tets_) {
     if(!tet.valid_) { continue; }
     ofs << tet.vid_[0] << " " << tet.vid_[1] << " " << tet.vid_[2] << " " << tet.vid_[3] << std::endl;
   }
   ofs << edges_.size() << std::endl;
+  NZSWLOG("zsw_info") << "edge_size:" << edges_.size() << std::endl;
   for(const zsw::Edge &e : edges_) {
     if(!e.valid_) continue;
     ofs << e.vid_[0] << " " << e.vid_[1] << std::endl;
