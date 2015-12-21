@@ -19,7 +19,7 @@ namespace zsw
   class KernelRegionJudger final
   {
   public:
-    KernelRegionJudger(const zsw::Scalar precision=10*zsw::const_val::eps) { precision_=precision; isgood_=true; debug_=false; }
+    KernelRegionJudger(const zsw::Scalar precision=10*zsw::const_val::eps) { precision_=precision; isgood_=true; debug_=false;  }
     void addConstraint(const Eigen::Matrix<zsw::Scalar,3,1> &v0, const Eigen::Matrix<zsw::Scalar,3,1> &v1,
                        const Eigen::Matrix<zsw::Scalar,3,1> &v2, const Eigen::Matrix<zsw::Scalar,3,1> &vr);
     bool judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt);

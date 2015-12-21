@@ -12,6 +12,7 @@ namespace zsw{
         if(isFlatTet(threshold, vertices[cit->vertex(0)->info()].pt_, vertices[cit->vertex(1)->info()].pt_,
                        vertices[cit->vertex(2)->info()].pt_, vertices[cit->vertex(3)->info()].pt_, e[0], e[1])) {
           if(delaunay.flip(cit, e[0].first, e[0].second) || delaunay.flip(cit, e[1].first, e[1].second)) {
+            std::cerr << "fliped!" << std::endl;
             flipable = true;
             break;
           }

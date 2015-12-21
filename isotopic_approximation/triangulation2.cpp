@@ -129,7 +129,7 @@ size_t zsw::Triangulation::construct(const zsw::Scalar flat_threshold,const zsw:
     vertices_.push_back({true, INNER_POINT, tmp, {}, {}});
   }
   Delaunay delaunay(tet_points.begin(), tet_points.end());
-  removeSliverTet(flat_threshold, vertices_, delaunay);
+  // removeSliverTet(flat_threshold, vertices_, delaunay);
   //haveFlatTet(delaunay, vertices_);
   init(r, delaunay);
   assert(isGood()==0);
@@ -454,7 +454,10 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
                                     const std::vector<size_t> &ref_jpts,
                                     std::map<size_t,zsw::Scalar> &jpts_update) const
 {
+  bool ret=true;
+#pragma omp parallel for
   for(size_t bti=0; bti<bound_tris.size(); ++bti) {
+    if(!ret) { continue; }
     const Eigen::Matrix<size_t,3,1> &b_tr=bound_tris[bti];
     Eigen::Matrix<zsw::Scalar,3,3> A;
     A.block<3,1>(0,0) = vertices_[b_tr[0]].pt_-pt;
@@ -482,11 +485,18 @@ bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matri
       if((A*ans-(jpt.pt_-pt)).norm()>zsw::const_val::eps) { continue; }
       if(ans[0]<-zsw::const_val::eps || ans[1]<-zsw::const_val::eps || ans[2]<-zsw::const_val::eps || ans[0]+ans[1]+ans[2]>1+zsw::const_val::eps) { continue; } // not in tet
       zsw::Scalar jpt_val_cur=pt_val+ans.dot(nv);
-      if(fabs(jpt_val_cur-jpt.val_exp_) > 1.0+zsw::const_val::eps) { return false; }
-      else {  jpts_update[bti]=jpt_val_cur; }
+      size_t a=0;
+      if(fabs(jpt_val_cur-jpt.val_exp_) > 1.0+zsw::const_val::eps) {
+#pragma omp critical(ret_update)
+        ret=false;
+      }
+      else {
+#pragma omp critical(jpts_update)
+        jpts_update[bti]=jpt_val_cur;
+      }
     }
   }
-  return true;
+  return ret;
 }
 
 void zsw::Triangulation::edgeCollapse(const std::vector<size_t> &tet_ids,
@@ -631,25 +641,27 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
       else {          tmp_bound_tri[vcnt++]=tvid;        }
     }
     if(vcnt==3) {
-      krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
-                        vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
-      bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
+        krj.addConstraint(vertices_[tmp_bound_tri[0]].pt_, vertices_[tmp_bound_tri[1]].pt_,
+                          vertices_[tmp_bound_tri[2]].pt_, vertices_[tmp_bound_tri[3]].pt_);
+        bound_tris.push_back(tmp_bound_tri.block<3,1>(0,0));
     }
   }
-  //BoundTriQualityJudger btqj(0.985); // cos 10*
-  //initBoundTriQuality(e, btqj);
+  BoundTriQualityJudger btqj(0.985); // cos 10*
+  initBoundTriQuality(e, btqj);
   // TetQualityJudger tqj(0.07); // no flat 2v2 tet, sin 15*
   // initTetQualityJudger(vertices_[e.vid_[0]].pt_type_, bound_tris, tqj);
   std::vector<size_t> ref_jpts; // jpts can affect this edge collapse
   CALC_REF_JPTS(ref_jpts, bound_tris);
   // find the candicate points :  jpt in kernel region
   std::vector<JudgePoint> candicate_pts;
-  for(size_t jpt_id : ref_jpts) {
-    const JudgePoint &jpt = jpts_[jpt_id];
+#pragma omp for
+  for(size_t i=0; i<ref_jpts.size(); ++i) {
+    const JudgePoint &jpt = jpts_[ref_jpts[i]];
     if(fabs(jpt.val_exp_-pt_val)<0.5 && krj.judge(jpt.pt_)
-       // && btqj.judge(jpt.pt_)
+       && btqj.judge(jpt.pt_)
        // && tqj.judge(jpt.pt_)
        && normalCondition(vertices_, bound_tris, jpt.pt_, pt_val, bi_jpts_, bo_jpts_, jpts_ptr_bi_, jpts_ptr_bo_)) {
+#pragma omp critical
       candicate_pts.push_back(jpt);
     }
   }
@@ -699,7 +711,7 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
   tet_ids.resize(std::distance(tet_ids.begin(), unq_end));
 
   std::vector<Eigen::Matrix<size_t,3,1>> bound_tris;
-  KernelRegionJudger krj;
+  KernelRegionJudger krj(0);
   for(size_t tid : tet_ids) {
     // bound tri
     size_t vcnt=0;
@@ -728,12 +740,14 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
 #endif
 
   std::list<Eigen::Matrix<zsw::Scalar,3,1>> candicate_pts;
+  #pragma omp parallel for
   for(size_t i=0; i<tet_ids.size(); ++i) {
     const size_t *vid = tets_[tet_ids[i]].vid_;
     std::list<Eigen::Matrix<zsw::Scalar,3,1>> tmp_candicate_pts;
     sampleTet(vertices_[vid[0]].pt_, vertices_[vid[1]].pt_,
               vertices_[vid[2]].pt_, vertices_[vid[3]].pt_, tet_sample_r_, tmp_candicate_pts);
     tmp_candicate_pts.remove_if([this, &krj, &bound_tris](const Eigen::Matrix<zsw::Scalar,3,1> &pt){ return !krj.judge(pt); });
+    #pragma omp critical
     candicate_pts.splice(candicate_pts.end(), tmp_candicate_pts);
   }
 
@@ -755,25 +769,6 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
                    if(isValidZeroEdge(e_id) && eids_set.find(e_id)==eids_set.end()) {
                      eids_set.insert(e_id);}
                  });
-    // {
-    //   std::function<bool(const zsw::Tet&)> ignore_bbox
-    //     = std::bind(&zsw::Triangulation::ignoreWithPtType, this, std::placeholders::_1, zsw::BBOX_POINT);
-    //   std::function<bool(const zsw::Tet&)> ignore_out
-    //     = std::bind(&zsw::Triangulation::ignoreWithPtType, this, std::placeholders::_1, zsw::OUTER_POINT);
-    //   std::function<bool(const zsw::Tet&)> ignore_self_out
-    //     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, this, std::placeholders::_1, zsw::OUTER_POINT);
-    //   std::function<bool(const zsw::Tet&)> ignore_self_in
-    //     = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, this, std::placeholders::_1, zsw::INNER_POINT);
-
-    //   std::function<bool(const zsw::Tet&)> ignore_not_with_zero_point
-    //     = std::bind(&zsw::Triangulation::ignoreNotWithPtType, this, std::placeholders::_1, zsw::ZERO_POINT);
-    //   writeTetMesh("/home/wegatron/tmp/debug_zc.vtk",{ignore_bbox, ignore_self_out, ignore_self_in});
-    //   writeTetMeshAdjVs("/home/wegatron/tmp/debug_adj_after.vtk",{collapse_eid[0]});
-    //   size_t pointid=0;
-    //   std::ofstream ofs("/home/wegatron/tmp/debug_pt.vtk");
-    //   point2vtk(ofs, merge_pt_ptr->data(), 1, &pointid, 1);      ofs.close();
-    //   abort();
-    // }
     assert(isGood()==0);
   } //else { NZSWLOG("zsw_info")  << "zc: no poper merge point!"<< std::endl; }
 }
