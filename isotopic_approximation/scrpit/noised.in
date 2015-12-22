@@ -1,0 +1,32 @@
+CYLINDER_NOISED = ${DATA_DIR}/cylinder_noised.obj
+CYLINDER_NOISED_OUTPUT_DIR = ${APP_OUTPUT_DIR}/cylinder_noised/
+CYLINDER_NOISED_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/cylinder_noised/cylinder_noised
+
+BUNNY_NOISED = ${DATA_DIR}/bunny_noised.obj
+BUNNY_NOISED_OUTPUT_DIR = ${APP_OUTPUT_DIR}/bunny_noised/
+BUNNY_NOISED_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/bunny_noised/bunny_noised
+
+FERTILITY_NOISED = ${DATA_DIR}/fertility_noised.obj
+FERTILITY_NOISED_OUTPUT_DIR = ${APP_OUTPUT_DIR}/fertility_noised/
+FERTILITY_NOISED_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/fertility_noised/fertility_noised
+
+.PHONY : clean_cylinder_noised
+clean_cylinder_noised: clean_log
+	rm -rf ${CYLINDER_NOISED_OUTPUT_DIR}*; mkdir ${CYLINDER_NOISED_OUTPUT_PREFIX}_tmp
+.PHONY : simp_cylinder_noised
+simp_cylinder_noised: clean_cylinder_noised export
+	${APP_EXEC} ${CYLINDER_NOISED} ${CYLINDER_NOISED_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${CYLINDER_THICK} ${CYLINDER_SAMPLE_R} ${FLAT_THRESHOLD}
+
+.PHONY : clean_bunny_noised
+clean_bunny_noised: clean_log
+	rm -rf ${BUNNY_NOISED_OUTPUT_DIR}*; mkdir ${BUNNY_NOISED_OUTPUT_PREFIX}_tmp
+.PHONY: simp_bunny_noised
+simp_bunny_noised: clean_bunny_noised export
+	${APP_EXEC} ${BUNNY_NOISED} ${BUNNY_NOISED_OUTPUT_PREFIX} ${NORMAL_COND_SCALE} ${BUNNY_THICK} ${BUNNY_SAMPLE_R} ${FLAT_THRESHOLD}
+	
+.PHONY :clean_fertility_noised
+clean_fertility_noised: clean_log
+	rm -rf ${FERTILITY_NOISED_OUTPUT_DIR}*; mkdir ${FERTILITY_NOISED_OUTPUT_PREFIX}_tmp
+.PHONY : simp_fertility_noised
+simp_fertility_noised: clean_fertility_noised export
+	${APP_EXEC} ${FERTILITY_NOISED} ${FERTILITY_NOISED_OUTPUT_PREFIX} ${NORMAL_CONND_SCALE} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R} ${FLAT_THRESHOLD}
