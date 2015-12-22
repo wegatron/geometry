@@ -7,31 +7,31 @@ EXPORT_LIB_DIR = /home/wegatron/workspace/geometry/isotopic_approximation/build-
 NORMAL_COND_SCALE = 0.7
 FLAT_THRESHOLD = 0.25
 
-SPHERE = ${DATA_DIR}/sphere.stl
+SPHERE = ${DATA_DIR}/sphere.obj
 SPHERE_OUTPUT_DIR = ${APP_OUTPUT_DIR}/sphere/
 SPHERE_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/sphere/sphere
 SPHERE_THICK = 0.1
 SPHERE_SAMPLE_R = 0.03
 
-FANDISK = ${DATA_DIR}/fandisk_smoothed.ply
+FANDISK = ${DATA_DIR}/fandisk_smoothed.obj
 FANDISK_OUTPUT_DIR = ${APP_OUTPUT_DIR}/fandisk/
 FANDISK_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/fandisk/fandisk
 FANDISK_THICK = 2
 FANDISK_SAMPLE_R = 0.6
 
-CUBE = ${DATA_DIR}/cube.stl
+CUBE = ${DATA_DIR}/cube.obj
 CUBE_OUTPUT_DIR = ${APP_OUTPUT_DIR}/cube
 CUBE_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/cube/cube
 CUBE_THICK = 0.06
 CUBE_SAMPLE_R = 0.03
 
-CYLINDER = ${DATA_DIR}/cylinder_smoothed.ply
+CYLINDER = ${DATA_DIR}/cylinder_smoothed.obj
 CYLINDER_OUTPUT_DIR = ${APP_OUTPUT_DIR}/cylinder/
 CYLINDER_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/cylinder/cylinder
 CYLINDER_THICK = 0.2
 CYLINDER_SAMPLE_R =  0.1
 
-FERTILITY =  ${DATA_DIR}/fertility.stl
+FERTILITY =  ${DATA_DIR}/fertility.obj
 FERTILITY_OUTPUT_DIR = ${APP_OUTPUT_DIR}/fertility/
 FERTILITY_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/fertility/fertility
 FERTILITY_THICK = 0.5
