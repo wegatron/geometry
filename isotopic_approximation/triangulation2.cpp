@@ -687,6 +687,7 @@ void zsw::Triangulation::tryCollapseBoundaryEdge(const size_t e_id,
         std::function<bool(const zsw::Tet&)> ignore_self_in
           = std::bind(&zsw::Triangulation::ignoreOnlyWithPtType, this, std::placeholders::_1, zsw::INNER_POINT);
         writeTetMesh(tmp_output_dir_+"bound_tmp_"+std::to_string(bc_cnt)+".vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
+        saveStatus(tmp_output_dir_+"status_bc_"+std::to_string(bc_cnt), zsw::BC_STAGE);
       }
       edgeCollapse(tet_ids, bound_tris, merge_pt_ptr->pt_, vertices_[e.vid_[0]].pt_type_, jpts_update, e,
                    [&eids_set, this](const size_t e_id) {
@@ -762,7 +763,10 @@ void zsw::Triangulation::tryCollapseZeroEdge(const size_t e_id,
   if(merge_pt_ptr != nullptr) {
     static size_t zc_cnt=0;
     if(++zc_cnt%40==0) {      NZSWLOG("zsw_info") << "zc: edge collapsed number: " << zc_cnt << std::endl;    }
-    if(zc_cnt%800==0) {      writeSurface(tmp_output_dir_+"zc_tmp_"+std::to_string(zc_cnt)+".obj", zsw::ZERO_POINT);    }
+    if(zc_cnt%800==0) {
+      writeSurface(tmp_output_dir_+"zc_tmp_"+std::to_string(zc_cnt)+".obj", zsw::ZERO_POINT);
+      saveStatus(tmp_output_dir_+"status_zc_"+std::to_string(zc_cnt), zsw::ZC_STAGE);
+    }
     edgeCollapse(tet_ids, bound_tris, *merge_pt_ptr, zsw::ZERO_POINT, jpts_update,
                  e, [&eids_set,this](const size_t e_id) {
                    if(isValidZeroEdge(e_id) && eids_set.find(e_id)==eids_set.end()) {

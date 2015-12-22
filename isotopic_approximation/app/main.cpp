@@ -37,7 +37,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.writeTetMesh(output_prefix+"tol_ori.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_in_ori.vtk", {ignore_bbox, ignore_out});
   tr.writeTetMesh(output_prefix+"tol_total_ori.vtk", {});
-
+  tr.saveStatus(output_prefix+"_tmp/status_before_simp_tol", zsw::BC_STAGE);
   tr.simpTolerance();
   tr.writeTetMesh(output_prefix+"_simp_tol_before_mt.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
   tr.writeTetMesh(output_prefix+"tol_total_before_mt.vtk", {});
