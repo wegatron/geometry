@@ -52,6 +52,20 @@ namespace zsw{
     // std::list<JudgePoint> jpts_;
   };
 
+  struct Surface
+  {
+    size_t vid_[3];
+    Eigen::Matrix<zsw::Scalar,3,1> vn_;
+    std::list<size_t> adj_faces_;
+  };
+
+  struct SurfaceMesh
+  {
+    std::vector<Surface> faces_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vertices_ori_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vertices_ori_vn_;
+  };
+
   class BoundSphere
   {
   public:

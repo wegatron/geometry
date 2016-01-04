@@ -20,7 +20,7 @@ void test(const string &filepath, const string &output_prefix, const zsw::Scalar
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
   zsw::genPoints(thick, in_mesh, bo_points, bi_points);
   zsw::Triangulation tr(0.3,"/home/wegatron/tmp/");
-  CALL_FUNC(tr.construct(flat_threshold, sample_r, bo_points, bi_points), abort());
+  CALL_FUNC(tr.construct(flat_threshold, sample_r, 0.3, bo_points, bi_points), abort());
   std::function<bool(const zsw::Tet&)> ignore_bbox
     = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::BBOX_POINT);
   std::function<bool(const zsw::Tet&)> ignore_out

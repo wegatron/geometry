@@ -25,7 +25,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   zsw::genPoints(thick_dis, input_mesh, bo_points, bi_points);
 
   zsw::Triangulation tr(normal_cond_scale, output_prefix+"_tmp/");
-  CALL_FUNC(tr.construct(flat_threshold, sample_r, bo_points, bi_points), abort());
+  CALL_FUNC(tr.construct(flat_threshold, sample_r, thick_dis, bo_points, bi_points), abort());
 
   std::function<bool(const zsw::Tet&)> ignore_bbox
     = std::bind(&zsw::Triangulation::ignoreWithPtType, &tr, std::placeholders::_1, zsw::BBOX_POINT);
@@ -58,7 +58,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   tr.simpZeroSurface();
   tr.writeTetMesh(output_prefix+"tol_total_last.vtk", {});
   tr.writeTetMesh(output_prefix+"_after_simp_zero.vtk", {ignore_bbox, ignore_self_out, ignore_self_in});
-  tr.writeSurface2(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
+  tr.writeSurface(output_prefix+"_simped_zero.obj", zsw::ZERO_POINT);
   ofs << "simp_zero_surface_time_cost:" << zsw_clock.time() << std::endl;
   ofs << "total_time_cost:" << zsw_clock.totalTime() << std::endl;
   assert(tr.isGood()==0);

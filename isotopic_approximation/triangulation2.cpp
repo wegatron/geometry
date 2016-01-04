@@ -98,7 +98,9 @@
     }                                                                   \
   }while(0)
 
-size_t zsw::Triangulation::construct(const zsw::Scalar flat_threshold,const zsw::Scalar r,
+size_t zsw::Triangulation::construct(const zsw::Scalar flat_threshold,
+                                     const zsw::Scalar epsilon,
+                                     const zsw::Scalar r,
                                      std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_pts,
                                      std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_pts)
 {
@@ -131,12 +133,12 @@ size_t zsw::Triangulation::construct(const zsw::Scalar flat_threshold,const zsw:
   Delaunay delaunay(tet_points.begin(), tet_points.end());
   removeSliverTet(flat_threshold, vertices_, delaunay);
   //haveFlatTet(delaunay, vertices_);
-  init(r, delaunay);
+  init(r, epsilon, delaunay);
   assert(isGood()==0);
   return 0;
 }
 
-void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
+void zsw::Triangulation::init(const zsw::Scalar r, const zsw::Scalar epsilon, Delaunay &delaunay)
 {
   size_t t_id=0;
   for(Delaunay::Finite_cells_iterator cit=delaunay.finite_cells_begin();
@@ -183,6 +185,12 @@ void zsw::Triangulation::init(const zsw::Scalar r, Delaunay &delaunay)
     vertices_[tmp_edge.vid_[0]].edge_ids_.push_back(e_id);
     vertices_[tmp_edge.vid_[1]].edge_ids_.push_back(e_id++);
   }
+
+  SurfaceMesh bo_surface_mesh, bi_surface_mesh;
+  extractSurfaceMesh(zsw::INNER_POINT, bi_surface_mesh);
+  extractSurfaceMesh(zsw::OUTER_POINT, bo_surface_mesh);
+  smoothSurfaceMesh(epsilon, +1, bi_surface_mesh);
+  smoothSurfaceMesh(epsilon, -1, bo_surface_mesh);
   std::cerr << "tol edge size:" << e_id << std::endl;
 }
 
@@ -397,57 +405,61 @@ void zsw::Triangulation::invalidTet(const size_t inv_tid)
     tet2vtk(ofs, &pts_data[0], n_pts, &tets_data[0], n_tets);
   }
 
-  void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_type) const
-  {
-    std::ofstream ofs(filepath);
-    std::set<size_t> valid_vid;
-    std::vector<Eigen::Matrix<size_t,3,1>> faces;
-    Eigen::Matrix<size_t,4,1> zv_id;
-    for(const Tet &tet : tets_) {
-      if(!tet.valid_) { continue; }
-      size_t id_cnt=0;
-      for(size_t v_id : tet.vid_) {
-        if(vertices_[v_id].pt_type_ == pt_type) {
-          zv_id[id_cnt++]=v_id;
-        }
-      }
-      if(id_cnt==3) {
-        valid_vid.insert(zv_id[0]); valid_vid.insert(zv_id[1]); valid_vid.insert(zv_id[2]);
-        faces.push_back(zv_id.block<3,1>(0,0));
+void zsw::Triangulation::writeSurface(const std::string &filepath, PointType pt_type) const
+{
+  std::ofstream ofs(filepath);
+  std::set<size_t> valid_vid;
+  std::vector<Eigen::Matrix<size_t,3,1>> faces;
+  Eigen::Matrix<size_t,4,1> zv_id;
+  for(const Tet &tet : tets_) {
+    if(!tet.valid_) { continue; }
+    size_t id_cnt=0;
+    for(size_t v_id : tet.vid_) {
+      if(vertices_[v_id].pt_type_ == pt_type) {
+        zv_id[id_cnt++]=v_id;
+      } else if(vertices_[v_id].pt_type_ != zsw::OUTER_POINT && vertices_[v_id].pt_type_ != zsw::INNER_POINT) {
+        id_cnt=0; break;
       }
     }
-    std::map<size_t,size_t> vv_map;
-    size_t vid_cnt=0;
-    for(size_t v_id : valid_vid) {
-      vv_map[v_id]=++vid_cnt;
-      ofs << "v " << vertices_[v_id].pt_.transpose() << std::endl;
-    }
-    for(const Eigen::Matrix<size_t,3,1> &f : faces) {
-      ofs << "f " << vv_map[f[0]] << " " << vv_map[f[1]] << " " << vv_map[f[2]] << std::endl;
+    if(id_cnt==3) {
+      valid_vid.insert(zv_id[0]); valid_vid.insert(zv_id[1]); valid_vid.insert(zv_id[2]);
+      faces.push_back(zv_id.block<3,1>(0,0));
     }
   }
+  std::map<size_t,size_t> vv_map;
+  size_t vid_cnt=0;
+  for(size_t v_id : valid_vid) {
+    vv_map[v_id]=++vid_cnt;
+    ofs << "v " << vertices_[v_id].pt_.transpose() << std::endl;
+  }
+  for(const Eigen::Matrix<size_t,3,1> &f : faces) {
+    ofs << "f " << vv_map[f[0]] << " " << vv_map[f[1]] << " " << vv_map[f[2]] << std::endl;
+  }
+}
 
-  void zsw::Triangulation::writeSurface2(const std::string &filepath, PointType pt_type) const
-  {
-    std::ofstream ofs(filepath);
-    std::cerr << "pt size:" << vertices_.size() << std::endl;
-    for(const zsw::Vertex &vertex : vertices_) {
-      ofs << "v " << vertex.pt_.transpose() << std::endl;
+void zsw::Triangulation::writeSurface2(const std::string &filepath, PointType pt_type) const
+{
+  std::ofstream ofs(filepath);
+  std::cerr << "pt size:" << vertices_.size() << std::endl;
+  for(const zsw::Vertex &vertex : vertices_) {
+    ofs << "v " << vertex.pt_.transpose() << std::endl;
+  }
+  Eigen::Matrix<size_t,4,1> zv_id;
+  for(const Tet &tet : tets_) {
+    if(!tet.valid_) { continue; }
+    size_t id_cnt=0;
+    for(size_t v_id : tet.vid_) {
+      if(vertices_[v_id].pt_type_ == pt_type) {
+        zv_id[id_cnt++]=v_id;
+      } else if(vertices_[v_id].pt_type_ != zsw::OUTER_POINT && vertices_[v_id].pt_type_ != zsw::INNER_POINT) {
+        id_cnt=0; break;
+      }
     }
-    Eigen::Matrix<size_t,4,1> zv_id;
-    for(const Tet &tet : tets_) {
-      if(!tet.valid_) { continue; }
-      size_t id_cnt=0;
-      for(size_t v_id : tet.vid_) {
-        if(vertices_[v_id].pt_type_ == pt_type) {
-          zv_id[id_cnt++]=v_id;
-        }
-      }
-      if(id_cnt==3) {
-        ofs << "f " << zv_id[0]+1 << " " << zv_id[1]+1 << " " << zv_id[2]+1 << std::endl;
-      }
+    if(id_cnt==3) {
+      ofs << "f " << zv_id[0]+1 << " " << zv_id[1]+1 << " " << zv_id[2]+1 << std::endl;
     }
   }
+}
 
 bool zsw::Triangulation::isKeepJpts(const zsw::Scalar pt_val, const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                     const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,
@@ -1132,4 +1144,30 @@ void zsw::Triangulation::saveStatus(const std::string &filepath, const Status st
   ofs << jpts_.size() << std::endl;
   for(const JudgePoint &jpt : jpts_) { ofs << jpt.pt_.transpose() << " " << jpt.val_exp_ << " " << jpt.val_cur_ << std::endl; }
   ofs.close();
+}
+
+void zsw::Triangulation::extractSurfaceMesh(const zsw::PointType &pt_type, SurfaceMesh &surface_mesh)
+{
+  // extract face
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  for(const Tet &tet : tets_) {
+    if(!tet.valid_) { continue; }
+    size_t id_cnt=0;
+    for(size_t v_id : tet.vid_) {
+      if(vertices_[v_id].pt_type_ == pt_type) {
+        zv_id[id_cnt++]=v_id;
+      } else if(vertices_[v_id].pt_type_ != zsw::OUTER_POINT && vertices_[v_id].pt_type_ != zsw::INNER_POINT) {
+        id_cnt=0; break;
+      }
+    }
+    if(id_cnt==3) {
+      valid_vid.insert(zv_id[0]); valid_vid.insert(zv_id[1]); valid_vid.insert(zv_id[2]);
+      faces.push_back({}, );
+    }
+  }
+}
+
+void zsw::Triangulation::smoothSurfaceMesh(const zsw::Scalar max_val, const int normal_sign, SurfaceMesh &surface_mesh)
+{
+  std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
 }

@@ -64,6 +64,7 @@ namespace zsw
     /// \param bo_points points in outer boundary
     /// \param bi_points points in inner boundary
     size_t construct(const zsw::Scalar flat_threshold, const zsw::Scalar r,
+                     const zsw::Scalar epsilon,
                      std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
                      std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points);
 
@@ -121,7 +122,11 @@ namespace zsw
     ///
     /// \param r the sample radius in bi and bo surface
     /// \param Delaunay cgal's delaunay triangulation
-    void init(const zsw::Scalar r, Delaunay &delaunay);
+    void init(const zsw::Scalar r, const zsw::Scalar epsilon, Delaunay &delaunay);
+
+    void extractSurfaceMesh(const PointType &pt_type, SurfaceMesh &surface_mesh);
+
+    void smoothSurfaceMesh(const zsw::Scalar max_val, const int normal_sign, SurfaceMesh &surface_mesh);
 
     void initBoundTriQuality(const Edge &e, BoundTriQualityJudger &btqj) const;
 
