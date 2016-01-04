@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 
-include pc_settinh.in
+include pc_setting.in
 
 .PHONY: export
 export:
