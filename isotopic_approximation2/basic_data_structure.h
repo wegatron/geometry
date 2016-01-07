@@ -57,18 +57,24 @@ namespace zsw{
   typedef DelaunayTriangulation::Point                                             Point;
   typedef Tds::Vertex_handle Vhd;
   typedef CGAL::Triple<Vhd, Vhd, Vhd> Fhd;
+  typedef CGAL::Triangulation_data_structure_3<CGAL::Triangulation_hierarchy_vertex_base_3<CGAL::Triangulation_vertex_base_with_info_3<zsw::VertexInfo, CGAL::Epick, CGAL::Triangulation_vertex_base_3<CGAL::Epick, CGAL::Triangulation_ds_vertex_base_3<CGAL::Triangulation_data_structure_3<CGAL::Triangulation_vertex_base_with_info_3<zsw::VertexInfo, CGAL::Epick> > > > > >, CGAL::Triangulation_ds_cell_base_3<void>, CGAL::Sequential_tag> TTds;
 
   class TriangulationWapper final
   {
   public:
-  TriangulationWapper(Tds &triangulation) : triangulation_(triangulation) {}
+  TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices)
+    : delaunay_triangulation_(vertices.begin(), vertices.end())  {
+      tds_=&delaunay_triangulation_.tds();
+    }
     bool isSatisfyLinkCondition(const Tds::Edge &edge);
     //void constructKernelRegionJudger(const Tds::Edge &edge, KernelRegionJudger &krj);
     void calcBoundTris(const Tds::Edge &edge, std::vector<Fhd> &bound_tris);
     void collapseEdge(Tds::Edge &edge, const Point &pt);
     void insertInEdge(Tds::Edge &edge, const Point &pt);
+
   private:
-    Tds &triangulation_;
+    DelaunayTriangulation delaunay_triangulation_;
+    TTds * tds_; // triangularion_ is the data in delaunay_triangulation_
   };
 
 }

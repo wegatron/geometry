@@ -5,8 +5,8 @@
 //#define ZSW_DEBUG
 
 void zsw::genPoints(const zsw::Scalar dis, zsw::mesh::TriMesh &tm,
-                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points,
-                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points)
+                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_points,
+                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_points)
 {
   if(!tm.has_vertex_normals()) {
     tm.request_face_normals();

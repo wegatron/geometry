@@ -40,13 +40,13 @@ include_directories(${FLANN_INCLUDE_DIRS})
 file(GLOB headers *.h)
 file(GLOB src *.cpp)
 
-add_library(isotropic_approximate SHARED ${headers} ${src})
+add_library(iso_app SHARED ${headers} ${src})
 
 target_link_libraries(iso_app zswlib ${OPENMESH_LIBRARIES}
   ipopt coinhsl coinmumps coinmetis blas lapack dl mpi)
 
 # add_subdirectory(test)
-# add_subdirectory(app)
+add_subdirectory(app)
 
 # add_subdirectory()
 

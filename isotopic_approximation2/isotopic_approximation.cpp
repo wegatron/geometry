@@ -26,7 +26,7 @@ namespace zsw{
     for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bo_vertices) {
       vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(zsw::OUTER_POINT, v, 0.0)});
     }
-    DelaunayTriangulation delaunay(vertices.begin(), vertices.end());
+    tw_.reset(new zsw::TriangulationWapper(vertices));
   }
 
   void Approximation::simpTolerance()
