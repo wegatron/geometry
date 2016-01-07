@@ -55,7 +55,7 @@ namespace zsw{
   struct Surface
   {
     size_t vid_[3];
-    Eigen::Matrix<zsw::Scalar,3,1> vn_;
+    Eigen::Matrix<zsw::Scalar,3,1> fn_;
     std::list<size_t> adj_faces_;
   };
 

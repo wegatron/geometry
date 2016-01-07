@@ -1150,6 +1150,14 @@ void zsw::Triangulation::extractSurfaceMesh(const zsw::PointType &pt_type, Surfa
 {
   // extract face
   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  surface_mesh.vertices_ori_.resize(vertices_.size());
+  surface_mesh.vertices_ori_vn_.assign(vertices_.size(), Eigen::Matrix<zsw::Scalar,3,1>::Zero());
+  std::vector<std::vector<size_t>> v2f(vertices_.size(), {});
+  for(size_t i=0; i<vertices_.size(); ++i) {    surface_mesh.vertices_ori_[i]=vertices_[i].pt_;  }
+
+  std::vector<size_t> fn_cnt(vertices_.size(),0);
+  Eigen::Matrix<size_t,4,1> zv_id;
+  size_t f_id=0;
   for(const Tet &tet : tets_) {
     if(!tet.valid_) { continue; }
     size_t id_cnt=0;
@@ -1161,8 +1169,19 @@ void zsw::Triangulation::extractSurfaceMesh(const zsw::PointType &pt_type, Surfa
       }
     }
     if(id_cnt==3) {
-      valid_vid.insert(zv_id[0]); valid_vid.insert(zv_id[1]); valid_vid.insert(zv_id[2]);
-      faces.push_back({}, );
+      Eigen::Matrix<zsw::Scalar,3,1> fn=(vertices_[z_vid[1]].pt_-vertices_[z_vid[0]].pt_).cross(vertices_[z_vid[2]].pt_-vertices_[z_vid[0]].pt_);
+      fn.normalize();
+      surface_mesh.faces.push_back({z_vid[0],z_vid[1],z_vid[2]}, fn, {});
+      surface_mesh.vertices_ori_vn_[z_vid[0]]+=fn;
+      surface_mesh.vertices_ori_vn_[z_vid[1]]+=fn;
+      surface_mesh.vertices_ori_vn_[z_vid[2]]+=fn;
+      v2f[z_vid[0]].push_back(f_id);
+      v2f[z_vid[1]].push_back(f_id);
+      v2f[z_vid[2]].push_back(f_id);
+      ++f_id;
+      ++fn_cnt[z_vid[0]];
+      ++fn_cnt[z_vid[1]];
+      ++fn_cnt[z_vid[2]];
     }
   }
 }
