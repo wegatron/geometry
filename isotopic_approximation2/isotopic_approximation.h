@@ -26,6 +26,8 @@ namespace zsw {
     std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bi_;
     std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bo_;
     std::shared_ptr<TriangulationWapper> tw_;
+    zsw::Scalar surf_sample_r_;
+    zsw::Scalar tet_sample_r_;
   };
 
 }

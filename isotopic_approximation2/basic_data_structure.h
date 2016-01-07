@@ -22,15 +22,23 @@ namespace zsw{
 
   struct VertexInfo
   {
-    size_t index_;
+    //size_t index_;
     PointType pt_type_;
     // data for smooth
     Eigen::Matrix<zsw::Scalar,3,1> pos_ori_;
     zsw::Scalar max_dis_; // max distance travel
     VertexInfo() {
-      index_=-1; pt_type_=BBOX_POINT;
+      pt_type_=BBOX_POINT;
       pos_ori_=Eigen::Matrix<zsw::Scalar,3,1>::Zero();
       max_dis_=0.0;
+    }
+    VertexInfo(PointType pt_type,
+               Eigen::Matrix<zsw::Scalar,3,1> pos_ori,
+               zsw::Scalar max_dis) {
+      //index_=index;
+      pt_type_=pt_type;
+      pos_ori_=pos_ori;
+      max_dis_=max_dis;
     }
   };
 
