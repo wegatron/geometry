@@ -37,4 +37,25 @@ namespace zsw{
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
+  bool ignore_bbox(const TTds::Cell_handle cell) {
+    return cell->vertex(0)->info().pt_type_==zsw::BBOX_POINT ||
+      cell->vertex(1)->info().pt_type_==zsw::BBOX_POINT ||
+      cell->vertex(2)->info().pt_type_==zsw::BBOX_POINT ||
+      cell->vertex(3)->info().pt_type_==zsw::BBOX_POINT;
+  }
+
+  bool ignore_self_in(const TTds::Cell_handle cell) {
+    return cell->vertex(0)->info().pt_type_==zsw::INNER_POINT &&
+      cell->vertex(1)->info().pt_type_==zsw::INNER_POINT &&
+      cell->vertex(2)->info().pt_type_==zsw::INNER_POINT &&
+      cell->vertex(3)->info().pt_type_==zsw::INNER_POINT;
+  }
+
+  bool ignore_self_out(const TTds::Cell_handle cell) {
+    return cell->vertex(0)->info().pt_type_==zsw::OUTER_POINT &&
+      cell->vertex(1)->info().pt_type_==zsw::OUTER_POINT &&
+      cell->vertex(2)->info().pt_type_==zsw::OUTER_POINT &&
+      cell->vertex(3)->info().pt_type_==zsw::OUTER_POINT;
+  }
+
 }

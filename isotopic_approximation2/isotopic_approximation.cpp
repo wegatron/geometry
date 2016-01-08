@@ -52,15 +52,9 @@ namespace zsw{
   void Approximation::writeZeroSurface(const std::string &filepath) const
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    std::ofstream ofs;
-    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
-    const TTds &tds=tw_->getTds();
-    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-      ofs << "v " <<  *vit << std::endl;
-    }
   }
 
-  #if 0
+#if 0
   void Approximation::writeTetMesh(const std::string &filepath) const
   {
     std::ofstream ofs;
@@ -91,9 +85,10 @@ namespace zsw{
     ofs.close();
     tds.print_cells(std::cout, v_map);
   }
-#endif
+#else
 
-  void Approximation::writeTetMesh(const std::string &filepath) const
+  void Approximation::writeTetMesh(const std::string &filepath,
+                                   std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const
   {
     std::ofstream ofs;
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
@@ -106,21 +101,25 @@ namespace zsw{
       ofs << *vit << std::endl;
       vit->info().index_=v_index++;
     }
-    std::cout << "infinite_point:" << *delaunay.infinite_vertex() << std::endl;
-    const size_t cells_number=delaunay.number_of_cells();
-    ofs << "CELLS "<< cells_number << " " << cells_number*5 <<std::endl;
 
-    size_t cnt=0;
+    stringstream ss;
+    size_t valid_cells_number=0;
     for(auto cit=delaunay.all_cells_begin(); cit!=delaunay.all_cells_end(); ++cit) {
-      ofs << "4 " << cit->vertex(0)->info().index_ << " " <<
+      bool ignore=false;
+      for(auto igf : ignore_tet_funcs) {        if(igf(cit)) { ignore=true; break; }      }
+      if(ignore) { continue; }
+      ss << "4 " << cit->vertex(0)->info().index_ << " " <<
         cit->vertex(1)->info().index_ << " " <<
         cit->vertex(2)->info().index_ << " " <<
         cit->vertex(3)->info().index_ << std::endl;
-      if(++cnt==cells_number) { break; }
+      ++valid_cells_number;
     }
-    ofs << "CELL_TYPES " << cells_number << std::endl;
-    for(size_t i=0; i<cells_number; ++i) {      ofs << "10" << std::endl;    }
+    ofs << "CELLS "<< valid_cells_number << " " << valid_cells_number*5 <<std::endl;
+    ofs << ss.str();
+    ofs << "CELL_TYPES " << valid_cells_number << std::endl;
+    for(size_t i=0; i<valid_cells_number; ++i) {      ofs << "10" << std::endl;    }
     ofs.close();
   }
 
+#endif
 }

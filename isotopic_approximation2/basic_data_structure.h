@@ -76,5 +76,11 @@ namespace zsw{
     TTds &tds_;
   };
 
+  bool ignore_bbox(const TTds::Cell_handle cell);
+
+  bool ignore_self_in(const TTds::Cell_handle cell);
+
+  bool ignore_self_out(const TTds::Cell_handle cell);
+
 }
 #endif /* BASIC_DATA_STRUCTURE_H */
