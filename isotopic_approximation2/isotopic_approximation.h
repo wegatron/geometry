@@ -21,6 +21,7 @@ namespace zsw {
     void writeTetMesh(const std::string &filepath,
                       std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const;
   private:
+    void createJudgePoints();
     std::vector<JudgePoint> jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bo_jpts_;

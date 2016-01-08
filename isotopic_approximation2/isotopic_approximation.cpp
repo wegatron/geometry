@@ -4,6 +4,7 @@
 #include "isotopic_approximation.h"
 #include "basic_op.h"
 #include "bound_sphere.h"
+#include "sampling.h"
 
 using namespace std;
 
@@ -32,6 +33,38 @@ namespace zsw{
       vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(zsw::OUTER_POINT, v, 0.0)});
     }
     tw_.reset(new zsw::TriangulationWapper(vertices));
+    createJudgePoints();
+  }
+
+  void Approximation::createJudgePoints()
+  {
+    const TTds &tds=tw_->getTds();
+    Eigen::Matrix<zsw::Scalar,3,4> bi_tri_points;
+    Eigen::Matrix<zsw::Scalar,3,4> bo_tri_points;
+    for(TTds::Cell_iterator cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+      size_t bi_cnt=0;
+      size_t bo_cnt=0;
+      for(size_t i=0; i<4; ++i) {
+        if(cit->vertex(i)->info().pt_type_==zsw::INNER_POINT) {
+          bi_tri_points(0,bi_cnt)=cit->vertex(i)->point()[0];
+          bi_tri_points(1,bi_cnt)=cit->vertex(i)->point()[1];
+          bi_tri_points(2,bi_cnt)=cit->vertex(i)->point()[2];
+          ++bi_cnt;
+        } else if(cit->vertex(i)->info().pt_type_==zsw::OUTER_POINT) {
+          bi_tri_points(0,bo_cnt)=cit->vertex(i)->point()[0];
+          bi_tri_points(1,bo_cnt)=cit->vertex(i)->point()[1];
+          bi_tri_points(2,bo_cnt)=cit->vertex(i)->point()[2];
+          ++bo_cnt;
+        }
+      }
+      if(bi_cnt==3) { sampleTriangle(bi_tri_points.block<3,3>(0,0), surf_sample_r_, bi_jpts_);}
+      else if(bo_cnt==3) { sampleTriangle(bo_tri_points.block<3,3>(0,0), surf_sample_r_, bo_jpts_); }
+      jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
+      jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
+      jpts_.reserve(bi_jpts_.size()+bo_jpts_.size());
+      for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bi_jpts_) { jpts_.push_back({jpt,-1,-1}); }
+      for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bo_jpts_) { jpts_.push_back({jpt,1,1}); }
+    }
   }
 
   void Approximation::simpTolerance()
@@ -72,7 +105,6 @@ namespace zsw{
     std::vector<TTds::Cell_iterator> chds(cells_number);
     size_t ci=0;
     for(TTds::Cell_iterator cit=tds.cells_begin(); ci<cells_number; ++cit) { chds[ci++] = cit; }
-
     ofs << "CELLS "<< cells_number << " " << cells_number*5 <<std::endl;
     for(size_t i=0; i<cells_number; ++i) {
       ofs << "4 " << v_map[chds[i]->vertex(0)] << " " <<
@@ -93,18 +125,19 @@ namespace zsw{
     std::ofstream ofs;
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
     const DelaunayTriangulation &delaunay=tw_->getDelaunay();
+    const TTds &tds=tw_->getTds();
     ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
-        << delaunay.number_of_vertices()+1 << " float" << std::endl;
+        << tds.number_of_vertices() << " float" << std::endl;
 
     size_t v_index=0;
-    for(auto vit=delaunay.all_vertices_begin(); vit!=delaunay.all_vertices_end(); ++vit) {
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
       ofs << *vit << std::endl;
       vit->info().index_=v_index++;
     }
 
     stringstream ss;
     size_t valid_cells_number=0;
-    for(auto cit=delaunay.all_cells_begin(); cit!=delaunay.all_cells_end(); ++cit) {
+    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
       bool ignore=false;
       for(auto igf : ignore_tet_funcs) {        if(igf(cit)) { ignore=true; break; }      }
       if(ignore) { continue; }
