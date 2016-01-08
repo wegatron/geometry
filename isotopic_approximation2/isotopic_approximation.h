@@ -1,6 +1,7 @@
 #ifndef ISOTOPIC_APPROXIMATION_H
 #define ISOTOPIC_APPROXIMATION_H
 
+#include <unordered_map>
 #include <zswlib/config.h>
 #include <zswlib/mesh/zsw_flann.h>
 #include "basic_data_structure.h"
@@ -21,6 +22,8 @@ namespace zsw {
     void writeTetMesh(const std::string &filepath,
                       std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const;
   private:
+    void tryCollapseBoundaryEdge(TTds::Edge &e,
+                                 std::unordered_map<std::string,TTds::Edge> &edge_map);
     void createJudgePoints();
     std::vector<JudgePoint> jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_jpts_;

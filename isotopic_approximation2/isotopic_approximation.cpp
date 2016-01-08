@@ -23,14 +23,15 @@ namespace zsw{
     zsw::BoundSphere bs("/home/wegatron/workspace/geometry/data/bound_sphere.obj", scale, transform);
     const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_vertices = bs.getVertices();
     std::vector<std::pair<Point, VertexInfo>> vertices;
+    size_t vid=0;
     for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bs_vertices) {
-      vertices.push_back({Point(v[0], v[1], v[2]), VertexInfo(zsw::BBOX_POINT, v, 0.0)});
+      vertices.push_back({Point(v[0], v[1], v[2]), VertexInfo(vid++, zsw::BBOX_POINT, v, 0.0)});
     }
     for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bi_vertices) {
-      vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(zsw::INNER_POINT, v, 0.0)});
+      vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(vid++, zsw::INNER_POINT, v, 0.0)});
     }
     for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bo_vertices) {
-      vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(zsw::OUTER_POINT, v, 0.0)});
+      vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(vid++, zsw::OUTER_POINT, v, 0.0)});
     }
     tw_.reset(new zsw::TriangulationWapper(vertices));
     createJudgePoints();
@@ -69,7 +70,30 @@ namespace zsw{
 
   void Approximation::simpTolerance()
   {
+    TTds &tds=tw_->getTds();
+    std::unordered_map<std::string, TTds::Edge> edge_map;
+    for(TTds::Edge_iterator eit=tds.edges_begin();
+        eit!=tds.edges_end(); ++eit) {
+      if(tw_->isBoundaryEdge(*eit)) {
+        std::pair<size_t,size_t> key(eit->first->vertex(eit->second)->info().index_,
+                                     eit->first->vertex(eit->second)->info().index_);
+        if(key.first>key.second) { swap(key.first, key.second); }
+        std::string key_str=std::to_string(key.first) + "," + std::to_string(key.second);
+        edge_map.insert(std::make_pair(key_str, *eit));
+      }
+    }
+    while(!edge_map.empty()) {
+      TTds::Edge &e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
+      if(tds.is_edge(e.first, e.second, e.third)) { continue; }
+      tryCollapseBoundaryEdge(e, edge_map);
+    }
+  }
+
+  void Approximation::tryCollapseBoundaryEdge(TTds::Edge &e,
+                                              std::unordered_map<std::string,TTds::Edge> &edge_map)
+  {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+
   }
 
   void Approximation::mutuallTessellation()

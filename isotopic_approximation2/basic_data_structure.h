@@ -33,10 +33,10 @@ namespace zsw{
       pos_ori_=Eigen::Matrix<zsw::Scalar,3,1>::Zero();
       max_dis_=0.0;
     }
-    VertexInfo(PointType pt_type,
+    VertexInfo(size_t index, PointType pt_type,
                Eigen::Matrix<zsw::Scalar,3,1> pos_ori,
                zsw::Scalar max_dis) {
-      //index_=index;
+      index_=index;
       pt_type_=pt_type;
       pos_ori_=pos_ori;
       max_dis_=max_dis;
@@ -69,8 +69,11 @@ namespace zsw{
     void calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris);
     void collapseEdge(TTds::Edge &edge, const Point &pt);
     void insertInEdge(TTds::Edge &edge, const Point &pt);
+    bool isBoundaryEdge(const TTds::Edge &edge) const;
+
     const DelaunayTriangulation &getDelaunay() { return delaunay_triangulation_; }
-    const TTds &getTds() { return tds_; }
+    const TTds &getTds() const { return tds_; }
+    TTds &getTds() { return tds_; }
   private:
     DelaunayTriangulation delaunay_triangulation_;
     TTds &tds_;
