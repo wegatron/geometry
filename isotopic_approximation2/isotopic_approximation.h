@@ -17,8 +17,8 @@ namespace zsw {
     void simpTolerance();
     void mutuallTessellation();
     void simpZeroSurface();
-    void writeZeroSurface();
-    void writeTetMesh();
+    void writeZeroSurface(const std::string &filepath) const;
+    void writeTetMesh(const std::string &filepath) const;
   private:
     std::vector<JudgePoint> jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_jpts_;

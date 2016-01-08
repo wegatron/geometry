@@ -1,6 +1,11 @@
+#include <iostream>
+#include <fstream>
+#include <zswlib/error_ctrl.h>
 #include "isotopic_approximation.h"
 #include "basic_op.h"
 #include "bound_sphere.h"
+
+using namespace std;
 
 namespace zsw{
 
@@ -14,7 +19,7 @@ namespace zsw{
     calcBBOX(bo_vertices, bbox);
     zsw::Scalar scale = 0.5*(bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1)).norm();
     Eigen::Matrix<zsw::Scalar,3,1> transform = 0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
-    zsw::BoundSphere bs("bound_sphere.obj", scale, transform);
+    zsw::BoundSphere bs("/home/wegatron/workspace/geometry/data/bound_sphere.obj", scale, transform);
     const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_vertices = bs.getVertices();
     std::vector<std::pair<Point, VertexInfo>> vertices;
     for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bs_vertices) {
@@ -44,14 +49,78 @@ namespace zsw{
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
-  void Approximation::writeZeroSurface()
+  void Approximation::writeZeroSurface(const std::string &filepath) const
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    const TTds &tds=tw_->getTds();
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      ofs << "v " <<  *vit << std::endl;
+    }
   }
 
-  void Approximation::writeTetMesh()
+  #if 0
+  void Approximation::writeTetMesh(const std::string &filepath) const
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    const TTds &tds=tw_->getTds();
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+        << tds.number_of_vertices() << " float" << std::endl;
+    size_t v_index=0;
+    CGAL::Unique_hash_map<TTds::Vertex_handle, std::size_t > v_map;
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      ofs << *vit << std::endl;
+      v_map[vit]=v_index++;
+    }
+    const size_t cells_number=tds.number_of_cells();
+    std::vector<TTds::Cell_iterator> chds(cells_number);
+    size_t ci=0;
+    for(TTds::Cell_iterator cit=tds.cells_begin(); ci<cells_number; ++cit) { chds[ci++] = cit; }
+
+    ofs << "CELLS "<< cells_number << " " << cells_number*5 <<std::endl;
+    for(size_t i=0; i<cells_number; ++i) {
+      ofs << "4 " << v_map[chds[i]->vertex(0)] << " " <<
+        v_map[chds[i]->vertex(1)] << " " <<
+        v_map[chds[i]->vertex(2)] << " " <<
+        v_map[chds[i]->vertex(3)] << std::endl;
+    }
+    ofs << "CELL_TYPES " << cells_number << std::endl;
+    for(size_t i=0; i<cells_number; ++i) {      ofs << "10" << std::endl;    }
+    ofs.close();
+    tds.print_cells(std::cout, v_map);
+  }
+#endif
+
+  void Approximation::writeTetMesh(const std::string &filepath) const
+  {
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    const DelaunayTriangulation &delaunay=tw_->getDelaunay();
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+        << delaunay.number_of_vertices()+1 << " float" << std::endl;
+
+    size_t v_index=0;
+    for(auto vit=delaunay.all_vertices_begin(); vit!=delaunay.all_vertices_end(); ++vit) {
+      ofs << *vit << std::endl;
+      vit->info().index_=v_index++;
+    }
+    std::cout << "infinite_point:" << *delaunay.infinite_vertex() << std::endl;
+    const size_t cells_number=delaunay.number_of_cells();
+    ofs << "CELLS "<< cells_number << " " << cells_number*5 <<std::endl;
+
+    size_t cnt=0;
+    for(auto cit=delaunay.all_cells_begin(); cit!=delaunay.all_cells_end(); ++cit) {
+      ofs << "4 " << cit->vertex(0)->info().index_ << " " <<
+        cit->vertex(1)->info().index_ << " " <<
+        cit->vertex(2)->info().index_ << " " <<
+        cit->vertex(3)->info().index_ << std::endl;
+      if(++cnt==cells_number) { break; }
+    }
+    ofs << "CELL_TYPES " << cells_number << std::endl;
+    for(size_t i=0; i<cells_number; ++i) {      ofs << "10" << std::endl;    }
+    ofs.close();
   }
 
 }

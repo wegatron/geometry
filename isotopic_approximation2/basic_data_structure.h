@@ -22,12 +22,13 @@ namespace zsw{
 
   struct VertexInfo
   {
-    //size_t index_;
+    size_t index_;
     PointType pt_type_;
     // data for smooth
     Eigen::Matrix<zsw::Scalar,3,1> pos_ori_;
     zsw::Scalar max_dis_; // max distance travel
     VertexInfo() {
+      index_=-1;
       pt_type_=BBOX_POINT;
       pos_ori_=Eigen::Matrix<zsw::Scalar,3,1>::Zero();
       max_dis_=0.0;
@@ -62,19 +63,17 @@ namespace zsw{
   class TriangulationWapper final
   {
   public:
-  TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices)
-    : delaunay_triangulation_(vertices.begin(), vertices.end())  {
-      tds_=&delaunay_triangulation_.tds();
-    }
-    bool isSatisfyLinkCondition(const Tds::Edge &edge);
+    TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
+    bool isSatisfyLinkCondition(const TTds::Edge &edge);
     //void constructKernelRegionJudger(const Tds::Edge &edge, KernelRegionJudger &krj);
-    void calcBoundTris(const Tds::Edge &edge, std::vector<Fhd> &bound_tris);
-    void collapseEdge(Tds::Edge &edge, const Point &pt);
-    void insertInEdge(Tds::Edge &edge, const Point &pt);
-
+    void calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris);
+    void collapseEdge(TTds::Edge &edge, const Point &pt);
+    void insertInEdge(TTds::Edge &edge, const Point &pt);
+    const DelaunayTriangulation &getDelaunay() { return delaunay_triangulation_; }
+    const TTds &getTds() { return tds_; }
   private:
     DelaunayTriangulation delaunay_triangulation_;
-    TTds * tds_; // triangularion_ is the data in delaunay_triangulation_
+    TTds &tds_;
   };
 
 }
