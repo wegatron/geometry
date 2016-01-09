@@ -64,7 +64,7 @@ namespace zsw{
   {
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
-    bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
+    bool isSatisfyLinkCondition(const TTds::Edge &edge);
     void calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris, std::vector<Vhd> &opposite_vs) const;
     void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
     void insertInEdge(TTds::Edge &edge, const Point &pt);

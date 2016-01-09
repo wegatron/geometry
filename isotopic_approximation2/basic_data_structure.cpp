@@ -1,5 +1,7 @@
 #include "basic_data_structure.h"
 
+#include <unordered_map>
+
 namespace zsw{
 
   TriangulationWapper::TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices)
@@ -12,9 +14,29 @@ namespace zsw{
     tds_.delete_vertex(vh);
   }
 
-  bool TriangulationWapper::isSatisfyLinkCondition(const TTds::Edge &edge) const
+  bool TriangulationWapper::isSatisfyLinkCondition(const TTds::Edge &edge)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    TTds::Facet_circulator fit = tds_.incident_facets(edge);
+    TTds::Facet_circulator done(fit);
+    do {
+      std::unordered_map<size_t, size_t> count_map;
+      for(size_t i=0; i<4; ++i) {
+        if(i==fit->second) { continue; }
+        std::list<Vhd> adj_vhds;
+        tds_.adjacent_vertices(fit->first->vertex(i), std::back_inserter(adj_vhds));
+        for(Vhd vhd : adj_vhds) {
+          auto iter = count_map.find(vhd->info().index_);
+          if(iter==count_map.end()) {            count_map[vhd->info().index_]=1;          }
+          else { count_map[vhd->info().index_] = iter->second+1; }
+        }
+      }
+      size_t cnt=0;
+      for(auto iter=count_map.begin(); iter!=count_map.end(); ++iter) {
+        if(iter->second==3) { ++cnt; }
+      }
+      if(cnt!=2) { return false; }
+    } while(fit!=done);
+    return true;
   }
 
   void TriangulationWapper::calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris,
