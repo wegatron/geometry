@@ -267,6 +267,15 @@ namespace zsw{
 
   void calcFhdBBox(const std::vector<Fhd> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    assert(bound_tris.size()>0);
+    bbox(0,0)=bbox(0,1)=bound_tris[0].first->point()[0];
+    bbox(1,0)=bbox(1,1)=bound_tris[0].first->point()[1];
+    bbox(2,0)=bbox(2,1)=bound_tris[0].first->point()[2];
+    for(const Fhd &fhd : bound_tris) {
+      for(size_t bi=0; bi<3; ++bi) {
+        if(fhd.first->point()[bi]<bbox(bi,0)) { bbox(bi,0)=fhd.first->point()[bi]; }
+        else if(fhd.first->point()[bi]>bbox(bi,1)) { bbox(bi,1)=fhd.first->point()[bi]; }
+      }
+    }
   }
 }

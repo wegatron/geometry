@@ -42,43 +42,59 @@ namespace zsw{
   void TriangulationWapper::calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris,
                                           std::vector<Vhd> &opposite_vs) const
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  }
-
-  void TriangulationWapper::collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt)
-  {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  }
-
-  void TriangulationWapper::insertInEdge(TTds::Edge &edge, const Point &pt)
-  {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  }
-
-  bool TriangulationWapper::isBoundaryEdge(const TTds::Edge &edge) const
-  {
-    zsw::PointType oppo_type;
-    edge.first;
-    if(edge.first->vertex(edge.second)->info().pt_type_==zsw::INNER_POINT
-       && edge.first->vertex(edge.third)->info().pt_type_==zsw::INNER_POINT) {
-      oppo_type= zsw::OUTER_POINT;
-    } else if(edge.first->vertex(edge.second)->info().pt_type_==zsw::OUTER_POINT
-              && edge.first->vertex(edge.third)->info().pt_type_==zsw::OUTER_POINT) {
-      oppo_type = zsw::INNER_POINT;
-    } else { return false; }
-    CGAL::Container_from_circulator<TTds::Cell_circulator> cells(tds_.incident_cells(edge));
-    bool ret=false;
-    for(auto cell : cells) {
-      if(cell.vertex(0)->info().pt_type_== oppo_type ||
-         cell.vertex(1)->info().pt_type_==oppo_type ||
-         cell.vertex(2)->info().pt_type_==oppo_type ||
-         cell.vertex(3)->info().pt_type_==oppo_type) {
-        ret=true;
-        break;
+    for(size_t vi=0; vi<2; ++vi) {
+      std::list<TTds::Cell_handle> cells;
+      tds_.incident_cells(edge.first->vertex(vi), std::back_inserter(cells));
+      for(auto cit : cells) {
+        Vhd vhds[3];
+        size_t cnt=0;
+        for(size_t i=0; i<4; ++i) {
+          if(cit->vertex(i)!=edge.first->vertex(0) && cit->vertex(i)!=edge.first->vertex(1)) {
+            vhds[cnt++]=cit->vertex(i);
+          }
+        }
+        if(cnt==3) {
+          bound_tris.push_back({vhds[0], vhds[1], vhds[2]});
+          opposite_vs.push_back(edge.first->vertex(vi));
+        }
       }
     }
-    return ret;
   }
+
+    void TriangulationWapper::collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt)
+    {
+      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    }
+
+    void TriangulationWapper::insertInEdge(TTds::Edge &edge, const Point &pt)
+    {
+      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    }
+
+    bool TriangulationWapper::isBoundaryEdge(const TTds::Edge &edge) const
+    {
+      zsw::PointType oppo_type;
+      edge.first;
+      if(edge.first->vertex(edge.second)->info().pt_type_==zsw::INNER_POINT
+         && edge.first->vertex(edge.third)->info().pt_type_==zsw::INNER_POINT) {
+        oppo_type= zsw::OUTER_POINT;
+      } else if(edge.first->vertex(edge.second)->info().pt_type_==zsw::OUTER_POINT
+                && edge.first->vertex(edge.third)->info().pt_type_==zsw::OUTER_POINT) {
+        oppo_type = zsw::INNER_POINT;
+      } else { return false; }
+      CGAL::Container_from_circulator<TTds::Cell_circulator> cells(tds_.incident_cells(edge));
+      bool ret=false;
+      for(auto cell : cells) {
+        if(cell.vertex(0)->info().pt_type_== oppo_type ||
+           cell.vertex(1)->info().pt_type_==oppo_type ||
+           cell.vertex(2)->info().pt_type_==oppo_type ||
+           cell.vertex(3)->info().pt_type_==oppo_type) {
+          ret=true;
+          break;
+        }
+      }
+      return ret;
+    }
 
     bool ignore_bbox(const TTds::Cell_handle cell) {
       return cell->vertex(0)->info().pt_type_==zsw::BBOX_POINT ||
