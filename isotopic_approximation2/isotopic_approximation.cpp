@@ -108,27 +108,41 @@ namespace zsw{
   void Approximation::tryCollapseBoundaryEdge(TTds::Edge &e,
                                               std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     if(!tw_->isSatisfyLinkCondition(e)) { return; }
     std::vector<Fhd> bound_tris;
+    std::vector<Vhd> opposite_vs;
+    tw_->calcBoundTris(e, bound_tris, opposite_vs);
     Eigen::Matrix<zsw::Scalar,3,2> bbox;
-    tw_->calcBoundTris(e, bound_tris, bbox);
-    KernelRegionJudger krj;
-    constructKernelRegionJudger(bound_tris, krj);
-    // speed up can
-    std::vector<JudgePoint*> jpt_in_bbox;
+    calcFhdBBox(bound_tris, bbox);
+    std::vector<JudgePoint*> jpts_in_bbox;
     for(JudgePoint &jpt : jpts_) {
       if(jpt.pt_[0]<bbox(0,0) || jpt.pt_[1]<bbox(1,0) || jpt.pt_[2]<bbox(2,0) ||
          jpt.pt_[0]>bbox(0,1) || jpt.pt_[1]>bbox(1,1) || jpt.pt_[2]>bbox(2,1)) { continue; }
-      jpt_in_bbox.push_back(&jpt);
+      jpts_in_bbox.push_back(&jpt);
     }
     // candicate merge points in kernel region
+    KernelRegionJudger krj;
+    constructKernelRegionJudger(bound_tris, opposite_vs, krj);
     std::vector<JudgePoint*> candicate_point;
-  }
-
-  void Approximation::constructKernelRegionJudger(const std::vector<Fhd> &bound_tris, KernelRegionJudger &krj) const
-  {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    for(JudgePoint * jpt_ptr : jpts_in_bbox) {
+      if(krj.judge(jpt_ptr->pt_)) { candicate_point.push_back(jpt_ptr); }
+    }
+    // sort jpt by error
+    sort(candicate_point.begin(), candicate_point.end(), [](const JudgePoint *a, const JudgePoint *b){
+        return fabs(a->val_cur_-a->val_exp_) > fabs(b->val_cur_-b->val_exp_);
+      });
+    JudgePoint *merge_pt=nullptr;
+    std::vector<VertexUpdateData> vup;
+    std::vector<JudgePointUpdateData> jup;
+    for(JudgePoint * jpt_ptr : candicate_point) {
+      vup.clear(); jup.clear();
+      if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, vup, &jup)) { merge_pt=jpt_ptr; break; }
+    }
+    Vhd vhd=e.first->vertex(0);
+    tw_->collapseEdge(e, vhd, merge_pt->pt_);
+    updateVertex(vup);
+    updateJudgePoint(jup);
+    boundaryEdgeBack(vhd, edge_map);
   }
 
   void Approximation::mutuallTessellation()

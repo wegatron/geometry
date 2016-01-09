@@ -18,12 +18,12 @@ namespace zsw{
   }
 
   void TriangulationWapper::calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris,
-                                          Eigen::Matrix<zsw::Scalar,3,2> &bbox) const
+                                          std::vector<Vhd> &opposite_vs) const
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
-  void TriangulationWapper::collapseEdge(TTds::Edge &edge, const Point &pt)
+  void TriangulationWapper::collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }

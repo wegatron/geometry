@@ -55,17 +55,18 @@ namespace zsw{
   //Use the Fast_location tag. Default or Compact_location works too.
   typedef CGAL::Delaunay_triangulation_3<K, Tds, CGAL::Fast_location> DelaunayTriangulation;
   typedef DelaunayTriangulation::Point                                             Point;
-  typedef Tds::Vertex_handle Vhd;
-  typedef CGAL::Triple<Vhd, Vhd, Vhd> Fhd;
   typedef CGAL::Triangulation_data_structure_3<CGAL::Triangulation_hierarchy_vertex_base_3<CGAL::Triangulation_vertex_base_with_info_3<zsw::VertexInfo, CGAL::Epick, CGAL::Triangulation_vertex_base_3<CGAL::Epick, CGAL::Triangulation_ds_vertex_base_3<CGAL::Triangulation_data_structure_3<CGAL::Triangulation_vertex_base_with_info_3<zsw::VertexInfo, CGAL::Epick> > > > > >, CGAL::Triangulation_ds_cell_base_3<void>, CGAL::Sequential_tag> TTds;
+
+  typedef TTds::Vertex_handle Vhd;
+  typedef CGAL::Triple<Vhd, Vhd, Vhd> Fhd;
 
   class TriangulationWapper final
   {
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
-    void calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox) const;
-    void collapseEdge(TTds::Edge &edge, const Point &pt);
+    void calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris, std::vector<Vhd> &opposite_vs) const;
+    void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
     void insertInEdge(TTds::Edge &edge, const Point &pt);
     bool isBoundaryEdge(const TTds::Edge &edge) const;
 
