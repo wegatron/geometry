@@ -80,6 +80,7 @@ namespace zsw{
                                      eit->first->vertex(eit->second)->info().index_);
         if(key.first>key.second) { swap(key.first, key.second); }
         std::string key_str=std::to_string(key.first) + "," + std::to_string(key.second);
+        assert(edge_map.find(key_str)==edge_map.end());
         edge_map.insert(std::make_pair(key_str, *eit));
       }
     }
@@ -145,6 +146,12 @@ namespace zsw{
     boundaryEdgeBack(vhd, edge_map);
   }
 
+  void Approximation::tryCollapseZeroEdge(TTds::Edge &e,
+                                          std::unordered_map<std::string,TTds::Edge> &edge_map)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
   void Approximation::mutuallTessellation()
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
@@ -152,7 +159,23 @@ namespace zsw{
 
   void Approximation::simpZeroSurface()
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    TTds &tds = tw_->getTds();
+    std::unordered_map<std::string, TTds::Edge> edge_map;
+    for(TTds::Edge_iterator eit=tds.edges_begin();
+        eit!=tds.edges_end(); ++eit) {
+      if(eit->first->vertex(0)->info().pt_type_!=zsw::ZERO_POINT
+         || eit->first->vertex(1)->info().pt_type_!=zsw::ZERO_POINT) { continue; }
+      size_t key[2] = {eit->first->vertex(0)->info().index_, eit->first->vertex(1)->info().index_};
+      if(key[0]>key[1]) { swap(key[0],key[1]); }
+      std::string key_str(std::to_string(key[0])+","+std::to_string(key[1]));
+      assert(edge_map.find(key_str)==edge_map.end());
+      edge_map.insert(std::make_pair(key_str, *eit));
+    }
+    while(!edge_map.empty()) {
+      TTds::Edge &e=edge_map.begin()->second; edge_map.erase(edge_map.begin());
+      if(tds.is_edge(e.first, e.second, e.third)) { continue; }
+      tryCollapseZeroEdge(e, edge_map);
+    }
   }
 
   void Approximation::writeZeroSurface(const std::string &filepath) const
@@ -195,4 +218,10 @@ namespace zsw{
     for(size_t i=0; i<valid_cells_number; ++i) {      ofs << "10" << std::endl;    }
     ofs.close();
   }
+
+  void calcFhdBBox(const std::vector<Fhd> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
 }

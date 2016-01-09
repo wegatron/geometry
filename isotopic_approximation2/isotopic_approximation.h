@@ -55,6 +55,9 @@ namespace zsw {
     void tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
 
+    void tryCollapseZeroEdge(TTds::Edge &e,
+                             std::unordered_map<std::string,TTds::Edge> &edge_map);
+
     void createJudgePoints();
 
     void updateVertex(const std::vector<VertexUpdateData> &vup)
