@@ -139,18 +139,25 @@ namespace zsw{
     // candicate merge points in kernel region
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
-    std::vector<const JudgePoint*> candicate_point;
+    std::vector<const JudgePoint*> candicate_points;
     for(const JudgePoint * jpt_ptr : jpts_in_bbox) {
-      if(krj.judge(jpt_ptr->pt_)) { candicate_point.push_back(jpt_ptr); }
+      if(krj.judge(jpt_ptr->pt_)) { candicate_points.push_back(jpt_ptr); }
     }
+#if 1
+    // test adj info and jpts selection is right
+    writeAdjcentCells("/home/wegatron/tmp/adj_cell.vtk", e);
+    writeJudgePoints("/home/wegatron/tmp/jpts_in_bbox.vtk", jpts_in_bbox);
+    writeJudgePoints("/home/wegatron/tmp/candicate_points.vtk", candicate_points);
+    abort();
+#endif
     // sort jpt by error
-    sort(candicate_point.begin(), candicate_point.end(), [](const JudgePoint *a, const JudgePoint *b){
+    sort(candicate_points.begin(), candicate_points.end(), [](const JudgePoint *a, const JudgePoint *b){
         return fabs(a->val_cur_-a->val_exp_) > fabs(b->val_cur_-b->val_exp_);
       });
     const JudgePoint *merge_pt=nullptr;
     std::vector<VertexUpdateData> vup;
     std::vector<JudgePointUpdateData> jup;
-    for(const JudgePoint * jpt_ptr : candicate_point) {
+    for(const JudgePoint * jpt_ptr : candicate_points) {
       vup.clear(); jup.clear();
       if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, vup, &jup)) { merge_pt=jpt_ptr; break; }
     }
@@ -223,7 +230,6 @@ namespace zsw{
   {
     std::ofstream ofs;
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
-    const DelaunayTriangulation &delaunay=tw_->getDelaunay();
     const TTds &tds=tw_->getTds();
     ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
         << tds.number_of_vertices() << " float" << std::endl;
@@ -265,6 +271,20 @@ namespace zsw{
     }
   }
 
+  void Approximation::constructKernelRegionJudger(const std::vector<Fhd> &bound_tris,
+                                                  std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const
+  {
+    for(size_t fi=0; fi<bound_tris.size(); ++fi) {
+      Eigen::Matrix<zsw::Scalar,3,1> v0;
+      Eigen::Matrix<zsw::Scalar,3,1> v[3];
+      v0[0]=opposite_vs[fi]->point()[0]; v0[1]=opposite_vs[fi]->point()[1]; v0[2]=opposite_vs[fi]->point()[2];
+      v[0]<< bound_tris[fi].first->point()[0], bound_tris[fi].first->point()[1], bound_tris[fi].first->point()[2];
+      v[1]<< bound_tris[fi].second->point()[0], bound_tris[fi].second->point()[1], bound_tris[fi].second->point()[2];
+      v[2]<< bound_tris[fi].third->point()[0], bound_tris[fi].third->point()[1], bound_tris[fi].third->point()[2];
+      krj.addConstraint(v[0],v[1],v[2],v0);
+    }
+  }
+
   void calcFhdBBox(const std::vector<Fhd> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox)
   {
     assert(bound_tris.size()>0);
@@ -278,4 +298,54 @@ namespace zsw{
       }
     }
   }
+
+  void Approximation::writeAdjcentCells(const std::string &filepath, const TTds::Edge &e) const
+  {
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    const TTds &tds=tw_->getTds();
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+        << tds.number_of_vertices() << " float" << std::endl;
+
+    CGAL::Unique_hash_map<TTds::Vertex_handle,size_t> v_map;
+    size_t v_index=0;
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      ofs << *vit << std::endl;
+      v_map[vit] = v_index++;
+    }
+
+    std::unordered_set<TTds::Cell_handle, CGAL::Handle_hash_function> cell_set;
+    for(size_t vi=0; vi<2; ++vi) {
+      std::list<TTds::Cell_handle> cells;
+      tds.incident_cells(e.first->vertex(vi), std::back_inserter(cells));
+      for(auto chd : cells) { cell_set.insert(chd); }
+    }
+
+    ofs << "CELLS " << cell_set.size() << " " << cell_set.size()*5 << std::endl;
+    for(auto cit=cell_set.begin(); cit!=cell_set.end(); ++cit) {
+      ofs << "4 " << v_map[(*cit)->vertex(0)] << " " <<
+        v_map[(*cit)->vertex(1)] << " " <<
+        v_map[(*cit)->vertex(2)] << " " <<
+        v_map[(*cit)->vertex(3)] << std::endl;
+    }
+    ofs << "CELL_TYPES " << cell_set.size() << std::endl;
+    for(size_t ci=0; ci<cell_set.size(); ++ci) { ofs << "10" << std::endl; }
+    ofs.close();
+  }
+
+  void Approximation::writeJudgePoints(const std::string &filepath, const vector<const JudgePoint*> &jpts) const
+  {
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+        << jpts.size() << " float" << std::endl;
+    for(const JudgePoint *jpt : jpts) {
+      ofs << jpt->pt_.transpose() << std::endl;
+    }
+    ofs << "CELLS " << jpts.size() << " " << jpts.size()*2 << std::endl;
+    for(size_t i=0; i<jpts.size(); ++i) {      ofs << "1 " << i << std::endl;    }
+    ofs << "CELL_TYPES " << jpts.size() << std::endl;
+    for(size_t i=0; i<jpts.size(); ++i) { ofs << "1" << std::endl; }
+  }
+
 }

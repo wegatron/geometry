@@ -35,7 +35,12 @@ namespace zsw {
     void writeZeroSurface(const std::string &filepath) const;
     void writeTetMesh(const std::string &filepath,
                       std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const;
+
+    void writeAdjcentCells(const std::string &filepath, const TTds::Edge &e) const;
+
     void writeJudgePoints(const std::string &filepath) const;
+
+    void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
 
     bool isSatisfyErrorBound(std::vector<Fhd> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
@@ -47,10 +52,7 @@ namespace zsw {
     }
 
     void constructKernelRegionJudger(const std::vector<Fhd> &bound_tris,
-                                     std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const
-    {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    }
+                                     std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const;
 
     void tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
