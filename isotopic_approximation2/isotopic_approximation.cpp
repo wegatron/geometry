@@ -134,29 +134,23 @@ namespace zsw{
     std::vector<Fhd> bound_tris;
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
-    Eigen::Matrix<zsw::Scalar,3,2> bbox;
-    calcFhdBBox(bound_tris, bbox);
-    std::vector<JudgePoint*> jpts_in_bbox;
-    for(JudgePoint &jpt : jpts_) {
-      if(jpt.pt_[0]<bbox(0,0) || jpt.pt_[1]<bbox(1,0) || jpt.pt_[2]<bbox(2,0) ||
-         jpt.pt_[0]>bbox(0,1) || jpt.pt_[1]>bbox(1,1) || jpt.pt_[2]>bbox(2,1)) { continue; }
-      jpts_in_bbox.push_back(&jpt);
-    }
+    std::vector<const JudgePoint*> jpts_in_bbox;
+    calcJptsInBbox(bound_tris, jpts_in_bbox);
     // candicate merge points in kernel region
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
-    std::vector<JudgePoint*> candicate_point;
-    for(JudgePoint * jpt_ptr : jpts_in_bbox) {
+    std::vector<const JudgePoint*> candicate_point;
+    for(const JudgePoint * jpt_ptr : jpts_in_bbox) {
       if(krj.judge(jpt_ptr->pt_)) { candicate_point.push_back(jpt_ptr); }
     }
     // sort jpt by error
     sort(candicate_point.begin(), candicate_point.end(), [](const JudgePoint *a, const JudgePoint *b){
         return fabs(a->val_cur_-a->val_exp_) > fabs(b->val_cur_-b->val_exp_);
       });
-    JudgePoint *merge_pt=nullptr;
+    const JudgePoint *merge_pt=nullptr;
     std::vector<VertexUpdateData> vup;
     std::vector<JudgePointUpdateData> jup;
-    for(JudgePoint * jpt_ptr : candicate_point) {
+    for(const JudgePoint * jpt_ptr : candicate_point) {
       vup.clear(); jup.clear();
       if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, vup, &jup)) { merge_pt=jpt_ptr; break; }
     }
@@ -175,7 +169,7 @@ namespace zsw{
     std::vector<Fhd> bound_tris;
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
-    std::vector<JudgePoint*> jpts_in_bbox;
+    std::vector<const JudgePoint*> jpts_in_bbox;
     calcJptsInBbox(bound_tris, jpts_in_bbox);
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> sample_points;
     sampleIncidentCells(e, sample_points);
@@ -260,9 +254,19 @@ namespace zsw{
     ofs.close();
   }
 
+  void Approximation::calcJptsInBbox(std::vector<Fhd> &bound_tris, std::vector<const JudgePoint*> &jpts_in_bbox) const
+  {
+    Eigen::Matrix<zsw::Scalar,3,2> bbox;
+    calcFhdBBox(bound_tris, bbox);
+    for(const JudgePoint &jpt : jpts_) {
+      if(jpt.pt_[0]<bbox(0,0) || jpt.pt_[1]<bbox(1,0) || jpt.pt_[2]<bbox(2,0) ||
+         jpt.pt_[0]>bbox(0,1) || jpt.pt_[1]>bbox(1,1) || jpt.pt_[2]>bbox(2,1)) { continue; }
+      jpts_in_bbox.push_back(&jpt);
+    }
+  }
+
   void calcFhdBBox(const std::vector<Fhd> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
-
 }

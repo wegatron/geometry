@@ -38,7 +38,7 @@ namespace zsw {
     void writeJudgePoints(const std::string &filepath) const;
 
     bool isSatisfyErrorBound(std::vector<Fhd> &bound_tris,
-                             const std::vector<JudgePoint*> &jpts_in_bbox,
+                             const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
                              std::vector<VertexUpdateData> &vup,
                              std::vector<JudgePointUpdateData> * jup=nullptr) const
@@ -75,10 +75,7 @@ namespace zsw {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
 
-    void calcJptsInBbox(std::vector<Fhd> &bound_tris, std::vector<JudgePoint*> &jpts_in_bbox)
-    {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    }
+    void calcJptsInBbox(std::vector<Fhd> &bound_tris, std::vector<const JudgePoint*> &jpts_in_bbox) const;
 
     void sampleIncidentCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points)
     {
