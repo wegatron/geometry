@@ -75,6 +75,20 @@ namespace zsw {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
 
+    void calcJptsInBbox(std::vector<Fhd> &bound_tris, std::vector<JudgePoint*> &jpts_in_bbox)
+    {
+      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    }
+
+    void sampleIncidentCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points)
+    {
+      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    }
+
+    void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map)
+    {
+      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    }
   private:
     std::vector<JudgePoint> jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_jpts_;

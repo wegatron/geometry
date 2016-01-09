@@ -25,5 +25,6 @@ int main(int argc, char *argv[])
 
   appro.writeJudgePoints("/home/wegatron/judge_point.vtk");
   appro.writeTetMesh("/home/wegatron/tmp.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+  appro.simpTolerance();
   return 0;
 }

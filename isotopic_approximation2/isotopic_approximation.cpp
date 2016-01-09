@@ -80,8 +80,29 @@ namespace zsw{
                                      eit->first->vertex(eit->second)->info().index_);
         if(key.first>key.second) { swap(key.first, key.second); }
         std::string key_str=std::to_string(key.first) + "," + std::to_string(key.second);
-        assert(edge_map.find(key_str)==edge_map.end());
-        edge_map.insert(std::make_pair(key_str, *eit));
+        if(edge_map.find(key_str)==edge_map.end()) { edge_map.insert(std::make_pair(key_str, *eit)); }
+#if 0
+        else {
+          CGAL::Container_from_circulator<TTds::Cell_circulator> cells0(tds.incident_cells(*eit));
+          std::cerr << "cell0:" << std::endl;
+          for(auto cell : cells0) {
+            std::cerr << cell.vertex(0)->info().index_ << " " <<
+              cell.vertex(1)->info().index_ << " " <<
+              cell.vertex(2)->info().index_ << " " <<
+              cell.vertex(3)->info().index_ << std::endl;
+          }
+
+          CGAL::Container_from_circulator<TTds::Cell_circulator> cells1(tds.incident_cells(edge_map[key_str]));
+          std::cerr << "cell1:" << std::endl;
+          for(auto cell : cells1) {
+            std::cerr << cell.vertex(0)->info().index_ << " " <<
+              cell.vertex(1)->info().index_ << " " <<
+              cell.vertex(2)->info().index_ << " " <<
+              cell.vertex(3)->info().index_ << std::endl;
+          }
+          std::cerr << "---------------------" << std::endl;
+        }
+#endif
       }
     }
     while(!edge_map.empty()) {
@@ -149,7 +170,28 @@ namespace zsw{
   void Approximation::tryCollapseZeroEdge(TTds::Edge &e,
                                           std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    TTds &tds=tw_->getTds();
+    if(!tw_->isSatisfyLinkCondition(e)) { return; }
+    std::vector<Fhd> bound_tris;
+    std::vector<Vhd> opposite_vs;
+    tw_->calcBoundTris(e, bound_tris, opposite_vs);
+    std::vector<JudgePoint*> jpts_in_bbox;
+    calcJptsInBbox(bound_tris, jpts_in_bbox);
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> sample_points;
+    sampleIncidentCells(e, sample_points);
+    KernelRegionJudger krj;
+    constructKernelRegionJudger(bound_tris, opposite_vs, krj);
+    const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt=nullptr;
+    std::vector<VertexUpdateData> vup;
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : sample_points) {
+      vup.clear(); // can't parallel
+      if(krj.judge(pt) && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, vup, nullptr)) { merge_pt=&pt; break; }
+    }
+    if(merge_pt==nullptr) { return; }
+    Vhd vhd=e.first->vertex(0);
+    tw_->collapseEdge(e, vhd, *merge_pt);
+    updateVertex(vup);
+    zeroEdgeBack(vhd, edge_map);
   }
 
   void Approximation::mutuallTessellation()
@@ -168,8 +210,7 @@ namespace zsw{
       size_t key[2] = {eit->first->vertex(0)->info().index_, eit->first->vertex(1)->info().index_};
       if(key[0]>key[1]) { swap(key[0],key[1]); }
       std::string key_str(std::to_string(key[0])+","+std::to_string(key[1]));
-      assert(edge_map.find(key_str)==edge_map.end());
-      edge_map.insert(std::make_pair(key_str, *eit));
+      if(edge_map.find(key_str)==edge_map.end()) { edge_map.insert(std::make_pair(key_str, *eit)); }
     }
     while(!edge_map.empty()) {
       TTds::Edge &e=edge_map.begin()->second; edge_map.erase(edge_map.begin());
