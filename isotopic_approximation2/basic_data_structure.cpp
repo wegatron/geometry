@@ -12,17 +12,13 @@ namespace zsw{
     tds_.delete_vertex(vh);
   }
 
-  bool TriangulationWapper::isSatisfyLinkCondition(const TTds::Edge &edge)
+  bool TriangulationWapper::isSatisfyLinkCondition(const TTds::Edge &edge) const
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
-  // void TriangulationWapper::constructKernelRegionJudger(const Tds::Edge &edge, KernelRegionJudger &krj)
-  // {
-  //   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  // }
-
-  void TriangulationWapper::calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris)
+  void TriangulationWapper::calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris,
+                                          Eigen::Matrix<zsw::Scalar,3,2> &bbox) const
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }

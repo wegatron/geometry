@@ -10,7 +10,7 @@ namespace zsw {
   template<typename ScalarType>
     class Flann {
   public:
-    Flann(ScalarType *data, const size_t points_number) : points(data, points_number, 3) {
+  Flann(ScalarType *data, const size_t points_number) : points(data, points_number, 3) {
       index.reset(new flann::Index<flann::L2<ScalarType> >(points, flann::KDTreeIndexParams(4)));
       index->buildIndex();
     }
@@ -29,6 +29,27 @@ namespace zsw {
       for(size_t i=0; i<tmp_dist.size(); ++i) {
         dist[i] = tmp_dist[i].front();
       }
+    }
+
+    void queryNearest(std::vector<Eigen::Matrix<ScalarType, 3, 1>> &q_points, std::vector<size_t> &indices,
+                      std::vector<ScalarType> &dist) {
+      std::vector<std::vector<int> > tmp_indices;
+      std::vector<std::vector<ScalarType> > tmp_dist;
+      flann::Matrix<ScalarType> tmp_q_points(q_points[0].data(), q_points.size(), 3);
+      index->knnSearch(tmp_q_points, tmp_indices, tmp_dist, 1, flann::SearchParams(128));
+      indices.resize(q_points.size());
+      for(size_t i=0; i<tmp_indices.size(); ++i) {
+        indices[i] = tmp_indices[i].front();
+      }
+      dist.resize(tmp_dist.size());
+      for(size_t i=0; i<tmp_dist.size(); ++i) {
+        dist[i] = tmp_dist[i].front();
+      }
+    }
+
+    void addPoints(ScalarType *data, const size_t points_number) {
+      flann::Matrix<ScalarType> n_pts(data, points_number,3);
+      index->addPoints(n_pts);
     }
   private:
     std::shared_ptr<flann::Index<flann::L2<ScalarType> > > index;

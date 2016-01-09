@@ -21,8 +21,9 @@ int main(int argc, char *argv[])
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bo_points;
   zsw::genPoints(1.5, input_mesh, bi_points, bo_points);
   zsw::Approximation appro;
-  appro.init(0.5, 0.5, bi_points, bo_points);
+  appro.init(2.5, 2.5, bi_points, bo_points);
 
+  appro.writeJudgePoints("/home/wegatron/judge_point.vtk");
   appro.writeTetMesh("/home/wegatron/tmp.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   return 0;
 }

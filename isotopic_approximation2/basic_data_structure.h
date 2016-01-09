@@ -7,7 +7,6 @@
 #include <CGAL/Triangulation_3.h>
 #include <CGAL/Triangulation_vertex_base_with_info_3.h>
 #include <CGAL/Triangulation_cell_base_with_info_3.h>
-
 #include <zswlib/config.h>
 
 namespace zsw{
@@ -64,9 +63,8 @@ namespace zsw{
   {
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
-    bool isSatisfyLinkCondition(const TTds::Edge &edge);
-    //void constructKernelRegionJudger(const Tds::Edge &edge, KernelRegionJudger &krj);
-    void calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris);
+    bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
+    void calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox) const;
     void collapseEdge(TTds::Edge &edge, const Point &pt);
     void insertInEdge(TTds::Edge &edge, const Point &pt);
     bool isBoundaryEdge(const TTds::Edge &edge) const;

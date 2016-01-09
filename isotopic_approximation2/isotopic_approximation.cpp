@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <unordered_set>
 #include <zswlib/error_ctrl.h>
 #include "isotopic_approximation.h"
 #include "basic_op.h"
@@ -58,14 +59,14 @@ namespace zsw{
           ++bo_cnt;
         }
       }
-      if(bi_cnt==3) { sampleTriangle(bi_tri_points.block<3,3>(0,0), surf_sample_r_, bi_jpts_);}
-      else if(bo_cnt==3) { sampleTriangle(bo_tri_points.block<3,3>(0,0), surf_sample_r_, bo_jpts_); }
-      jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
-      jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
-      jpts_.reserve(bi_jpts_.size()+bo_jpts_.size());
-      for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bi_jpts_) { jpts_.push_back({jpt,-1,-1}); }
-      for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bo_jpts_) { jpts_.push_back({jpt,1,1}); }
+      if(bi_cnt==3 && bo_cnt==1) { sampleTriangle(bi_tri_points.block<3,3>(0,0), surf_sample_r_, bi_jpts_);}
+      else if(bo_cnt==3 && bi_cnt==1) { sampleTriangle(bo_tri_points.block<3,3>(0,0), surf_sample_r_, bo_jpts_); }
     }
+    jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
+    jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
+    jpts_.reserve(bi_jpts_.size()+bo_jpts_.size());
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bi_jpts_) { jpts_.push_back({jpt,-1,-1}); }
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bo_jpts_) { jpts_.push_back({jpt,1,1}); }
   }
 
   void Approximation::simpTolerance()
@@ -89,11 +90,45 @@ namespace zsw{
     }
   }
 
+  void Approximation::writeJudgePoints(const std::string &filepath) const
+  {
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+        << jpts_.size() << " float" << std::endl;
+    for(const JudgePoint &jpt : jpts_) {
+      ofs << jpt.pt_.transpose() << std::endl;
+    }
+    ofs << "CELLS " << jpts_.size() << " " << jpts_.size()*2 << std::endl;
+    for(size_t i=0; i<jpts_.size(); ++i) {      ofs << "1 " << i << std::endl;    }
+    ofs << "CELL_TYPES " << jpts_.size() << std::endl;
+    for(size_t i=0; i<jpts_.size(); ++i) { ofs << "1" << std::endl; }
+  }
+
   void Approximation::tryCollapseBoundaryEdge(TTds::Edge &e,
                                               std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    if(!tw_->isSatisfyLinkCondition(e)) { return; }
+    std::vector<Fhd> bound_tris;
+    Eigen::Matrix<zsw::Scalar,3,2> bbox;
+    tw_->calcBoundTris(e, bound_tris, bbox);
+    KernelRegionJudger krj;
+    constructKernelRegionJudger(bound_tris, krj);
+    // speed up can
+    std::vector<JudgePoint*> jpt_in_bbox;
+    for(JudgePoint &jpt : jpts_) {
+      if(jpt.pt_[0]<bbox(0,0) || jpt.pt_[1]<bbox(1,0) || jpt.pt_[2]<bbox(2,0) ||
+         jpt.pt_[0]>bbox(0,1) || jpt.pt_[1]>bbox(1,1) || jpt.pt_[2]>bbox(2,1)) { continue; }
+      jpt_in_bbox.push_back(&jpt);
+    }
+    // candicate merge points in kernel region
+    std::vector<JudgePoint*> candicate_point;
+  }
 
+  void Approximation::constructKernelRegionJudger(const std::vector<Fhd> &bound_tris, KernelRegionJudger &krj) const
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
   void Approximation::mutuallTessellation()
@@ -111,38 +146,6 @@ namespace zsw{
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
-#if 0
-  void Approximation::writeTetMesh(const std::string &filepath) const
-  {
-    std::ofstream ofs;
-    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
-    const TTds &tds=tw_->getTds();
-    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
-        << tds.number_of_vertices() << " float" << std::endl;
-    size_t v_index=0;
-    CGAL::Unique_hash_map<TTds::Vertex_handle, std::size_t > v_map;
-    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-      ofs << *vit << std::endl;
-      v_map[vit]=v_index++;
-    }
-    const size_t cells_number=tds.number_of_cells();
-    std::vector<TTds::Cell_iterator> chds(cells_number);
-    size_t ci=0;
-    for(TTds::Cell_iterator cit=tds.cells_begin(); ci<cells_number; ++cit) { chds[ci++] = cit; }
-    ofs << "CELLS "<< cells_number << " " << cells_number*5 <<std::endl;
-    for(size_t i=0; i<cells_number; ++i) {
-      ofs << "4 " << v_map[chds[i]->vertex(0)] << " " <<
-        v_map[chds[i]->vertex(1)] << " " <<
-        v_map[chds[i]->vertex(2)] << " " <<
-        v_map[chds[i]->vertex(3)] << std::endl;
-    }
-    ofs << "CELL_TYPES " << cells_number << std::endl;
-    for(size_t i=0; i<cells_number; ++i) {      ofs << "10" << std::endl;    }
-    ofs.close();
-    tds.print_cells(std::cout, v_map);
-  }
-#else
-
   void Approximation::writeTetMesh(const std::string &filepath,
                                    std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const
   {
@@ -153,10 +156,11 @@ namespace zsw{
     ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
         << tds.number_of_vertices() << " float" << std::endl;
 
+    CGAL::Unique_hash_map<TTds::Vertex_handle,size_t> v_map;
     size_t v_index=0;
     for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
       ofs << *vit << std::endl;
-      vit->info().index_=v_index++;
+      v_map[vit] = v_index++;
     }
 
     stringstream ss;
@@ -165,10 +169,10 @@ namespace zsw{
       bool ignore=false;
       for(auto igf : ignore_tet_funcs) {        if(igf(cit)) { ignore=true; break; }      }
       if(ignore) { continue; }
-      ss << "4 " << cit->vertex(0)->info().index_ << " " <<
-        cit->vertex(1)->info().index_ << " " <<
-        cit->vertex(2)->info().index_ << " " <<
-        cit->vertex(3)->info().index_ << std::endl;
+      ss << "4 " << v_map[cit->vertex(0)] << " " <<
+        v_map[cit->vertex(1)] << " " <<
+        v_map[cit->vertex(2)] << " " <<
+        v_map[cit->vertex(3)] << std::endl;
       ++valid_cells_number;
     }
     ofs << "CELLS "<< valid_cells_number << " " << valid_cells_number*5 <<std::endl;
@@ -177,6 +181,4 @@ namespace zsw{
     for(size_t i=0; i<valid_cells_number; ++i) {      ofs << "10" << std::endl;    }
     ofs.close();
   }
-
-#endif
 }

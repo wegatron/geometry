@@ -5,6 +5,7 @@
 #include <zswlib/config.h>
 #include <zswlib/mesh/zsw_flann.h>
 #include "basic_data_structure.h"
+#include "constraint.h"
 
 namespace zsw {
 
@@ -21,7 +22,9 @@ namespace zsw {
     void writeZeroSurface(const std::string &filepath) const;
     void writeTetMesh(const std::string &filepath,
                       std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const;
+    void writeJudgePoints(const std::string &filepath) const;
   private:
+    void constructKernelRegionJudger(const std::vector<Fhd> &bound_tris, KernelRegionJudger &krj) const;
     void tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
     void createJudgePoints();
