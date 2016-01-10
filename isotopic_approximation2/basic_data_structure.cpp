@@ -87,8 +87,8 @@ namespace zsw{
 
   bool TriangulationWapper::isBoundaryEdge(const TTds::Edge &edge) const
   {
+    if(!tds_.is_edge(edge.first, edge.second, edge.third)) { return false; }
     zsw::PointType oppo_type;
-    edge.first;
     if(edge.first->vertex(edge.second)->info().pt_type_==zsw::INNER_POINT
        && edge.first->vertex(edge.third)->info().pt_type_==zsw::INNER_POINT) {
       oppo_type= zsw::OUTER_POINT;

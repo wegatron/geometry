@@ -111,7 +111,7 @@ namespace zsw{
     std::cerr << "edge size:" << edge_map.size() << std::endl;
     while(!edge_map.empty()) {
       TTds::Edge e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
-      if(!tds.is_edge(e.first, e.second, e.third)) { continue; }
+      if(!tw_->isBoundaryEdge(e.first, e.second, e.third)) { continue; }
       std::cout << "try collapse edge:";
       std::cout << e.first->vertex(e.second)->info().index_ << " " <<
         e.first->vertex(e.third)->info().index_ << std::endl;
@@ -166,7 +166,6 @@ namespace zsw{
     writeAdjcentCells("/home/wegatron/tmp/adj_cell.vtk", e);
     writeJudgePoints("/home/wegatron/tmp/jpts_in_bbox.vtk", jpts_in_bbox);
     writeJudgePoints("/home/wegatron/tmp/candicate_points.vtk", candicate_points);
-    abort();
 #endif
 
     // sort jpt by error
