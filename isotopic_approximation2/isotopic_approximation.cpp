@@ -36,6 +36,8 @@ namespace zsw{
     }
     tw_.reset(new zsw::TriangulationWapper(vertices));
     createJudgePoints();
+    std::cout << "vertices :" << vertices.size() << std::endl;
+    std::cout << "judgepoints:" << jpts_.size() << std::endl;
   }
 
   void Approximation::createJudgePoints()
@@ -53,9 +55,9 @@ namespace zsw{
           bi_tri_points(2,bi_cnt)=cit->vertex(i)->point()[2];
           ++bi_cnt;
         } else if(cit->vertex(i)->info().pt_type_==zsw::OUTER_POINT) {
-          bi_tri_points(0,bo_cnt)=cit->vertex(i)->point()[0];
-          bi_tri_points(1,bo_cnt)=cit->vertex(i)->point()[1];
-          bi_tri_points(2,bo_cnt)=cit->vertex(i)->point()[2];
+          bo_tri_points(0,bo_cnt)=cit->vertex(i)->point()[0];
+          bo_tri_points(1,bo_cnt)=cit->vertex(i)->point()[1];
+          bo_tri_points(2,bo_cnt)=cit->vertex(i)->point()[2];
           ++bo_cnt;
         }
       }
@@ -71,15 +73,16 @@ namespace zsw{
 
   void Approximation::simpTolerance()
   {
+    test();
     TTds &tds=tw_->getTds();
     std::unordered_map<std::string, TTds::Edge> edge_map;
     for(TTds::Edge_iterator eit=tds.edges_begin();
         eit!=tds.edges_end(); ++eit) {
       if(tw_->isBoundaryEdge(*eit)) {
-        std::pair<size_t,size_t> key(eit->first->vertex(eit->second)->info().index_,
-                                     eit->first->vertex(eit->second)->info().index_);
-        if(key.first>key.second) { swap(key.first, key.second); }
-        std::string key_str=std::to_string(key.first) + "," + std::to_string(key.second);
+        size_t key[2] = {eit->first->vertex(eit->second)->info().index_,
+                         eit->first->vertex(eit->third)->info().index_};
+        if(key[0]>key[1]) { swap(key[0], key[1]); }
+        std::string key_str(std::to_string(key[0]) + "," + std::to_string(key[1]));
         if(edge_map.find(key_str)==edge_map.end()) { edge_map.insert(std::make_pair(key_str, *eit)); }
 #if 0
         else {
@@ -105,9 +108,13 @@ namespace zsw{
 #endif
       }
     }
+    std::cerr << "edge size:" << edge_map.size() << std::endl;
     while(!edge_map.empty()) {
-      TTds::Edge &e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
-      if(tds.is_edge(e.first, e.second, e.third)) { continue; }
+      TTds::Edge e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
+      if(!tds.is_edge(e.first, e.second, e.third)) { continue; }
+      std::cout << "try collapse edge:";
+      std::cout << e.first->vertex(e.second)->info().index_ << " " <<
+        e.first->vertex(e.third)->info().index_ << std::endl;
       tryCollapseBoundaryEdge(e, edge_map);
     }
   }
@@ -130,10 +137,20 @@ namespace zsw{
   void Approximation::tryCollapseBoundaryEdge(TTds::Edge &e,
                                               std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
-    if(!tw_->isSatisfyLinkCondition(e)) { return; }
+    TTds &tds = tw_->getTds();
+
+    assert(tds.is_edge(e.first,e.second,e.third));
+
+    if(!tw_->isSatisfyLinkCondition(e)) {  return;    }
+
+    assert(tds.is_edge(e.first,e.second,e.third));
+
     std::vector<Fhd> bound_tris;
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
+
+    assert(tds.is_edge(e.first,e.second,e.third));
+
     std::vector<const JudgePoint*> jpts_in_bbox;
     calcJptsInBbox(bound_tris, jpts_in_bbox);
     // candicate merge points in kernel region
@@ -143,6 +160,7 @@ namespace zsw{
     for(const JudgePoint * jpt_ptr : jpts_in_bbox) {
       if(krj.judge(jpt_ptr->pt_)) { candicate_points.push_back(jpt_ptr); }
     }
+
 #if 1
     // test adj info and jpts selection is right
     writeAdjcentCells("/home/wegatron/tmp/adj_cell.vtk", e);
@@ -150,6 +168,7 @@ namespace zsw{
     writeJudgePoints("/home/wegatron/tmp/candicate_points.vtk", candicate_points);
     abort();
 #endif
+
     // sort jpt by error
     sort(candicate_points.begin(), candicate_points.end(), [](const JudgePoint *a, const JudgePoint *b){
         return fabs(a->val_cur_-a->val_exp_) > fabs(b->val_cur_-b->val_exp_);
@@ -161,7 +180,7 @@ namespace zsw{
       vup.clear(); jup.clear();
       if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, vup, &jup)) { merge_pt=jpt_ptr; break; }
     }
-    Vhd vhd=e.first->vertex(0);
+    Vhd vhd=e.first->vertex(e.second);
     tw_->collapseEdge(e, vhd, merge_pt->pt_);
     updateVertex(vup);
     updateJudgePoint(jup);
@@ -189,7 +208,7 @@ namespace zsw{
       if(krj.judge(pt) && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, vup, nullptr)) { merge_pt=&pt; break; }
     }
     if(merge_pt==nullptr) { return; }
-    Vhd vhd=e.first->vertex(0);
+    Vhd vhd=e.first->vertex(e.second);
     tw_->collapseEdge(e, vhd, *merge_pt);
     updateVertex(vup);
     zeroEdgeBack(vhd, edge_map);
@@ -206,9 +225,9 @@ namespace zsw{
     std::unordered_map<std::string, TTds::Edge> edge_map;
     for(TTds::Edge_iterator eit=tds.edges_begin();
         eit!=tds.edges_end(); ++eit) {
-      if(eit->first->vertex(0)->info().pt_type_!=zsw::ZERO_POINT
-         || eit->first->vertex(1)->info().pt_type_!=zsw::ZERO_POINT) { continue; }
-      size_t key[2] = {eit->first->vertex(0)->info().index_, eit->first->vertex(1)->info().index_};
+      if(eit->first->vertex(eit->second)->info().pt_type_!=zsw::ZERO_POINT
+         || eit->first->vertex(eit->third)->info().pt_type_!=zsw::ZERO_POINT) { continue; }
+      size_t key[2] = {eit->first->vertex(eit->second)->info().index_, eit->first->vertex(eit->third)->info().index_};
       if(key[0]>key[1]) { swap(key[0],key[1]); }
       std::string key_str(std::to_string(key[0])+","+std::to_string(key[1]));
       if(edge_map.find(key_str)==edge_map.end()) { edge_map.insert(std::make_pair(key_str, *eit)); }
@@ -232,11 +251,12 @@ namespace zsw{
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
     const TTds &tds=tw_->getTds();
     ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
-        << tds.number_of_vertices() << " float" << std::endl;
+        << tds.number_of_vertices()-1 << " float" << std::endl;
 
     CGAL::Unique_hash_map<TTds::Vertex_handle,size_t> v_map;
     size_t v_index=0;
     for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      if(vit->info().pt_type_==zsw::INVALID_POINT) { continue; }
       ofs << *vit << std::endl;
       v_map[vit] = v_index++;
     }
@@ -246,7 +266,7 @@ namespace zsw{
     for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
       bool ignore=false;
       for(auto igf : ignore_tet_funcs) {        if(igf(cit)) { ignore=true; break; }      }
-      if(ignore) { continue; }
+      if(ignore || ignore_invalid(cit)) { continue; }
       ss << "4 " << v_map[cit->vertex(0)] << " " <<
         v_map[cit->vertex(1)] << " " <<
         v_map[cit->vertex(2)] << " " <<
@@ -315,9 +335,15 @@ namespace zsw{
     }
 
     std::unordered_set<TTds::Cell_handle, CGAL::Handle_hash_function> cell_set;
-    for(size_t vi=0; vi<2; ++vi) {
+    {
       std::list<TTds::Cell_handle> cells;
-      tds.incident_cells(e.first->vertex(vi), std::back_inserter(cells));
+      tds.incident_cells(e.first->vertex(e.second), std::back_inserter(cells));
+      for(auto chd : cells) { cell_set.insert(chd); }
+    }
+
+    {
+      std::list<TTds::Cell_handle> cells;
+      tds.incident_cells(e.first->vertex(e.third), std::back_inserter(cells));
       for(auto chd : cells) { cell_set.insert(chd); }
     }
 
@@ -346,6 +372,15 @@ namespace zsw{
     for(size_t i=0; i<jpts.size(); ++i) {      ofs << "1 " << i << std::endl;    }
     ofs << "CELL_TYPES " << jpts.size() << std::endl;
     for(size_t i=0; i<jpts.size(); ++i) { ofs << "1" << std::endl; }
+  }
+
+  void Approximation::test()
+  {
+    const TTds &tds=tw_->getTds();
+    for(auto vit = tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      std::list<TTds::Cell_handle> cells;
+      tds.incident_cells(vit, std::back_inserter(cells));
+    }
   }
 
 }

@@ -62,6 +62,8 @@ namespace zsw {
 
     void createJudgePoints();
 
+    void test();
+
     void updateVertex(const std::vector<VertexUpdateData> &vup)
     {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;

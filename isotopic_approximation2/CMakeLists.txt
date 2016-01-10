@@ -47,6 +47,7 @@ target_link_libraries(iso_app zswlib ${OPENMESH_LIBRARIES}
 
 # add_subdirectory(test)
 add_subdirectory(app)
+add_subdirectory(test)
 
 # add_subdirectory()
 
