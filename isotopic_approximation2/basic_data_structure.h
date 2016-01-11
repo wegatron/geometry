@@ -71,14 +71,13 @@ namespace zsw{
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
+    bool isBoundaryEdge(const TTds::Edge &edge) const;
     void calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
     void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
-    void insertInEdge(TTds::Edge &edge, const Point &pt);
-    bool isBoundaryEdge(const TTds::Edge &edge) const;
+    Vhd insertInEdge(TTds::Edge &edge, const Point &pt, const PointType pt_type);
 
     const DelaunayTriangulation &getDelaunay() { return delaunay_triangulation_; }
     const TTds &getTds() const { return tds_; }
-    TTds &getTds() { return tds_; }
 
     void makeHole(Vhd vhd, std::map<VertexTriple, Facet> &outer_map,
                   std::vector<Chd> &hole);
@@ -88,6 +87,7 @@ namespace zsw{
   private:
     DelaunayTriangulation delaunay_triangulation_;
     TTds &tds_;
+    size_t next_v_id_;
   };
 
 

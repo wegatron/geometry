@@ -73,7 +73,7 @@ namespace zsw{
 
   void Approximation::simpTolerance()
   {
-    TTds &tds=tw_->getTds();
+    const TTds &tds=tw_->getTds();
     std::unordered_map<std::string, TTds::Edge> edge_map;
     for(TTds::Edge_iterator eit=tds.edges_begin();
         eit!=tds.edges_end(); ++eit) {
@@ -136,7 +136,7 @@ namespace zsw{
   void Approximation::tryCollapseBoundaryEdge(TTds::Edge &e,
                                               std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
-    TTds &tds = tw_->getTds();
+    const TTds &tds = tw_->getTds();
 
     assert(tds.is_edge(e.first,e.second,e.third));
 
@@ -188,7 +188,7 @@ namespace zsw{
   void Approximation::tryCollapseZeroEdge(TTds::Edge &e,
                                           std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
-    TTds &tds=tw_->getTds();
+    const TTds &tds=tw_->getTds();
     if(!tw_->isSatisfyLinkCondition(e)) { return; }
     std::vector<VertexTriple> bound_tris;
     std::vector<Vhd> opposite_vs;
@@ -214,12 +214,35 @@ namespace zsw{
 
   void Approximation::mutuallTessellation()
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    const TTds &tds = tw_->getTds();
+    std::unordered_map<std::string, TTds::Edge> edge_map;
+    for(auto eit=tds.edges_begin(); eit!=tds.edges_end(); ++eit) {
+      Vhd vhds[2] = {eit->first->vertex(eit->second), eit->first->vertex(eit->third)};
+      if((vhds[0]->info().pt_type_==zsw::INNER_POINT && vhds[1]->info().pt_type_==zsw::OUTER_POINT) ||
+         (vhds[1]->info().pt_type_==zsw::INNER_POINT && vhds[0]->info().pt_type_==zsw::OUTER_POINT)) {
+        if(vhds[0]->info().index_ > vhds[1]->info().index_) { std::swap(vhds[0], vhds[1]); }
+        std::string key_str(std::to_string(vhds[0]->info().index_)+","+std::to_string(vhds[1]->info().index_));
+        edge_map.insert(std::make_pair(key_str, *eit));
+      }
+    }
+
+    std::cerr << "vertex num before mutuallTessellation:" << tds.number_of_vertices() << std::endl;
+
+    for(auto mit=edge_map.begin(); mit!=edge_map.end(); ++mit) {
+      TTds::Edge &edge = mit->second;
+      Point &pa = edge.first->vertex(edge.second)->point();
+      Point &pb = edge.first->vertex(edge.third)->point();
+      Point pt((pa[0]+pb[0])/2.0, (pa[1]+pb[1])/2.0, (pa[2]+pb[2])/2.0);
+      tw_->insertInEdge(mit->second, pt, zsw::ZERO_POINT);
+    }
+
+    std::cerr << "vertex num after mutuallTessellation:" << tds.number_of_vertices() << std::endl;
+
   }
 
   void Approximation::simpZeroSurface()
   {
-    TTds &tds = tw_->getTds();
+    const TTds &tds = tw_->getTds();
     std::unordered_map<std::string, TTds::Edge> edge_map;
     for(TTds::Edge_iterator eit=tds.edges_begin();
         eit!=tds.edges_end(); ++eit) {
@@ -228,7 +251,7 @@ namespace zsw{
       size_t key[2] = {eit->first->vertex(eit->second)->info().index_, eit->first->vertex(eit->third)->info().index_};
       if(key[0]>key[1]) { swap(key[0],key[1]); }
       std::string key_str(std::to_string(key[0])+","+std::to_string(key[1]));
-      if(edge_map.find(key_str)==edge_map.end()) { edge_map.insert(std::make_pair(key_str, *eit)); }
+      edge_map.insert(std::make_pair(key_str, *eit));
     }
     while(!edge_map.empty()) {
       TTds::Edge &e=edge_map.begin()->second; edge_map.erase(edge_map.begin());
@@ -384,7 +407,7 @@ namespace zsw{
 
   void Approximation::testCollapse()
   {
-    TTds &tds = tw_->getTds();
+    const TTds &tds = tw_->getTds();
     for(auto eit=tds.edges_begin(); eit!=tds.edges_end(); ++eit) {
       if(tw_->isBoundaryEdge(*eit)) {
         const Point &pt = eit->first->vertex(eit->second)->point();
@@ -396,6 +419,26 @@ namespace zsw{
         break;
       }
     }
+
+    std::cerr << "number of vertices:" << tds.number_of_vertices() << std::endl;
+    std::cerr << "num of cell:" << tds.number_of_cells() << std::endl;
+
+    for(auto eit=tds.edges_begin(); eit!=tds.edges_end(); ++eit) {
+      Vhd vhds[2] = {eit->first->vertex(eit->second), eit->first->vertex(eit->third)};
+      if((vhds[0]->info().pt_type_==zsw::OUTER_POINT && vhds[1]->info().pt_type_==zsw::OUTER_POINT)) {
+        TTds::Edge edge=*eit;
+        Point &pa = edge.first->vertex(edge.second)->point();
+        Point &pb = edge.first->vertex(edge.third)->point();
+        Point pt((pa[0]+pb[0])/2.0, (pa[1]+pb[1])/2.0, (pa[2]+pb[2])/2.0);
+        tw_->insertInEdge(edge, pt, zsw::OUTER_POINT);
+        break;
+      }
+    }
+
+    std::cerr << "number of vertices:" << tds.number_of_vertices() << std::endl;
+    std::cerr << "num of cell:" << tds.number_of_cells() << std::endl;
+
+    //mutuallTessellation();
     testTdsValid();
   }
 }

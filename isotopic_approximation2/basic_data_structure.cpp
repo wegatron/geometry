@@ -16,6 +16,7 @@ namespace zsw{
     //    tds_.incident_cells(vh, std::back_inserter(invcells));
     //    tds_.delete_cells(invcells.begin(), invcells.end()) ;
     //    tds_.delete_vertex(vh);
+    next_v_id_=vertices.size();
   }
 
   bool TriangulationWapper::isSatisfyLinkCondition(const TTds::Edge &edge) const
@@ -79,6 +80,7 @@ namespace zsw{
   {
     assert(tds_.is_valid());
     assert(tds_.is_edge(edge.first, edge.second, edge.third));
+    merge_vhd->set_point(Point(pt[0],pt[1],pt[2]));
     Vhd remove_v = (edge.first->vertex(edge.second)==merge_vhd) ? edge.first->vertex(edge.third) : edge.first->vertex(edge.second);
     std::vector<TTds::Cell_handle> hole;
     std::map<VertexTriple, Facet> outer_map;
@@ -158,9 +160,15 @@ namespace zsw{
     }
   }
 
-  void TriangulationWapper::insertInEdge(TTds::Edge &edge, const Point &pt)
+  Vhd TriangulationWapper::insertInEdge(TTds::Edge &edge, const Point &pt, const PointType pt_type)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    Vhd vhd = tds_.insert_in_edge(edge);
+    vhd->set_point(pt);
+    vhd->info().index_=next_v_id_++;
+    vhd->info().pt_type_=pt_type;
+    vhd->info().pos_ori_<< pt[0], pt[1], pt[2];
+    vhd->info().max_dis_=0.0;
+    return vhd;
   }
 
   bool TriangulationWapper::isBoundaryEdge(const TTds::Edge &edge) const
