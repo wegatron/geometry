@@ -73,7 +73,6 @@ namespace zsw{
 
   void Approximation::simpTolerance()
   {
-    test();
     TTds &tds=tw_->getTds();
     std::unordered_map<std::string, TTds::Edge> edge_map;
     for(TTds::Edge_iterator eit=tds.edges_begin();
@@ -111,7 +110,7 @@ namespace zsw{
     std::cerr << "edge size:" << edge_map.size() << std::endl;
     while(!edge_map.empty()) {
       TTds::Edge e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
-      if(!tw_->isBoundaryEdge(e.first, e.second, e.third)) { continue; }
+      if(!tw_->isBoundaryEdge(e)) { continue; }
       std::cout << "try collapse edge:";
       std::cout << e.first->vertex(e.second)->info().index_ << " " <<
         e.first->vertex(e.third)->info().index_ << std::endl;
@@ -145,7 +144,7 @@ namespace zsw{
 
     assert(tds.is_edge(e.first,e.second,e.third));
 
-    std::vector<Fhd> bound_tris;
+    std::vector<VertexTriple> bound_tris;
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
 
@@ -191,7 +190,7 @@ namespace zsw{
   {
     TTds &tds=tw_->getTds();
     if(!tw_->isSatisfyLinkCondition(e)) { return; }
-    std::vector<Fhd> bound_tris;
+    std::vector<VertexTriple> bound_tris;
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
     std::vector<const JudgePoint*> jpts_in_bbox;
@@ -279,10 +278,10 @@ namespace zsw{
     ofs.close();
   }
 
-  void Approximation::calcJptsInBbox(std::vector<Fhd> &bound_tris, std::vector<const JudgePoint*> &jpts_in_bbox) const
+  void Approximation::calcJptsInBbox(std::vector<VertexTriple> &bound_tris, std::vector<const JudgePoint*> &jpts_in_bbox) const
   {
     Eigen::Matrix<zsw::Scalar,3,2> bbox;
-    calcFhdBBox(bound_tris, bbox);
+    calcVertexTripleBBox(bound_tris, bbox);
     for(const JudgePoint &jpt : jpts_) {
       if(jpt.pt_[0]<bbox(0,0) || jpt.pt_[1]<bbox(1,0) || jpt.pt_[2]<bbox(2,0) ||
          jpt.pt_[0]>bbox(0,1) || jpt.pt_[1]>bbox(1,1) || jpt.pt_[2]>bbox(2,1)) { continue; }
@@ -290,7 +289,7 @@ namespace zsw{
     }
   }
 
-  void Approximation::constructKernelRegionJudger(const std::vector<Fhd> &bound_tris,
+  void Approximation::constructKernelRegionJudger(const std::vector<VertexTriple> &bound_tris,
                                                   std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const
   {
     for(size_t fi=0; fi<bound_tris.size(); ++fi) {
@@ -304,13 +303,13 @@ namespace zsw{
     }
   }
 
-  void calcFhdBBox(const std::vector<Fhd> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox)
+  void calcVertexTripleBBox(const std::vector<VertexTriple> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox)
   {
     assert(bound_tris.size()>0);
     bbox(0,0)=bbox(0,1)=bound_tris[0].first->point()[0];
     bbox(1,0)=bbox(1,1)=bound_tris[0].first->point()[1];
     bbox(2,0)=bbox(2,1)=bound_tris[0].first->point()[2];
-    for(const Fhd &fhd : bound_tris) {
+    for(const VertexTriple &fhd : bound_tris) {
       for(size_t bi=0; bi<3; ++bi) {
         if(fhd.first->point()[bi]<bbox(bi,0)) { bbox(bi,0)=fhd.first->point()[bi]; }
         else if(fhd.first->point()[bi]>bbox(bi,1)) { bbox(bi,1)=fhd.first->point()[bi]; }
@@ -373,13 +372,30 @@ namespace zsw{
     for(size_t i=0; i<jpts.size(); ++i) { ofs << "1" << std::endl; }
   }
 
-  void Approximation::test()
+  void Approximation::testTdsValid()
   {
     const TTds &tds=tw_->getTds();
+    if(!tds.is_valid()) { abort(); }
     for(auto vit = tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
       std::list<TTds::Cell_handle> cells;
       tds.incident_cells(vit, std::back_inserter(cells));
     }
   }
 
+  void Approximation::testCollapse()
+  {
+    TTds &tds = tw_->getTds();
+    for(auto eit=tds.edges_begin(); eit!=tds.edges_end(); ++eit) {
+      if(tw_->isBoundaryEdge(*eit)) {
+        const Point &pt = eit->first->vertex(eit->second)->point();
+        Eigen::Matrix<zsw::Scalar,3,1> merge_pt;
+        merge_pt<< pt[0], pt[1], pt[2];
+        Vhd vhd = eit->first->vertex(eit->second);
+        TTds::Edge e = *eit;
+        tw_->collapseEdge(e, vhd, merge_pt);
+        break;
+      }
+    }
+    testTdsValid();
+  }
 }

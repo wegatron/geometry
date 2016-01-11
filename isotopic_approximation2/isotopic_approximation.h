@@ -42,7 +42,7 @@ namespace zsw {
 
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
 
-    bool isSatisfyErrorBound(std::vector<Fhd> &bound_tris,
+    bool isSatisfyErrorBound(std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
                              std::vector<VertexUpdateData> &vup,
@@ -51,7 +51,7 @@ namespace zsw {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
 
-    void constructKernelRegionJudger(const std::vector<Fhd> &bound_tris,
+    void constructKernelRegionJudger(const std::vector<VertexTriple> &bound_tris,
                                      std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const;
 
     void tryCollapseBoundaryEdge(TTds::Edge &e,
@@ -61,8 +61,6 @@ namespace zsw {
                              std::unordered_map<std::string,TTds::Edge> &edge_map);
 
     void createJudgePoints();
-
-    void test();
 
     void updateVertex(const std::vector<VertexUpdateData> &vup)
     {
@@ -79,7 +77,7 @@ namespace zsw {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
 
-    void calcJptsInBbox(std::vector<Fhd> &bound_tris, std::vector<const JudgePoint*> &jpts_in_bbox) const;
+    void calcJptsInBbox(std::vector<VertexTriple> &bound_tris, std::vector<const JudgePoint*> &jpts_in_bbox) const;
 
     void sampleIncidentCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points)
     {
@@ -90,6 +88,11 @@ namespace zsw {
     {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
+
+    // for debug
+    void testTdsValid();
+
+    void testCollapse();
   private:
     std::vector<JudgePoint> jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_jpts_;
@@ -101,7 +104,7 @@ namespace zsw {
     zsw::Scalar tet_sample_r_;
   };
 
-  void calcFhdBBox(const std::vector<Fhd> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
+  void calcVertexTripleBBox(const std::vector<VertexTriple> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
 
 }
 #endif /* ISOTOPIC_APPROXIMATION_H */

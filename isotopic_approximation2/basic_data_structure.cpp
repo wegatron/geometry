@@ -50,7 +50,7 @@ namespace zsw{
     return true;
   }
 
-  void TriangulationWapper::calcBoundTris(const TTds::Edge &edge, std::vector<Fhd> &bound_tris,
+  void TriangulationWapper::calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris,
                                           std::vector<Vhd> &opposite_vs) const
   {
     assert(tds_.is_edge(edge.first,edge.second,edge.third));
@@ -75,9 +75,57 @@ namespace zsw{
     }
   }
 
-  void TriangulationWapper::collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt)
+  void TriangulationWapper::collapseEdge(TTds::Edge &edge, Vhd merge_vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    assert(tds_.is_valid());
+    assert(tds_.is_edge(edge.first, edge.second, edge.third));
+    Vhd remove_v = (edge.first->vertex(edge.second)==merge_vhd) ? edge.first->vertex(edge.third) : edge.first->vertex(edge.second);
+    std::vector<TTds::Cell_handle> hole;
+    std::map<VertexTriple, Facet> outer_map;
+    makeHole(remove_v, outer_map, hole);
+    std::map<VertexTriple, Facet> vt_map(outer_map);
+    for(auto oit=outer_map.begin(); oit!=outer_map.end(); ++oit) {
+      if(oit->first.first==merge_vhd || oit->first.second==merge_vhd || oit->first.third==merge_vhd) { continue; }
+      Chd nw_chd = tds_.create_cell();
+      nw_chd->set_vertices(oit->first.first, oit->first.second, oit->first.third, merge_vhd);
+      // for vertex triples
+      for(size_t ai=0; ai<4; ++ai) {
+        VertexTriple tmp_vt;
+        Vhd *ptr=&tmp_vt.first;
+        for(size_t j=0; j<4; ++j) {
+          if(j==ai) { continue; }
+          *ptr = nw_chd->vertex(j); ++ptr;
+        }
+        makeCanonical(tmp_vt);
+        auto tmp_it = vt_map.find(tmp_vt);
+        if(tmp_it!=vt_map.end()) {
+          // glue two faces
+          nw_chd->set_neighbor(ai, tmp_it->second.first);
+          tmp_it->second.first->set_neighbor(tmp_it->second.second,nw_chd);
+        } else { vt_map[tmp_vt]=std::make_pair(nw_chd, ai); }
+      }
+    }
+    tds_.delete_cells(hole.begin(), hole.end());
+    tds_.delete_vertex(remove_v);
+    assert(tds_.is_valid());
+  }
+
+  void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, Facet> &outer_map,
+                                     std::vector<Chd> &hole)
+  {
+    tds_.incident_cells(vhd, std::back_inserter(hole));
+    for(Chd &chd : hole) {
+      // find neighbor
+      int indv=chd->index(vhd);
+      Chd oppo_chd=chd->neighbor(indv);
+      VertexTriple tmp_vt;
+      Vhd *ptr=&tmp_vt.first;
+      for(int vi=0; vi<4; ++vi) { if(vi!=indv) { chd->vertex(vi)->set_cell(oppo_chd); *ptr=chd->vertex(vi); ++ptr; } }
+      makeCanonical(tmp_vt);
+      // find outer face
+      Facet f(oppo_chd, oppo_chd->index(chd));
+      outer_map.insert(std::make_pair(tmp_vt,f));
+    }
   }
 
   void TriangulationWapper::insertInEdge(TTds::Edge &edge, const Point &pt)
@@ -188,4 +236,28 @@ namespace zsw{
     return ss.str();
   }
 
+  void makeCanonical(VertexTriple &t)
+  {
+    int i = (t.first < t.second) ? 0 : 1;
+    if(i==0) {
+      i = (t.first < t.third) ? 0 : 2;
+    } else {
+      i = (t.second < t.third) ? 1 : 2;
+    }
+    Vhd tmp;
+    switch(i){
+    case 0: return;
+    case 1:
+      tmp = t.first;
+      t.first = t.second;
+      t.second = t.third;
+      t.third = tmp;
+      return;
+    default:
+      tmp = t.first;
+      t.first = t.third;
+      t.third = t.second;
+      t.second = tmp;
+    }
+  }
 }

@@ -25,6 +25,8 @@ int main(int argc, char *argv[])
 
   appro.writeJudgePoints("/home/wegatron/tmp/judge_point.vtk");
   appro.writeTetMesh("/home/wegatron/tmp/tmp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-  appro.simpTolerance();
+  appro.testCollapse();
+  appro.writeTetMesh("/home/wegatron/tmp/tmp_test_collapse.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+  //appro.simpTolerance();
   return 0;
 }
