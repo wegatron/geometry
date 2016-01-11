@@ -264,6 +264,14 @@ namespace zsw{
       cell->vertex(3)->info().pt_type_==zsw::OUTER_POINT;
   }
 
+  bool ignore_out(const TTds::Cell_handle cell)
+  {
+    return cell->vertex(0)->info().pt_type_==zsw::OUTER_POINT ||
+      cell->vertex(1)->info().pt_type_==zsw::OUTER_POINT ||
+      cell->vertex(2)->info().pt_type_==zsw::OUTER_POINT ||
+      cell->vertex(3)->info().pt_type_==zsw::OUTER_POINT;
+  }
+
   std::string cell2str(const TTds::Cell_handle cell)
   {
     std::stringstream ss;

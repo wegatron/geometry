@@ -78,6 +78,7 @@ namespace zsw{
 
     const DelaunayTriangulation &getDelaunay() { return delaunay_triangulation_; }
     const TTds &getTds() const { return tds_; }
+    TTds &getTds()  { return tds_; }
 
     void makeHole(Vhd vhd, std::map<VertexTriple, Facet> &outer_map,
                   std::vector<Chd> &hole);
@@ -98,6 +99,8 @@ namespace zsw{
   bool ignore_self_in(const TTds::Cell_handle cell);
 
   bool ignore_self_out(const TTds::Cell_handle cell);
+
+  bool ignore_out(const TTds::Cell_handle cell);
 
   std::string cell2str(const TTds::Cell_handle cell);
 
