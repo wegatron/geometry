@@ -84,10 +84,21 @@ namespace zsw{
     std::map<VertexTriple, Facet> outer_map;
     makeHole(remove_v, outer_map, hole);
     std::map<VertexTriple, Facet> vt_map(outer_map);
+
+    // std::cerr << "edge : " << edge.first->vertex(edge.second)->info().index_ << " "
+    //           << edge.first->vertex(edge.third)->info().index_  << std::endl;
+    // std::cerr << "outer_map size:" << outer_map.size() << std::endl;
+
     for(auto oit=outer_map.begin(); oit!=outer_map.end(); ++oit) {
       if(oit->first.first==merge_vhd || oit->first.second==merge_vhd || oit->first.third==merge_vhd) { continue; }
       Chd nw_chd = tds_.create_cell();
-      nw_chd->set_vertices(oit->first.first, oit->first.second, oit->first.third, merge_vhd);
+      CGAL::Orientation o = orientation(oit->first.first->point(), oit->first.second->point(),
+                                        oit->first.third->point(), merge_vhd->point());
+      if(o==CGAL::NEGATIVE) {
+        nw_chd->set_vertices(oit->first.second, oit->first.first, oit->first.third, merge_vhd);
+      } else {
+        nw_chd->set_vertices(oit->first.first, oit->first.second, oit->first.third, merge_vhd);
+      }
       // for vertex triples
       for(size_t ai=0; ai<4; ++ai) {
         VertexTriple tmp_vt;
@@ -99,12 +110,31 @@ namespace zsw{
         makeCanonical(tmp_vt);
         auto tmp_it = vt_map.find(tmp_vt);
         if(tmp_it!=vt_map.end()) {
+          // static size_t i_cnt=0;
+          // ++i_cnt;
+          // std::cerr << "out size:" << i_cnt << std::endl;
+          // std::cerr << "out:" << tmp_it->first.first->info().index_ << " "
+          //           << tmp_it->first.second->info().index_ << " "
+          //           << tmp_it->first.third->info().index_ << std::endl;
+
           // glue two faces
           nw_chd->set_neighbor(ai, tmp_it->second.first);
           tmp_it->second.first->set_neighbor(tmp_it->second.second,nw_chd);
-        } else { vt_map[tmp_vt]=std::make_pair(nw_chd, ai); }
+        } else {
+          vt_map[tmp_vt]=std::make_pair(nw_chd, ai);
+
+          // std::cerr << "in:" << tmp_vt.first->info().index_ << " "
+          //           << tmp_vt.second->info().index_ << " "
+          //           << tmp_vt.third->info().index_ << std::endl;
+          // std::cerr << "in size:" << vt_map.size() << std::endl;
+        }
       }
     }
+    // for(auto it =vt_map.begin(); it!=vt_map.end(); ++it) {
+    //   std::cerr << it->first.first->info().index_ << " "
+    //             << it->first.second->info().index_ << " "
+    //             << it->first.third->info().index_ << std::endl;
+    // }
     tds_.delete_cells(hole.begin(), hole.end());
     tds_.delete_vertex(remove_v);
     assert(tds_.is_valid());
@@ -238,26 +268,6 @@ namespace zsw{
 
   void makeCanonical(VertexTriple &t)
   {
-    int i = (t.first < t.second) ? 0 : 1;
-    if(i==0) {
-      i = (t.first < t.third) ? 0 : 2;
-    } else {
-      i = (t.second < t.third) ? 1 : 2;
-    }
-    Vhd tmp;
-    switch(i){
-    case 0: return;
-    case 1:
-      tmp = t.first;
-      t.first = t.second;
-      t.second = t.third;
-      t.third = tmp;
-      return;
-    default:
-      tmp = t.first;
-      t.first = t.third;
-      t.third = t.second;
-      t.second = tmp;
-    }
+    std::sort(&t.first, &t.first+3, [](Vhd a, Vhd b){ return a->info().index_<b->info().index_; });
   }
 }
