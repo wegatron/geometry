@@ -26,9 +26,15 @@ namespace zsw {
   {
   public:
     Approximation() {}
-    void init(const zsw::Scalar &surf_sample_r, const zsw::Scalar &tet_sample_r,
-              const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_vertices,
-              const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_vertices);
+    /* void init(const zsw::Scalar &surf_sample_r, const zsw::Scalar &tet_sample_r, */
+    /*           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_vertices, */
+    /*           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_vertices); */
+    void init(const zsw::Scalar err_epsilon,
+              const zsw::Scalar tri_sample_r,
+              const zsw::Scalar tet_sample_r,
+              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
     void simpTolerance();
     void mutuallTessellation();
     void simpZeroSurface();
@@ -60,7 +66,7 @@ namespace zsw {
     void tryCollapseZeroEdge(TTds::Edge &e,
                              std::unordered_map<std::string,TTds::Edge> &edge_map);
 
-    void createJudgePoints();
+    //void createJudgePoints();
 
     void updateVertex(const std::vector<VertexUpdateData> &vup)
     {
@@ -100,7 +106,8 @@ namespace zsw {
     std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bi_;
     std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bo_;
     std::shared_ptr<TriangulationWapper> tw_;
-    zsw::Scalar surf_sample_r_;
+    zsw::Scalar err_epsilon_;
+    zsw::Scalar tri_sample_r_;
     zsw::Scalar tet_sample_r_;
   };
 

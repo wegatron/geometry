@@ -11,65 +11,75 @@ using namespace std;
 
 namespace zsw{
 
-  void Approximation::init(const zsw::Scalar &surf_sample_r, const zsw::Scalar &tet_sample_r,
-                           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_vertices,
-                           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_vertices)
+  // void Approximation::init(const zsw::Scalar &surf_sample_r, const zsw::Scalar &tet_sample_r,
+  //                          const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_vertices,
+  //                          const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_vertices)
+  // {
+  //   surf_sample_r_=surf_sample_r;
+  //   tet_sample_r_=tet_sample_r;
+  //   Eigen::Matrix<zsw::Scalar,3,2> bbox;
+  //   calcBBOX(bo_vertices, bbox);
+  //   zsw::Scalar scale = 0.5*(bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1)).norm();
+  //   Eigen::Matrix<zsw::Scalar,3,1> transform = 0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
+  //   zsw::BoundSphere bs("/home/wegatron/workspace/geometry/data/bound_sphere.obj", scale, transform);
+  //   const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_vertices = bs.getVertices();
+  //   std::vector<std::pair<Point, VertexInfo>> vertices;
+  //   size_t vid=0;
+  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bs_vertices) {
+  //     vertices.push_back({Point(v[0], v[1], v[2]), VertexInfo(vid++, zsw::BBOX_POINT, v, 0.0)});
+  //   }
+  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bi_vertices) {
+  //     vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(vid++, zsw::INNER_POINT, v, 0.0)});
+  //   }
+  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bo_vertices) {
+  //     vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(vid++, zsw::OUTER_POINT, v, 0.0)});
+  //   }
+  //   tw_.reset(new zsw::TriangulationWapper(vertices));
+  //   createJudgePoints();
+  //   std::cout << "vertices :" << vertices.size() << std::endl;
+  //   std::cout << "judgepoints:" << jpts_.size() << std::endl;
+  // }
+
+  void Approximation::init(const zsw::Scalar err_epsilon,
+            const zsw::Scalar tri_sample_r,
+            const zsw::Scalar tet_sample_r,
+            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
   {
-    surf_sample_r_=surf_sample_r;
-    tet_sample_r_=tet_sample_r;
-    Eigen::Matrix<zsw::Scalar,3,2> bbox;
-    calcBBOX(bo_vertices, bbox);
-    zsw::Scalar scale = 0.5*(bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1)).norm();
-    Eigen::Matrix<zsw::Scalar,3,1> transform = 0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
-    zsw::BoundSphere bs("/home/wegatron/workspace/geometry/data/bound_sphere.obj", scale, transform);
-    const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_vertices = bs.getVertices();
-    std::vector<std::pair<Point, VertexInfo>> vertices;
-    size_t vid=0;
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bs_vertices) {
-      vertices.push_back({Point(v[0], v[1], v[2]), VertexInfo(vid++, zsw::BBOX_POINT, v, 0.0)});
-    }
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bi_vertices) {
-      vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(vid++, zsw::INNER_POINT, v, 0.0)});
-    }
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bo_vertices) {
-      vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(vid++, zsw::OUTER_POINT, v, 0.0)});
-    }
-    tw_.reset(new zsw::TriangulationWapper(vertices));
-    createJudgePoints();
-    std::cout << "vertices :" << vertices.size() << std::endl;
-    std::cout << "judgepoints:" << jpts_.size() << std::endl;
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
-  void Approximation::createJudgePoints()
-  {
-    const TTds &tds=tw_->getTds();
-    Eigen::Matrix<zsw::Scalar,3,4> bi_tri_points;
-    Eigen::Matrix<zsw::Scalar,3,4> bo_tri_points;
-    for(TTds::Cell_iterator cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-      size_t bi_cnt=0;
-      size_t bo_cnt=0;
-      for(size_t i=0; i<4; ++i) {
-        if(cit->vertex(i)->info().pt_type_==zsw::INNER_POINT) {
-          bi_tri_points(0,bi_cnt)=cit->vertex(i)->point()[0];
-          bi_tri_points(1,bi_cnt)=cit->vertex(i)->point()[1];
-          bi_tri_points(2,bi_cnt)=cit->vertex(i)->point()[2];
-          ++bi_cnt;
-        } else if(cit->vertex(i)->info().pt_type_==zsw::OUTER_POINT) {
-          bo_tri_points(0,bo_cnt)=cit->vertex(i)->point()[0];
-          bo_tri_points(1,bo_cnt)=cit->vertex(i)->point()[1];
-          bo_tri_points(2,bo_cnt)=cit->vertex(i)->point()[2];
-          ++bo_cnt;
-        }
-      }
-      if(bi_cnt==3 && bo_cnt==1) { sampleTriangle(bi_tri_points.block<3,3>(0,0), surf_sample_r_, bi_jpts_);}
-      else if(bo_cnt==3 && bi_cnt==1) { sampleTriangle(bo_tri_points.block<3,3>(0,0), surf_sample_r_, bo_jpts_); }
-    }
-    jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
-    jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
-    jpts_.reserve(bi_jpts_.size()+bo_jpts_.size());
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bi_jpts_) { jpts_.push_back({jpt,-1,-1}); }
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bo_jpts_) { jpts_.push_back({jpt,1,1}); }
-  }
+  // void Approximation::createJudgePoints()
+  // {
+  //   const TTds &tds=tw_->getTds();
+  //   Eigen::Matrix<zsw::Scalar,3,4> bi_tri_points;
+  //   Eigen::Matrix<zsw::Scalar,3,4> bo_tri_points;
+  //   for(TTds::Cell_iterator cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+  //     size_t bi_cnt=0;
+  //     size_t bo_cnt=0;
+  //     for(size_t i=0; i<4; ++i) {
+  //       if(cit->vertex(i)->info().pt_type_==zsw::INNER_POINT) {
+  //         bi_tri_points(0,bi_cnt)=cit->vertex(i)->point()[0];
+  //         bi_tri_points(1,bi_cnt)=cit->vertex(i)->point()[1];
+  //         bi_tri_points(2,bi_cnt)=cit->vertex(i)->point()[2];
+  //         ++bi_cnt;
+  //       } else if(cit->vertex(i)->info().pt_type_==zsw::OUTER_POINT) {
+  //         bo_tri_points(0,bo_cnt)=cit->vertex(i)->point()[0];
+  //         bo_tri_points(1,bo_cnt)=cit->vertex(i)->point()[1];
+  //         bo_tri_points(2,bo_cnt)=cit->vertex(i)->point()[2];
+  //         ++bo_cnt;
+  //       }
+  //     }
+  //     if(bi_cnt==3 && bo_cnt==1) { sampleTriangle(bi_tri_points.block<3,3>(0,0), surf_sample_r_, bi_jpts_);}
+  //     else if(bo_cnt==3 && bi_cnt==1) { sampleTriangle(bo_tri_points.block<3,3>(0,0), surf_sample_r_, bo_jpts_); }
+  //   }
+  //   jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
+  //   jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
+  //   jpts_.reserve(bi_jpts_.size()+bo_jpts_.size());
+  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bi_jpts_) { jpts_.push_back({jpt,-1,-1}); }
+  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bo_jpts_) { jpts_.push_back({jpt,1,1}); }
+  // }
 
   void Approximation::simpTolerance()
   {

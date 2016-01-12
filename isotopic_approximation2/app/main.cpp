@@ -3,31 +3,33 @@
 #include <zswlib/mesh/mesh_type.h>
 #include <zswlib/error_ctrl.h>
 #include <zswlib/zsw_clock_c11.h>
+
+#include "../shell.h"
 #include "../isotopic_approximation.h"
-#include "../surface_generator.h"
 
 using namespace std;
 
-int main(int argc, char *argv[])
+void test0(const std::string &file_path, const zsw::Scalar err_epsilon,
+           const zsw::Scalar tri_sample_r, const zsw::Scalar tet_sample_r)
 {
   std::ofstream ofs;
   zsw::mesh::TriMesh input_mesh;
-  if(!OpenMesh::IO::read_mesh(input_mesh, "/home/wegatron/workspace/geometry/data/bunny.obj")) {
-    std::cerr << "[ERROR] can't read mesh!" << std::endl;
+  if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
+    std::cerr << "can't open file " << file_path << std::endl;
     abort();
   }
-
-  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_points;
-  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bo_points;
-  zsw::genPoints(1.5, input_mesh, bi_points, bo_points);
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> inner_jpts;
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> outer_jpts;
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bs_jpts;
+  zsw::genAndSampleShell(input_mesh, err_epsilon, tri_sample_r, inner_jpts, outer_jpts, bs_jpts);
   zsw::Approximation appro;
-  appro.init(0.5, 0.5, bi_points, bo_points);
+  appro.init(err_epsilon, tri_sample_r, tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
+  appro.writeTetMesh("/home/wegatron/tmp/refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+}
 
-  appro.writeJudgePoints("/home/wegatron/tmp/judge_point.vtk");
-  appro.writeTetMesh("/home/wegatron/tmp/tmp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-  appro.testCollapse();
-  appro.writeTetMesh("/home/wegatron/tmp/tmp_test_collapse.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-  appro.writeTetMesh("/home/wegatron/tmp/tmp_zero.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-  //appro.simpTolerance();
+int main(int argc, char *argv[])
+{
+  test0("/home/wegatron/workspace/geometry/data/sphere.obj",0.1, 0.03, 0.03);
+  //test0("/home/wegatron/workspace/geometry/data/bunny.obj",1.5, 0.5, 0.5);
   return 0;
 }

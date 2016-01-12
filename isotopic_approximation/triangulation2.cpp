@@ -110,8 +110,7 @@ size_t zsw::Triangulation::construct(const zsw::Scalar flat_threshold,
   calcBBOX(bo_pts, bbox);
   zsw::Scalar scale = 0.5*(bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1)).norm();
   Eigen::Matrix<zsw::Scalar,3,1> transform = 0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
-  zsw::BoundSphere b
-    s("bound_sphere.obj", scale, transform);
+  zsw::BoundSphere bs("bound_sphere.obj", scale, transform);
   size_t pt_id=0;
   std::vector<std::pair<Point, size_t>> tet_points;
   // add bound sphere points
