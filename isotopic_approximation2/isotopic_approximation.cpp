@@ -89,7 +89,7 @@ namespace zsw{
       //   std::cerr << "real_err=" << real_err << std::endl;
       //   std::cerr << "index=" << (jpt_info.second-&jpts_[0]) << std::endl;
       // }
-      assert(real_err>1);
+      // assert(real_err>1);
 
       std::vector<Chd> chds;
       PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
@@ -97,11 +97,43 @@ namespace zsw{
       tw_->addPointInDelaunay(jpt_info.second->pt_, vertex_info, chds);
       for(Chd chd : chds) { updateJptsInCell(chd, err_queue); }
 
-      // if(debug_step==96) {
-      //   writeAdjcentCells("/home/wegatron/tmp/adj_cells.vtk", chds);
-      // }
-      writeTetMesh("/home/wegatron/tmp/refine_debug_"+std::to_string(debug_step++)+".vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
+      //writeTetMesh("/home/wegatron/tmp/refine_debug_"+std::to_string(debug_step++)+".vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
+    }
+    const TTds &tds=tw_->getTds();
+    std::queue<Chd> chds_queue;
+    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+      bool is_tol_tet=true;
+      for(size_t i=0; i<4; ++i) {
+        if(cit->vertex(i)->info().pt_type_!=zsw::INNER_POINT
+           && cit->vertex(i)->info().pt_type_!=zsw::OUTER_POINT) {
+          is_tol_tet=false;
+          break;
+        }
+      }
+      if(is_tol_tet) { chds_queue.push(cit); }
+    }
+    while(!chds_queue.empty()) {
+      Chd chd = chds_queue.front(); chds_queue.pop();
+      checkNormalCondition(chd, chds_queue);
+    }
+  }
 
+  void Approximation::checkNormalCondition(Chd chd, std::queue<Chd> &chds_queue)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
+    tris_pts<<
+      chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+      chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+      chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
+    if(normalCondition(tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) {
+      Eigen::Matrix<zsw::Scalar,3,1> center;
+      calcCircumcenter(tri_pts, center);
+      inner_kdtree_ptr->queryNearest();
+      outer_kdtree_ptr->queryNearest();
+      // find the minest
+      // check if the point is already in
+      // add and update
     }
   }
 

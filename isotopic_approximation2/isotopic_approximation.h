@@ -35,7 +35,7 @@ namespace zsw {
   class Approximation final
   {
   public:
-    Approximation() {}
+    Approximation() { normal_cond_scale_=0.7; }
     /* void init(const zsw::Scalar &surf_sample_r, const zsw::Scalar &tet_sample_r, */
     /*           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_vertices, */
     /*           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_vertices); */
@@ -123,6 +123,7 @@ namespace zsw {
     zsw::Scalar err_epsilon_;
     zsw::Scalar tri_sample_r_;
     zsw::Scalar tet_sample_r_;
+    zsw::Scalar normal_cond_scale_;
   };
 
   void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
