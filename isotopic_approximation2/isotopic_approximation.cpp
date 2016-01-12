@@ -47,7 +47,46 @@ namespace zsw{
             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    inner_jpts_=inner_jpts; outer_jpts_=outer_jpts;
+    inner_kdtree_ptr_.reset(new zsw::Flann<zsw::Scalar>(inner_jpts_[0].data(), inner_jpts_.size()));
+    outer_kdtree_ptr_.reset(new zsw::Flann<zsw::Scalar>(outer_jpts_[0].data(), outer_jpts_.size()));
+    jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, -1, 1}); }
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }
+    std::vector<std::pair<Point, VertexInfo>> init_vertices;
+    init_vertices.reserve(bs_jpts.size());
+    for(size_t ind=0; ind<bs_jpts.size(); ++ind) {
+      const Eigen::Matrix<zsw::Scalar,3,1> &pt=bs_jpts[i];
+      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(i, zsw::BBOX_POINT, pt, 0)));
+    }
+    tw_.reset(new TriangulationWapper(init_vertices));
+    refine();
+  }
+
+  class ErrorMaxComparison
+  {
+  public:
+    bool operator(const std::pair<zsw::Scalar,size_t> &lv,
+                  const std::pair<zsw::Scalar,size_t> &rv){
+      return lv.first>rv.first;
+    }
+  };
+
+  void Approximation::refine()
+  {
+    std::pirority_queue<std::pair<zsw::Scalar,size_t>,ErrorMaxComparison> err_queue;
+    for(size_t i=0; i<jpts_.size();++i) {
+      zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
+      if(err>1) { err_queue.push(std::make_pair(err, i)); }
+    }
+    while(!err_queue.empty()) {
+      std::pair<zsw::Scalar,size_t> jpt_info=err_queue.top(); err_queue.pop();
+      zsw::Scalar real_err=fabs(jpts_[jpt_info.second].val_cur_-jpts_[jpt_info.second].val_exp_);
+      if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
+      std::vector<Chd> chds;
+      tw_->addPointInDelaunay(jpts_[jpt_info.second].pt_, chds);
+      for(Chd chd : chds) { updateJptsInCell(chd, err_queue); }
+    }
   }
 
   // void Approximation::createJudgePoints()

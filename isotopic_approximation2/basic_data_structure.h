@@ -70,6 +70,8 @@ namespace zsw{
   {
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
+    void addPointInDelaunay(const std::pair<Point,VertexInfo> pt);
+
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     bool isBoundaryEdge(const TTds::Edge &edge) const;
     void calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;

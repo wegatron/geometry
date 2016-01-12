@@ -100,10 +100,10 @@ namespace zsw {
     void testCollapse();
   private:
     std::vector<JudgePoint> jpts_;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bi_jpts_;
-    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bo_jpts_;
-    std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bi_;
-    std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bo_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> inner_jpts_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> outer_jpts_;
+    std::shared_ptr<zsw::Flann<zsw::Scalar>> inner_kdtree_ptr_;
+    std::shared_ptr<zsw::Flann<zsw::Scalar>> outer_kdtree_ptr_;
     std::shared_ptr<TriangulationWapper> tw_;
     zsw::Scalar err_epsilon_;
     zsw::Scalar tri_sample_r_;
