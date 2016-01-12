@@ -26,8 +26,8 @@ namespace zsw {
   class ErrorMaxComparison
   {
   public:
-    bool operator()(const std::pair<zsw::Scalar,size_t> &lv,
-                  const std::pair<zsw::Scalar,size_t> &rv){
+    bool operator()(const std::pair<zsw::Scalar,JudgePoint*> &lv,
+                  const std::pair<zsw::Scalar,JudgePoint*> &rv){
       return lv.first>rv.first;
     }
   };
@@ -58,7 +58,7 @@ namespace zsw {
 
     void refine();
     void updateJptsInCell(Chd chd,
-                          std::priority_queue<std::pair<zsw::Scalar,size_t>,std::vector<std::pair<zsw::Scalar,size_t>>,
+                          std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                           ErrorMaxComparison> &err_queue);
     bool isSatisfyErrorBound(std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,

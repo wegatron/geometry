@@ -65,27 +65,27 @@ namespace zsw{
 
   void Approximation::refine()
   {
-    std::priority_queue<std::pair<zsw::Scalar,size_t>,
-                        std::vector<std::pair<zsw::Scalar,size_t>>,
+    std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                         ErrorMaxComparison> err_queue;
     for(size_t i=0; i<jpts_.size();++i) {
       zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
-      if(err>1) { err_queue.push(std::make_pair(err, i)); }
+      if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
     }
     while(!err_queue.empty()) {
-      std::pair<zsw::Scalar,size_t> jpt_info=err_queue.top(); err_queue.pop();
-      zsw::Scalar real_err=fabs(jpts_[jpt_info.second].val_cur_-jpts_[jpt_info.second].val_exp_);
+      std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
+      zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
       if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
       std::vector<Chd> chds;
-      PointType pt_type= (jpts_[jpt_info.second].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
-      VertexInfo vertex_info(-1, pt_type, jpts_[jpt_info.second].pt_, 0.0);
-      tw_->addPointInDelaunay(jpts_[jpt_info.second].pt_, vertex_info, chds);
+      PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
+      VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
+      tw_->addPointInDelaunay(jpt_info.second->pt_, vertex_info, chds);
       for(Chd chd : chds) { updateJptsInCell(chd, err_queue); }
     }
   }
 
-  void Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,size_t>,
-                                       std::vector<std::pair<zsw::Scalar,size_t>>,
+  void Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+                                       std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                                        ErrorMaxComparison> &err_queue)
   {
     assert(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
@@ -113,7 +113,10 @@ namespace zsw{
         if(chd->vertex(vi)->info().pt_type_==zsw::INNER_POINT) { val[vi]=-1; }
         else { val[vi]=1; }
       }
-     const_cast<JudgePoint&>(*jpt).val_cur_=val.dot(x);
+      JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
+      tmp_jpt->val_cur_=val.dot(x);
+      zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
+      if(err>1) { err_queue.push(std::make_pair(err, tmp_jpt)); }
     }
   }
 
