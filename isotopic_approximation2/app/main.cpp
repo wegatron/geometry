@@ -25,14 +25,14 @@ void test0(const std::string &file_path, const zsw::Scalar err_epsilon,
   zsw::writePoints("/home/wegatron/tmp/inner_jpts.vtk", inner_jpts);
   zsw::writePoints("/home/wegatron/tmp/outer_jpts.vtk", outer_jpts);
   zsw::writePoints("/home/wegatron/tmp/bs_jpts.vtk", bs_jpts);
-  // zsw::Approximation appro;
-  // appro.init(err_epsilon, tri_sample_r, tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
-  // appro.writeTetMesh("/home/wegatron/tmp/refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+  zsw::Approximation appro;
+  appro.init(err_epsilon, tri_sample_r, tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
+  appro.writeTetMesh("/home/wegatron/tmp/refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
 }
 
 int main(int argc, char *argv[])
 {
-  //test0("/home/wegatron/workspace/geometry/data/sphere.obj",0.1, 0.03, 0.03);
-  test0("/home/wegatron/workspace/geometry/data/bunny.obj",1.5, 0.5, 0.5);
+  test0("/home/wegatron/workspace/geometry/data/sphere.obj",0.1, 0.03, 0.03);
+  //test0("/home/wegatron/workspace/geometry/data/bunny.obj",1.5, 0.5, 0.5);
   return 0;
 }

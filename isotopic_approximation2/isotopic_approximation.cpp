@@ -72,15 +72,36 @@ namespace zsw{
       zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
       if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
     }
+
+    // size_t specified_step=0;
+    // std::cout << "input specified_step:" << std::endl;
+    // std::cin >> specified_step;
+    size_t debug_step=0;
+
     while(!err_queue.empty()) {
       std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
       zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
+
       if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
+
+      // std::cerr << "step " << debug_step << std::endl;
+      // if(debug_step==specified_step) {
+      //   std::cerr << "real_err=" << real_err << std::endl;
+      //   std::cerr << "index=" << (jpt_info.second-&jpts_[0]) << std::endl;
+      // }
+      assert(real_err>1);
+
       std::vector<Chd> chds;
       PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
       VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
       tw_->addPointInDelaunay(jpt_info.second->pt_, vertex_info, chds);
       for(Chd chd : chds) { updateJptsInCell(chd, err_queue); }
+
+      // if(debug_step==96) {
+      //   writeAdjcentCells("/home/wegatron/tmp/adj_cells.vtk", chds);
+      // }
+      writeTetMesh("/home/wegatron/tmp/refine_debug_"+std::to_string(debug_step++)+".vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
+
     }
   }
 
@@ -105,8 +126,16 @@ namespace zsw{
       b<< jpt->pt_[0],jpt->pt_[1],jpt->pt_[2],1;
       Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
       x=pplu.solve(b);
+
+      // if(jpt-&jpts_[0]==15547) {
+      //   std::cerr << "A" << std::endl;
+      //   std::cerr << A << std::endl;
+      //   std::cerr << "b:" << b.transpose() << std::endl;
+      //   std::cerr << "x:" << x.transpose() << std::endl;
+      // }
+
       if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps || x[2]<-zsw::const_val::eps
-         || x[3]<-zsw::const_val::eps || x[0]+x[1]+x[2]+x[3]>1+zsw::const_val::eps) { continue; } // jpt not in this cell
+         || x[3]<-zsw::const_val::eps) { continue; } // jpt not in this cell
       assert((A*x-b).norm()<zsw::const_val::eps);
       Eigen::Matrix<zsw::Scalar,4,1> val;
       for(size_t vi=0; vi<4; ++vi) {
@@ -115,6 +144,17 @@ namespace zsw{
       }
       JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
       tmp_jpt->val_cur_=val.dot(x);
+
+      // if(tmp_jpt-&jpts_[0]==15547) {
+      //   std::cerr << "A" << std::endl;
+      //   std::cerr << A << std::endl;
+      //   std::cerr << "b:" << b.transpose() << std::endl;
+      //   std::cerr << "x:" << x.transpose() << std::endl;
+      //   std::cerr << "val:" << val.transpose() << std::endl;
+      //   std::cerr << "update jpts_[15547]:" << tmp_jpt->val_cur_
+      //             << " for " << tmp_jpt->val_exp_ << std::endl;
+      // }
+
       zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
       if(err>1) { err_queue.push(std::make_pair(err, tmp_jpt)); }
     }
@@ -411,12 +451,15 @@ namespace zsw{
     bbox(1,0)=bbox(1,1)=(*vhd_ptr)->point()[1];
     bbox(2,0)=bbox(2,1)=(*vhd_ptr)->point()[2];
     for(size_t i=1; i<n; ++i) {
+      ++vhd_ptr;
       for(size_t di=0; di<3; ++di) {
         if((*vhd_ptr)->point()[di] < bbox(di,0)) { bbox(di,0)=(*vhd_ptr)->point()[di]; }
         else if((*vhd_ptr)->point()[di] > bbox(di,1)) { bbox(di,1)=(*vhd_ptr)->point()[di]; }
       }
-      ++vhd_ptr;
     }
+    Eigen::Matrix<zsw::Scalar,3,1> eps_mat; eps_mat<<zsw::const_val::eps, zsw::const_val::eps, zsw::const_val::eps;
+    bbox.block<3,1>(0,0) = bbox.block<3,1>(0,0)-eps_mat;
+    bbox.block<3,1>(0,1) = bbox.block<3,1>(0,1)+eps_mat;
   }
 
   void Approximation::writeAdjcentCells(const std::string &filepath, const TTds::Edge &e) const
@@ -533,5 +576,32 @@ namespace zsw{
     for(size_t i=0; i<pts.size(); ++i) {      ofs << "1 " << i << std::endl;    }
     ofs << "CELL_TYPES " << pts.size() << std::endl;
     for(size_t i=0; i<pts.size(); ++i) { ofs << "1" << std::endl; }
+  }
+
+  void Approximation::writeAdjcentCells(const std::string &filepath, const std::vector<Chd> &chds) const
+  {
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    const TTds &tds=tw_->getTds();
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+        << tds.number_of_vertices() << " float" << std::endl;
+
+    CGAL::Unique_hash_map<TTds::Vertex_handle,size_t> v_map;
+    size_t v_index=0;
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      ofs << *vit << std::endl;
+      v_map[vit] = v_index++;
+    }
+
+    ofs << "CELLS " << chds.size() << " " << chds.size()*5 << std::endl;
+    for(auto cit=chds.begin(); cit!=chds.end(); ++cit) {
+      ofs << "4 " << v_map[(*cit)->vertex(0)] << " " <<
+        v_map[(*cit)->vertex(1)] << " " <<
+        v_map[(*cit)->vertex(2)] << " " <<
+        v_map[(*cit)->vertex(3)] << std::endl;
+    }
+    ofs << "CELL_TYPES " << chds.size() << std::endl;
+    for(size_t ci=0; ci<chds.size(); ++ci) { ofs << "10" << std::endl; }
+    ofs.close();
   }
 }

@@ -27,7 +27,7 @@ namespace zsw {
   {
   public:
     bool operator()(const std::pair<zsw::Scalar,JudgePoint*> &lv,
-                  const std::pair<zsw::Scalar,JudgePoint*> &rv){
+                    const std::pair<zsw::Scalar,JudgePoint*> &rv){
       return lv.first>rv.first;
     }
   };
@@ -53,6 +53,7 @@ namespace zsw {
     void writeTetMesh(const std::string &filepath,
                       std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const;
     void writeAdjcentCells(const std::string &filepath, const TTds::Edge &e) const;
+    void writeAdjcentCells(const std::string &filepath, const std::vector<Chd> &chds) const;
     void writeJudgePoints(const std::string &filepath) const;
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
 
