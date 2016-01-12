@@ -38,14 +38,12 @@ namespace zsw {
     void simpTolerance();
     void mutuallTessellation();
     void simpZeroSurface();
+
     void writeZeroSurface(const std::string &filepath) const;
     void writeTetMesh(const std::string &filepath,
                       std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const;
-
     void writeAdjcentCells(const std::string &filepath, const TTds::Edge &e) const;
-
     void writeJudgePoints(const std::string &filepath) const;
-
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
 
     bool isSatisfyErrorBound(std::vector<VertexTriple> &bound_tris,
@@ -95,9 +93,10 @@ namespace zsw {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
 
+    // data access
+
     // for debug
     void testTdsValid();
-
     void testCollapse();
   private:
     std::vector<JudgePoint> jpts_;
@@ -112,6 +111,6 @@ namespace zsw {
   };
 
   void calcVertexTripleBBox(const std::vector<VertexTriple> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
-
+  void writePoints(const std::string &filepath, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
 }
 #endif /* ISOTOPIC_APPROXIMATION_H */

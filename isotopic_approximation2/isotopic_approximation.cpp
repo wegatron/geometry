@@ -447,8 +447,21 @@ namespace zsw{
 
     std::cerr << "number of vertices:" << tds.number_of_vertices() << std::endl;
     std::cerr << "num of cell:" << tds.number_of_cells() << std::endl;
-
-
     testTdsValid();
+  }
+
+  void writePoints(const std::string &filepath, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts)
+  {
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+        << pts.size() << " float" << std::endl;
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : pts) {
+      ofs << pt.transpose() << std::endl;
+    }
+    ofs << "CELLS " << pts.size() << " " << pts.size()*2 << std::endl;
+    for(size_t i=0; i<pts.size(); ++i) {      ofs << "1 " << i << std::endl;    }
+    ofs << "CELL_TYPES " << pts.size() << std::endl;
+    for(size_t i=0; i<pts.size(); ++i) { ofs << "1" << std::endl; }
   }
 }
