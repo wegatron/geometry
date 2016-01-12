@@ -46,7 +46,7 @@ namespace zsw{
   struct JudgePoint
   {
     Eigen::Matrix<zsw::Scalar,3,1> pt_;
-    zsw::Scalar val_exp_;
+    const zsw::Scalar val_exp_;
     zsw::Scalar val_cur_;
   };
 
@@ -70,7 +70,8 @@ namespace zsw{
   {
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
-    void addPointInDelaunay(const std::pair<Point,VertexInfo> pt);
+    Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt, VertexInfo &vertex_info,
+                            std::vector<Chd> &chds);
 
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     bool isBoundaryEdge(const TTds::Edge &edge) const;
@@ -108,5 +109,5 @@ namespace zsw{
 
   void makeCanonical(VertexTriple &t);
 
-  }
+}
 #endif /* BASIC_DATA_STRUCTURE_H */

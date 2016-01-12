@@ -56,25 +56,18 @@ namespace zsw{
     std::vector<std::pair<Point, VertexInfo>> init_vertices;
     init_vertices.reserve(bs_jpts.size());
     for(size_t ind=0; ind<bs_jpts.size(); ++ind) {
-      const Eigen::Matrix<zsw::Scalar,3,1> &pt=bs_jpts[i];
-      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(i, zsw::BBOX_POINT, pt, 0)));
+      const Eigen::Matrix<zsw::Scalar,3,1> &pt=bs_jpts[ind];
+      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, pt, 0)));
     }
     tw_.reset(new TriangulationWapper(init_vertices));
     refine();
   }
 
-  class ErrorMaxComparison
-  {
-  public:
-    bool operator(const std::pair<zsw::Scalar,size_t> &lv,
-                  const std::pair<zsw::Scalar,size_t> &rv){
-      return lv.first>rv.first;
-    }
-  };
-
   void Approximation::refine()
   {
-    std::pirority_queue<std::pair<zsw::Scalar,size_t>,ErrorMaxComparison> err_queue;
+    std::priority_queue<std::pair<zsw::Scalar,size_t>,
+                        std::vector<std::pair<zsw::Scalar,size_t>>,
+                        ErrorMaxComparison> err_queue;
     for(size_t i=0; i<jpts_.size();++i) {
       zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
       if(err>1) { err_queue.push(std::make_pair(err, i)); }
@@ -84,8 +77,43 @@ namespace zsw{
       zsw::Scalar real_err=fabs(jpts_[jpt_info.second].val_cur_-jpts_[jpt_info.second].val_exp_);
       if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
       std::vector<Chd> chds;
-      tw_->addPointInDelaunay(jpts_[jpt_info.second].pt_, chds);
+      PointType pt_type= (jpts_[jpt_info.second].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
+      VertexInfo vertex_info(-1, pt_type, jpts_[jpt_info.second].pt_, 0.0);
+      tw_->addPointInDelaunay(jpts_[jpt_info.second].pt_, vertex_info, chds);
       for(Chd chd : chds) { updateJptsInCell(chd, err_queue); }
+    }
+  }
+
+  void Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,size_t>,
+                                       std::vector<std::pair<zsw::Scalar,size_t>>,
+                                       ErrorMaxComparison> &err_queue)
+  {
+    assert(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
+           && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT);
+    // calc jpts in bbox
+    std::vector<const JudgePoint*> jpts_in_bbox;
+    Vhd vhds[4] = {chd->vertex(0), chd->vertex(1), chd->vertex(2), chd->vertex(3)};
+    calcJptsInBbox(vhds,4,jpts_in_bbox);
+    for(const JudgePoint * jpt : jpts_in_bbox) {
+      Eigen::Matrix<zsw::Scalar,4,4> A;
+      Eigen::Matrix<zsw::Scalar,4,1> x, b;
+      A <<
+        chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+        chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+        chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2],
+        1,1,1,1;
+      b<< jpt->pt_[0],jpt->pt_[1],jpt->pt_[2],1;
+      Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
+      x=pplu.solve(b);
+      if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps || x[2]<-zsw::const_val::eps
+         || x[3]<-zsw::const_val::eps || x[0]+x[1]+x[2]+x[3]>1+zsw::const_val::eps) { continue; } // jpt not in this cell
+      assert((A*x-b).norm()<zsw::const_val::eps);
+      Eigen::Matrix<zsw::Scalar,4,1> val;
+      for(size_t vi=0; vi<4; ++vi) {
+        if(chd->vertex(vi)->info().pt_type_==zsw::INNER_POINT) { val[vi]=-1; }
+        else { val[vi]=1; }
+      }
+     const_cast<JudgePoint&>(*jpt).val_cur_=val.dot(x);
     }
   }
 
@@ -200,7 +228,7 @@ namespace zsw{
     assert(tds.is_edge(e.first,e.second,e.third));
 
     std::vector<const JudgePoint*> jpts_in_bbox;
-    calcJptsInBbox(bound_tris, jpts_in_bbox);
+    calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
     // candicate merge points in kernel region
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
@@ -243,7 +271,7 @@ namespace zsw{
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
     std::vector<const JudgePoint*> jpts_in_bbox;
-    calcJptsInBbox(bound_tris, jpts_in_bbox);
+    calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> sample_points;
     sampleIncidentCells(e, sample_points);
     KernelRegionJudger krj;
@@ -349,10 +377,10 @@ namespace zsw{
     ofs.close();
   }
 
-  void Approximation::calcJptsInBbox(std::vector<VertexTriple> &bound_tris, std::vector<const JudgePoint*> &jpts_in_bbox) const
+  void Approximation::calcJptsInBbox(Vhd *vhd_ptr, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const
   {
     Eigen::Matrix<zsw::Scalar,3,2> bbox;
-    calcVertexTripleBBox(bound_tris, bbox);
+    calcVerticesBbox(vhd_ptr, n, bbox);
     for(const JudgePoint &jpt : jpts_) {
       if(jpt.pt_[0]<bbox(0,0) || jpt.pt_[1]<bbox(1,0) || jpt.pt_[2]<bbox(2,0) ||
          jpt.pt_[0]>bbox(0,1) || jpt.pt_[1]>bbox(1,1) || jpt.pt_[2]>bbox(2,1)) { continue; }
@@ -374,17 +402,17 @@ namespace zsw{
     }
   }
 
-  void calcVertexTripleBBox(const std::vector<VertexTriple> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox)
+  void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox)
   {
-    assert(bound_tris.size()>0);
-    bbox(0,0)=bbox(0,1)=bound_tris[0].first->point()[0];
-    bbox(1,0)=bbox(1,1)=bound_tris[0].first->point()[1];
-    bbox(2,0)=bbox(2,1)=bound_tris[0].first->point()[2];
-    for(const VertexTriple &fhd : bound_tris) {
-      for(size_t bi=0; bi<3; ++bi) {
-        if(fhd.first->point()[bi]<bbox(bi,0)) { bbox(bi,0)=fhd.first->point()[bi]; }
-        else if(fhd.first->point()[bi]>bbox(bi,1)) { bbox(bi,1)=fhd.first->point()[bi]; }
+    bbox(0,0)=bbox(0,1)=(*vhd_ptr)->point()[0];
+    bbox(1,0)=bbox(1,1)=(*vhd_ptr)->point()[1];
+    bbox(2,0)=bbox(2,1)=(*vhd_ptr)->point()[2];
+    for(size_t i=1; i<n; ++i) {
+      for(size_t di=0; di<3; ++di) {
+        if((*vhd_ptr)->point()[di] < bbox(di,0)) { bbox(di,0)=(*vhd_ptr)->point()[di]; }
+        else if((*vhd_ptr)->point()[di] > bbox(di,1)) { bbox(di,1)=(*vhd_ptr)->point()[di]; }
       }
+      ++vhd_ptr;
     }
   }
 

@@ -2,6 +2,7 @@
 #define ISOTOPIC_APPROXIMATION_H
 
 #include <unordered_map>
+#include <queue>
 #include <zswlib/config.h>
 #include <zswlib/mesh/zsw_flann.h>
 #include "basic_data_structure.h"
@@ -20,6 +21,15 @@ namespace zsw {
     Vhd vhd_;
     zsw::Scalar max_ids_;
     Eigen::Matrix<zsw::Scalar,3,1> pos_ori_;
+  };
+
+  class ErrorMaxComparison
+  {
+  public:
+    bool operator()(const std::pair<zsw::Scalar,size_t> &lv,
+                  const std::pair<zsw::Scalar,size_t> &rv){
+      return lv.first>rv.first;
+    }
   };
 
   class Approximation final
@@ -46,6 +56,10 @@ namespace zsw {
     void writeJudgePoints(const std::string &filepath) const;
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
 
+    void refine();
+    void updateJptsInCell(Chd chd,
+                          std::priority_queue<std::pair<zsw::Scalar,size_t>,std::vector<std::pair<zsw::Scalar,size_t>>,
+                          ErrorMaxComparison> &err_queue);
     bool isSatisfyErrorBound(std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
@@ -81,7 +95,7 @@ namespace zsw {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
 
-    void calcJptsInBbox(std::vector<VertexTriple> &bound_tris, std::vector<const JudgePoint*> &jpts_in_bbox) const;
+    void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
 
     void sampleIncidentCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points)
     {
@@ -110,7 +124,7 @@ namespace zsw {
     zsw::Scalar tet_sample_r_;
   };
 
-  void calcVertexTripleBBox(const std::vector<VertexTriple> &bound_tris, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
+  void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
   void writePoints(const std::string &filepath, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
 }
 #endif /* ISOTOPIC_APPROXIMATION_H */
