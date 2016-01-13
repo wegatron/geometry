@@ -322,16 +322,20 @@ namespace zsw{
       A(0,2)=vt.third->point()[0]; A(1,2)=vt.third->point()[1];  A(2,2)=vt.third->point()[2]; A(3,2)=1;
       A.block<3,1>(0,3)=merge_pt; A(3,3)=1;
       Eigen::Matrix<zsw::Scalar,4,1> val;
-      val[0]=(vt.first->info().pt_type_==zsw::INNER_POINT) ? -1 : 1;
-      val[1]=(vt.second->info().pt_type_==zsw::INNER_POINT) ? -1 : 1;
-      val[2]=(vt.second->info().pt_type_==zsw::INNER_POINT) ? -1 : 1;
+      if(vt.first->info().pt_type_==zsw::INNER_POINT) { val[0]=-1; }
+      else if(vt.first->info().pt_type_==zsw::ZERO_POINT) { val[0]=0; }
+      else { val[0]=1; }
+      if(vt.second->info().pt_type_==zsw::INNER_POINT) { val[1]=-1; }
+      else if(vt.second->info().pt_type_==zsw::ZERO_POINT) { val[1]=0; }
+      else { val[1]=1; }
+      if(vt.third->info().pt_type_==zsw::INNER_POINT) { val[2]=-1; }
+      else if(vt.third->info().pt_type_==zsw::ZERO_POINT) { val[2]=0; }
+      else { val[2]=1; }
       val[3]=v_pt;
       Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
-      // for(size_t i=0; i<jpts_.size(); ++i) {
       for(size_t jpt_i=0; jpt_i<jpts_in_bbox.size(); ++jpt_i) {
         if(is_updated[jpt_i]) { continue; }
         const JudgePoint *jpt=jpts_in_bbox[jpt_i];
-        // const JudgePoint *jpt=&jpts_[i];
         Eigen::Matrix<zsw::Scalar,4,1> b; b.block<3,1>(0,0)=jpt->pt_; b[3]=1;
         Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
         if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps
@@ -385,6 +389,7 @@ namespace zsw{
     std::vector<VertexUpdateData> vup;
     std::vector<JudgePointUpdateData> jup;
     const zsw::Scalar v_pt=(e.first->vertex(e.second)->info().pt_type_==zsw::INNER_POINT) ? -1 : 1;
+    std::cout << "candicate pt size:" << candicate_points.size() << std::endl;
     for(const JudgePoint * jpt_ptr : candicate_points) {
       vup.clear(); jup.clear();
       if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, vup, &jup)) { merge_pt=jpt_ptr; break; }
