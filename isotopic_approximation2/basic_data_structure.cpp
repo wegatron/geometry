@@ -298,4 +298,15 @@ namespace zsw{
   {
     std::sort(&t.first, &t.first+3, [](Vhd a, Vhd b){ return a->info().index_<b->info().index_; });
   }
+
+  bool isTolCell(Chd chd)
+  {
+    for(size_t i=0; i<4; ++i) {
+      if(chd->vertex(i)->info().pt_type_!=zsw::INNER_POINT
+         && chd->vertex(i)->info().pt_type_!=zsw::OUTER_POINT) {
+        return false;
+      }
+    }
+    return true;
+  }
 }

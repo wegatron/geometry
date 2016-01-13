@@ -30,9 +30,6 @@ bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
   for(size_t i=0; i<vec_v0_.size(); ++i) {
     if(vec_vn_[i].dot(pt-vec_v0_[i]) < precision_) {      return false;    }
   }
-  return true;
-}
-
 // bool zsw::normalCondition(
 //                           const std::vector<zsw::Vertex> &vertices,
 //                           const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris,
@@ -157,3 +154,40 @@ bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 //   }
 //   return true;
 // }
+  return true;
+}
+
+bool zsw::normalCondition(
+                          const Eigen::Matrix<zsw::Scalar,4,1> &val,
+                          const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts,
+                          const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+                          const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+                          std::shared_ptr<zsw::Flann<zsw::Scalar>> inner_kdtree_ptr,
+                          std::shared_ptr<zsw::Flann<zsw::Scalar>> outer_kdtree_ptr)
+{
+  // find the four inner_jpts and four outer_jpts
+  std::vector<size_t> in_indices;
+  std::vector<zsw::Scalar> in_dist;
+  inner_kdtree_ptr->queryNearest<4>(tri_pts, in_indices, in_dist);
+  std::vector<size_t> out_indices;
+  std::vector<zsw::Scalar> out_dist;
+  outer_kdtree_ptr->queryNearest(tri_pts, out_indices, out_dist);
+  // judge if can classify the eight point
+  Eigen::Matrix<zsw::Scalar,4,4> A;
+  A.block<3,4>(0,0)=tri_pts;
+  A(3,0)=A(3,1)=A(3,2)=A(3,3)=1;
+  Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
+  for(size_t in=0;in<4; ++in) {
+    Eigen::Matrix<zsw::Scalar,4,1> b;
+    b.block<3,1>(0,0)=inner_jpts[in_indices[in]]; b(3,0)=1;
+    Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
+    if(val.dot(x)>0) { return false; }
+  }
+  for(size_t out=0; out<4; ++out) {
+    Eigen::Matrix<zsw::Scalar,4,1> b;
+    b.block<3,1>(0,0)=outer_jpts[out_indices[out]]; b(3,0)=1;
+    Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
+    if(val.dot(x)<0) { return false; }
+  }
+  return true;
+}

@@ -60,7 +60,8 @@ namespace zsw {
     void refine();
     void updateJptsInCell(Chd chd,
                           std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
-                          ErrorMaxComparison> &err_queue);
+                          ErrorMaxComparison> *err_queue);
+    void checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue);
     bool isSatisfyErrorBound(std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
@@ -128,5 +129,6 @@ namespace zsw {
 
   void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
   void writePoints(const std::string &filepath, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
+  void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center);
 }
 #endif /* ISOTOPIC_APPROXIMATION_H */

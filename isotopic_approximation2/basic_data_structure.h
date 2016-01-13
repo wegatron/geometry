@@ -95,6 +95,8 @@ namespace zsw{
   };
 
 
+  bool isTolCell(Chd chd);
+
   bool ignore_invalid(const TTds::Cell_handle cell);
 
   bool ignore_bbox(const TTds::Cell_handle cell);

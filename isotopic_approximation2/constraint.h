@@ -30,15 +30,13 @@ namespace zsw
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vec_vn_;
   };
 
-  /* bool normalCondition( */
-  /*                      const std::vector<zsw::Vertex> &vertices, */
-  /*                      const std::vector<Eigen::Matrix<size_t,3,1>> &bound_tris, */
-  /*                      const Eigen::Matrix<zsw::Scalar,3,1> &pt, */
-  /*                      const zsw::Scalar pt_vals, */
-  /*                      const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_jpts, */
-  /*                      const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_jpts, */
-  /*                      std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bi, */
-  /*                      std::shared_ptr<zsw::Flann<zsw::Scalar>> jpts_ptr_bo); */
+  bool normalCondition(
+                       const Eigen::Matrix<zsw::Scalar,4,1> &val,
+                       const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts,
+                       const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+                       const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+                       std::shared_ptr<zsw::Flann<zsw::Scalar>> inner_kdtree_ptr,
+                       std::shared_ptr<zsw::Flann<zsw::Scalar>> outer_kdtree_ptr);
 }
 
 

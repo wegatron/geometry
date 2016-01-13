@@ -76,12 +76,11 @@ namespace zsw{
     // size_t specified_step=0;
     // std::cout << "input specified_step:" << std::endl;
     // std::cin >> specified_step;
-    size_t debug_step=0;
+    // size_t debug_step=0;
 
     while(!err_queue.empty()) {
       std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
       zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
-
       if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
 
       // std::cerr << "step " << debug_step << std::endl;
@@ -95,51 +94,63 @@ namespace zsw{
       PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
       VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
       tw_->addPointInDelaunay(jpt_info.second->pt_, vertex_info, chds);
-      for(Chd chd : chds) { updateJptsInCell(chd, err_queue); }
+      for(Chd chd : chds) { updateJptsInCell(chd, &err_queue); }
 
       //writeTetMesh("/home/wegatron/tmp/refine_debug_"+std::to_string(debug_step++)+".vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
     }
+
     const TTds &tds=tw_->getTds();
     std::queue<Chd> chds_queue;
     for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-      bool is_tol_tet=true;
-      for(size_t i=0; i<4; ++i) {
-        if(cit->vertex(i)->info().pt_type_!=zsw::INNER_POINT
-           && cit->vertex(i)->info().pt_type_!=zsw::OUTER_POINT) {
-          is_tol_tet=false;
-          break;
-        }
-      }
-      if(is_tol_tet) { chds_queue.push(cit); }
+      if(isTolCell(cit)) { chds_queue.push(cit); }
     }
     while(!chds_queue.empty()) {
       Chd chd = chds_queue.front(); chds_queue.pop();
-      checkNormalCondition(chd, chds_queue);
+      checkUpNormalCondition(chd, chds_queue);
     }
   }
 
-  void Approximation::checkNormalCondition(Chd chd, std::queue<Chd> &chds_queue)
+  void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    assert(chd->vertex(0)->info().pt_type_==zsw::INNER_POINT || chd->vertex(0)->info().pt_type_==zsw::OUTER_POINT);
+    assert(chd->vertex(1)->info().pt_type_==zsw::INNER_POINT || chd->vertex(1)->info().pt_type_==zsw::OUTER_POINT);
+    assert(chd->vertex(2)->info().pt_type_==zsw::INNER_POINT || chd->vertex(2)->info().pt_type_==zsw::OUTER_POINT);
+    assert(chd->vertex(3)->info().pt_type_==zsw::INNER_POINT || chd->vertex(3)->info().pt_type_==zsw::OUTER_POINT);
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
-    tris_pts<<
+    tri_pts<<
       chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
       chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
       chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
-    if(normalCondition(tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) {
-      Eigen::Matrix<zsw::Scalar,3,1> center;
-      calcCircumcenter(tri_pts, center);
-      inner_kdtree_ptr->queryNearest();
-      outer_kdtree_ptr->queryNearest();
-      // find the minest
-      // check if the point is already in
-      // add and update
+    Eigen::Matrix<zsw::Scalar,4,1> val;
+    for(size_t i=0; i<4; ++i) {
+      if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
+      else { val[i]=1; }
     }
+    if(normalCondition(val, normal_cond_scale_*tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) return;
+    Eigen::Matrix<zsw::Scalar,3,1> center;
+    calcCircumcenter(tri_pts, center);
+    // find the minest
+    std::vector<size_t> in_indices;
+    std::vector<zsw::Scalar> in_dist;
+    inner_kdtree_ptr_->queryNearest(center, in_indices, in_dist);
+    std::vector<size_t> out_indices;
+    std::vector<zsw::Scalar> out_dist;
+    outer_kdtree_ptr_->queryNearest(center, out_indices, out_dist);
+    size_t jpt_ind = (in_dist[0]<out_dist[0]) ? in_indices[0] : out_indices[0]+inner_jpts_.size();
+    // check if the point is already in
+    if(fabs(jpts_[jpt_ind].val_cur_-jpts_[jpt_ind].val_exp_)<zsw::const_val::eps) { return; }
+    // add and update
+    PointType pt_type=(jpts_[jpt_ind].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
+    VertexInfo vertex_info(-1, pt_type, jpts_[jpt_ind].pt_, 0.0);
+    std::vector<Chd> chds;
+    tw_->addPointInDelaunay(jpts_[jpt_ind].pt_, vertex_info, chds);
+    for(Chd chd : chds) { updateJptsInCell(chd, nullptr); }
+    for(Chd chd : chds) { if(isTolCell(chd)) {chds_queue.push(chd);} }
   }
 
   void Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
-                                       ErrorMaxComparison> &err_queue)
+                                       ErrorMaxComparison> *err_queue)
   {
     assert(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
            && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT);
@@ -187,8 +198,10 @@ namespace zsw{
       //             << " for " << tmp_jpt->val_exp_ << std::endl;
       // }
 
-      zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
-      if(err>1) { err_queue.push(std::make_pair(err, tmp_jpt)); }
+      if(err_queue!=nullptr) {
+        zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
+        if(err>1) { err_queue->push(std::make_pair(err, tmp_jpt)); }
+      }
     }
   }
 
@@ -635,5 +648,10 @@ namespace zsw{
     ofs << "CELL_TYPES " << chds.size() << std::endl;
     for(size_t ci=0; ci<chds.size(); ++ci) { ofs << "10" << std::endl; }
     ofs.close();
+  }
+
+  void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 }

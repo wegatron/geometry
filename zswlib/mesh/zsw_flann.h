@@ -15,11 +15,12 @@ namespace zsw {
       index->buildIndex();
     }
 
-    void queryNearest(Eigen::Matrix<ScalarType, 3, Eigen::Dynamic> &q_points, std::vector<size_t> &indices,
+    template<int col_n>
+    void queryNearest(const Eigen::Matrix<ScalarType, 3, col_n> &q_points, std::vector<size_t> &indices,
                       std::vector<ScalarType> &dist) {
       std::vector<std::vector<int> > tmp_indices;
       std::vector<std::vector<ScalarType> > tmp_dist;
-      flann::Matrix<ScalarType> tmp_q_points(q_points.data(), q_points.cols(), 3);
+      const flann::Matrix<ScalarType> tmp_q_points(const_cast<ScalarType*>(q_points.data()), q_points.cols(), 3);
       index->knnSearch(tmp_q_points, tmp_indices, tmp_dist, 1, flann::SearchParams(128));
       indices.resize(q_points.cols());
       for(size_t i=0; i<tmp_indices.size(); ++i) {
@@ -31,11 +32,11 @@ namespace zsw {
       }
     }
 
-    void queryNearest(std::vector<Eigen::Matrix<ScalarType, 3, 1>> &q_points, std::vector<size_t> &indices,
+    void queryNearest(const std::vector<Eigen::Matrix<ScalarType, 3, 1>> &q_points, std::vector<size_t> &indices,
                       std::vector<ScalarType> &dist) {
       std::vector<std::vector<int> > tmp_indices;
       std::vector<std::vector<ScalarType> > tmp_dist;
-      flann::Matrix<ScalarType> tmp_q_points(q_points[0].data(), q_points.size(), 3);
+      const flann::Matrix<ScalarType> tmp_q_points(const_cast<ScalarType*>(q_points[0].data()), q_points.size(), 3);
       index->knnSearch(tmp_q_points, tmp_indices, tmp_dist, 1, flann::SearchParams(128));
       indices.resize(q_points.size());
       for(size_t i=0; i<tmp_indices.size(); ++i) {
