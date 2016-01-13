@@ -60,7 +60,12 @@ namespace zsw{
       init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, pt, 0)));
     }
     tw_.reset(new TriangulationWapper(init_vertices));
+    std::cout << "[INFO] inner judge point size:" << inner_jpts_.size() << std::endl;
+    std::cout << "[INFO] outer judge point size:" << outer_jpts_.size() << std::endl;
     refine();
+    std::cout << "[INFO] refine complete, init finished!" << std::endl;
+    std::cout << "[INFO] vertex size:" << tw_->getTds().number_of_vertices() << std::endl;
+    std::cout << "[INFO] cell size:" << tw_->getTds().number_of_cells() << std::endl;
   }
 
   void Approximation::refine()
@@ -77,7 +82,7 @@ namespace zsw{
     // std::cout << "input specified_step:" << std::endl;
     // std::cin >> specified_step;
     // size_t debug_step=0;
-
+    std::cout << "[INFO] " << "refine start!" << std::endl;
     while(!err_queue.empty()) {
       std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
       zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
@@ -99,6 +104,7 @@ namespace zsw{
       //writeTetMesh("/home/wegatron/tmp/refine_debug_"+std::to_string(debug_step++)+".vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
     }
     writeTetMesh("/home/wegatron/tmp/before_checkUpNormalCondition.vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
+    std::cout << "[INFO] " << "start checkUpNormalCondition!" << std::endl;
     const TTds &tds=tw_->getTds();
     std::queue<Chd> chds_queue;
     for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }

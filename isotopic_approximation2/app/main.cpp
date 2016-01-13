@@ -32,7 +32,8 @@ void test0(const std::string &file_path, const zsw::Scalar err_epsilon,
 
 int main(int argc, char *argv[])
 {
-  test0("/home/wegatron/workspace/geometry/data/sphere.obj",0.1, 0.03, 0.03);
+  //test0("/home/wegatron/workspace/geometry/data/sphere.obj",0.1, 0.03, 0.03);
+  test0("/home/wegatron/workspace/geometry/data/cylinder_smoothed.obj", 0.3, 0.1, 0.1);
   //test0("/home/wegatron/workspace/geometry/data/bunny.obj",1.5, 0.5, 0.5);
   return 0;
 }
