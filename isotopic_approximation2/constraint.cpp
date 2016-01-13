@@ -168,10 +168,22 @@ bool zsw::normalCondition(
   // find the four inner_jpts and four outer_jpts
   std::vector<size_t> in_indices;
   std::vector<zsw::Scalar> in_dist;
-  inner_kdtree_ptr->queryNearest<4>(tri_pts, in_indices, in_dist);
+  inner_kdtree_ptr->queryNearest(tri_pts, in_indices, in_dist);
+
+  assert(fabs((inner_jpts[in_indices[0]]-tri_pts.block<3,1>(0,0)).squaredNorm()-in_dist[0])<zsw::const_val::eps);
+  assert(fabs((inner_jpts[in_indices[1]]-tri_pts.block<3,1>(0,1)).squaredNorm()-in_dist[1])<zsw::const_val::eps);
+  assert(fabs((inner_jpts[in_indices[2]]-tri_pts.block<3,1>(0,2)).squaredNorm()-in_dist[2])<zsw::const_val::eps);
+  assert(fabs((inner_jpts[in_indices[3]]-tri_pts.block<3,1>(0,3)).squaredNorm()-in_dist[3])<zsw::const_val::eps);
+
   std::vector<size_t> out_indices;
   std::vector<zsw::Scalar> out_dist;
   outer_kdtree_ptr->queryNearest(tri_pts, out_indices, out_dist);
+
+  assert(fabs((outer_jpts[out_indices[0]]-tri_pts.block<3,1>(0,0)).squaredNorm()-out_dist[0])<zsw::const_val::eps);
+  assert(fabs((outer_jpts[out_indices[1]]-tri_pts.block<3,1>(0,1)).squaredNorm()-out_dist[1])<zsw::const_val::eps);
+  assert(fabs((outer_jpts[out_indices[2]]-tri_pts.block<3,1>(0,2)).squaredNorm()-out_dist[2])<zsw::const_val::eps);
+  assert(fabs((outer_jpts[out_indices[3]]-tri_pts.block<3,1>(0,3)).squaredNorm()-out_dist[3])<zsw::const_val::eps);
+
   // judge if can classify the eight point
   Eigen::Matrix<zsw::Scalar,4,4> A;
   A.block<3,4>(0,0)=tri_pts;
@@ -181,13 +193,21 @@ bool zsw::normalCondition(
     Eigen::Matrix<zsw::Scalar,4,1> b;
     b.block<3,1>(0,0)=inner_jpts[in_indices[in]]; b(3,0)=1;
     Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
-    if(val.dot(x)>0) { return false; }
+    if(val.dot(x)>0) {
+      // std::cerr << "inner jpts:" << in_indices[in] << std::endl;
+      // std::cerr << "pt:" << inner_jpts[in_indices[in]].transpose() << std::endl;
+      return false;
+    }
   }
   for(size_t out=0; out<4; ++out) {
     Eigen::Matrix<zsw::Scalar,4,1> b;
     b.block<3,1>(0,0)=outer_jpts[out_indices[out]]; b(3,0)=1;
     Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
-    if(val.dot(x)<0) { return false; }
+    if(val.dot(x)<0) {
+      // std::cerr << "outer jpts:" << out_indices[out] << std::endl;
+      // std::cerr << "pt:" << inner_jpts[out_indices[out]].transpose() << std::endl;
+      return false;
+    }
   }
   return true;
 }

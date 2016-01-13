@@ -301,12 +301,12 @@ namespace zsw{
 
   bool isTolCell(Chd chd)
   {
+    size_t i_cnt=0;
+    size_t o_cnt=0;
     for(size_t i=0; i<4; ++i) {
-      if(chd->vertex(i)->info().pt_type_!=zsw::INNER_POINT
-         && chd->vertex(i)->info().pt_type_!=zsw::OUTER_POINT) {
-        return false;
-      }
+      if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT) { ++i_cnt; }
+      else if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT) { ++o_cnt; }
     }
-    return true;
+    return i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4;
   }
 }

@@ -98,24 +98,20 @@ namespace zsw{
 
       //writeTetMesh("/home/wegatron/tmp/refine_debug_"+std::to_string(debug_step++)+".vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
     }
-
+    writeTetMesh("/home/wegatron/tmp/before_checkUpNormalCondition.vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
     const TTds &tds=tw_->getTds();
     std::queue<Chd> chds_queue;
-    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-      if(isTolCell(cit)) { chds_queue.push(cit); }
-    }
+    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
     while(!chds_queue.empty()) {
       Chd chd = chds_queue.front(); chds_queue.pop();
+      if(!isTolCell(chd)) { continue; }
       checkUpNormalCondition(chd, chds_queue);
     }
   }
 
   void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue)
   {
-    assert(chd->vertex(0)->info().pt_type_==zsw::INNER_POINT || chd->vertex(0)->info().pt_type_==zsw::OUTER_POINT);
-    assert(chd->vertex(1)->info().pt_type_==zsw::INNER_POINT || chd->vertex(1)->info().pt_type_==zsw::OUTER_POINT);
-    assert(chd->vertex(2)->info().pt_type_==zsw::INNER_POINT || chd->vertex(2)->info().pt_type_==zsw::OUTER_POINT);
-    assert(chd->vertex(3)->info().pt_type_==zsw::INNER_POINT || chd->vertex(3)->info().pt_type_==zsw::OUTER_POINT);
+    assert(isTolCell(chd));
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
     tri_pts<<
       chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
@@ -126,7 +122,18 @@ namespace zsw{
       if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
       else { val[i]=1; }
     }
-    if(normalCondition(val, normal_cond_scale_*tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) return;
+    Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
+      tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
+      tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
+    Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
+    Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
+    if(normalCondition(val, scaled_tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) return;
+
+    static size_t debug_step=0;
+    // std::cerr << "tri_pts:\n" << tri_pts << std::endl;
+    //  writeTetMesh("/home/wegatron/tmp/upnorm_"+std::to_string(debug_step++)+".vtk",
+    //               {ignore_self_in, ignore_bbox, ignore_self_out});
+
     Eigen::Matrix<zsw::Scalar,3,1> center;
     calcCircumcenter(tri_pts, center);
     // find the minest
@@ -145,7 +152,7 @@ namespace zsw{
     std::vector<Chd> chds;
     tw_->addPointInDelaunay(jpts_[jpt_ind].pt_, vertex_info, chds);
     for(Chd chd : chds) { updateJptsInCell(chd, nullptr); }
-    for(Chd chd : chds) { if(isTolCell(chd)) {chds_queue.push(chd);} }
+    for(Chd chd : chds) { chds_queue.push(chd); }
   }
 
   void Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
