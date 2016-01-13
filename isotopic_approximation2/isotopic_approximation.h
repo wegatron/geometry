@@ -12,7 +12,7 @@ namespace zsw {
 
   struct JudgePointUpdateData
   {
-    size_t index_;
+    JudgePoint *jpt;
     zsw::Scalar val_cur_;
   };
 
@@ -62,14 +62,12 @@ namespace zsw {
                           std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                           ErrorMaxComparison> *err_queue);
     void checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue);
-    bool isSatisfyErrorBound(std::vector<VertexTriple> &bound_tris,
+    bool isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
+                             const zsw::Scalar v_pt,
                              std::vector<VertexUpdateData> &vup,
-                             std::vector<JudgePointUpdateData> * jup=nullptr) const
-    {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    }
+                             std::vector<JudgePointUpdateData> * jup=nullptr) const;
 
     void constructKernelRegionJudger(const std::vector<VertexTriple> &bound_tris,
                                      std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const;
@@ -87,15 +85,7 @@ namespace zsw {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
 
-    void updateJudgePoint(const std::vector<JudgePointUpdateData> &jup)
-    {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    }
-
-    void boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const
-    {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    }
+    void boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
 
     void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
 

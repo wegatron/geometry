@@ -23,7 +23,6 @@ namespace zsw{
   {
     TTds::Facet_circulator fit = tds_.incident_facets(edge);
     TTds::Facet_circulator done(fit);
-
     do {
       std::unordered_map<size_t, size_t> count_map;
       for(size_t i=0; i<4; ++i) {
@@ -236,19 +235,53 @@ namespace zsw{
   }
 
   Vhd TriangulationWapper::addPointInDelaunay(
-                                               const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                                               VertexInfo &vertex_info,
-                                               std::vector<Chd> &chds)
+                                              const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                                              VertexInfo &vertex_info,
+                                              std::vector<Chd> &chds,
+                                              std::unordered_set<std::string> *cell_key_set_pre, // in
+                                              std::unordered_set<std::string> *cell_key_set_cur //out
+                                              )
   {
     Point point(pt[0],pt[1], pt[2]);
     Vhd vhd=delaunay_triangulation_.insert(point);
     vertex_info.index_=next_v_id_++;
     vhd->info()=vertex_info;
-    tds_.incident_cells(vhd, std::back_inserter(chds));
+
+    const bool need_create=(cell_key_set_pre==nullptr);
+    if(need_create) {
+      cell_key_set_pre=new std::unordered_set<std::string>();
+      initCellKeySet(*cell_key_set_pre);
+    }
+    chds.clear();
+    if(cell_key_set_cur!=nullptr) { cell_key_set_cur->clear(); }
+    for(auto cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
+      if(!isValidCell(cit)) { continue; }
+      std::string key=cell2key(cit);
+      if(cell_key_set_pre->find(key)==cell_key_set_pre->end()) { chds.push_back(cit); }
+      if(cell_key_set_cur==nullptr) { continue; }
+      cell_key_set_cur->insert(key);
+    }
+    if(need_create) { delete cell_key_set_pre; }
     return vhd;
   }
 
-  bool ignore_invalid(const TTds::Cell_handle cell) {
+  void TriangulationWapper::initCellKeySet(std::unordered_set<std::string> &cell_key_set) const
+  {
+    for(auto cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
+      if(!isValidCell(cit)) { continue; }
+      std::string key=cell2key(cit);
+      cell_key_set.insert(key);
+    }
+  }
+
+  bool isValidCell(Chd chd)
+  {
+    return chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(1)->info().pt_type_!=zsw::INVALID_POINT &&
+      chd->vertex(2)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(3)->info().pt_type_!=zsw::INVALID_POINT;
+  }
+
+  bool ignore_invalid(const TTds::Cell_handle cell)
+  {
     return cell->vertex(0)->info().pt_type_==zsw::BBOX_POINT ||
       cell->vertex(1)->info().pt_type_==zsw::BBOX_POINT ||
       cell->vertex(2)->info().pt_type_==zsw::BBOX_POINT ||
@@ -284,13 +317,23 @@ namespace zsw{
       cell->vertex(3)->info().pt_type_==zsw::OUTER_POINT;
   }
 
-  std::string cell2str(const TTds::Cell_handle cell)
+  std::string cell2str(const Chd cell)
   {
     std::stringstream ss;
     ss << "cell:" << cell->vertex(0)->info().index_ << " " <<
       cell->vertex(1)->info().index_ << " " <<
       cell->vertex(2)->info().index_ << " " <<
       cell->vertex(3)->info().index_;
+    return ss.str();
+  }
+
+  std::string cell2key(const Chd chd)
+  {
+    std::stringstream ss;
+    ss << chd->vertex(0)->info().index_ << "," <<
+      chd->vertex(1)->info().index_ << "," <<
+      chd->vertex(2)->info().index_ << "," <<
+      chd->vertex(3)->info().index_;
     return ss.str();
   }
 

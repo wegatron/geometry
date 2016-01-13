@@ -1,6 +1,7 @@
 #ifndef BASIC_DATA_STRUCTURE_H
 #define BASIC_DATA_STRUCTURE_H
 
+#include <unordered_set>
 #include <Eigen/Dense>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Delaunay_triangulation_3.h>
@@ -70,12 +71,18 @@ namespace zsw{
   {
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
-    Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt, VertexInfo &vertex_info,
-                            std::vector<Chd> &chds);
+    Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                           VertexInfo &vertex_info,
+                           std::vector<Chd> &chds,
+                           std::unordered_set<std::string> *cell_key_set_pre=nullptr, // in
+                           std::unordered_set<std::string> *cell_key_set_cur=nullptr //out
+                           );
 
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     bool isBoundaryEdge(const TTds::Edge &edge) const;
     void calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
+    void initCellKeySet(std::unordered_set<std::string> &cell_key_set) const;
+
     void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
     Vhd insertInEdge(TTds::Edge &edge, const Point &pt, const PointType pt_type);
 
@@ -97,6 +104,8 @@ namespace zsw{
 
   bool isTolCell(Chd chd);
 
+  bool isValidCell(Chd chd);
+
   bool ignore_invalid(const TTds::Cell_handle cell);
 
   bool ignore_bbox(const TTds::Cell_handle cell);
@@ -107,7 +116,9 @@ namespace zsw{
 
   bool ignore_out(const TTds::Cell_handle cell);
 
-  std::string cell2str(const TTds::Cell_handle cell);
+  std::string cell2str(const Chd cell);
+
+  std::string cell2key(const Chd chd);
 
   void makeCanonical(VertexTriple &t);
 
