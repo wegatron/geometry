@@ -61,7 +61,10 @@ namespace zsw {
     void updateJptsInCell(Chd chd,
                           std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                           ErrorMaxComparison> *err_queue);
-    void checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue);
+    void checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
+                                std::unordered_set<std::string> *cell_key_set_pre,
+                                std::unordered_set<std::string> *cell_key_set_cur);
+
     bool isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,

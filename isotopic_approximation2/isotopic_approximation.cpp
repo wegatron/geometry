@@ -83,37 +83,41 @@ namespace zsw{
     size_t pre=0, cur=1;
     std::unordered_set<std::string> cell_key_set[2];
     tw_->initCellKeySet(cell_key_set[0]);
-    std::vector<Chd> chds;
+    const TTds &tds=tw_->getTds();
     while(!err_queue.empty()) {
       std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
       zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
       if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
       PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
       VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
-      chds.clear();
-      tw_->addPointInDelaunay(jpt_info.second->pt_, vertex_info, chds, &cell_key_set[pre], &cell_key_set[cur]);
+      std::vector<Chd> chds;
+      //tw_->addPointInDelaunay(jpt_info.second->pt_, vertex_info, chds);
+      tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds, &cell_key_set[pre], &cell_key_set[cur]);
       swap(pre,cur);
       for(Chd chd : chds) { updateJptsInCell(chd, &err_queue); }
 
-      //writeTetMesh("/home/wegatron/tmp/refine_debug_"+std::to_string(debug_step++)+".vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
+      // writeTetMesh("/home/wegatron/tmp/refine_debug_"+std::to_string(debug_step++)+".vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
     }
-    // writeTetMesh("/home/wegatron/tmp/before_checkUpNormalCondition.vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
-    // std::cout << "[INFO] " << "start checkUpNormalCondition!" << std::endl;
-    // const TTds &tds=tw_->getTds();
-    // std::queue<Chd> chds_queue;
-    // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
-    // while(!chds_queue.empty()) {
-    //   Chd chd = chds_queue.front(); chds_queue.pop();
-    //   if(!isTolCell(chd)) { continue; }
-    //   checkUpNormalCondition(chd, chds_queue);
-    // }
+    writeTetMesh("/home/wegatron/tmp/before_checkUpNormalCondition.vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
+    std::cout << "[INFO] " << "start checkUpNormalCondition!" << std::endl;
+    std::queue<Chd> chds_queue;
+    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
+    while(!chds_queue.empty()) {
+      Chd chd = chds_queue.front(); chds_queue.pop();
+      if(!isTolCell(chd)) { continue; }
+      cell_key_set[cur].clear();
+      checkUpNormalCondition(chd, chds_queue, &cell_key_set[pre], &cell_key_set[cur]);
+      swap(pre,cur);
+    }
 
-    for(const JudgePoint &jpt : jpts_) {
-      assert(fabs(jpt.val_cur_-jpt.val_exp_)<1);
-    }
+    // for(const JudgePoint &jpt : jpts_) {
+    //   assert(fabs(jpt.val_cur_-jpt.val_exp_)<1);
+    // }
   }
 
-  void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue)
+  void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
+                                             std::unordered_set<std::string> *cell_key_set_pre,
+                                             std::unordered_set<std::string> *cell_key_set_cur)
   {
     assert(isTolCell(chd));
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
@@ -127,8 +131,8 @@ namespace zsw{
       else { val[i]=1; }
     }
     Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
-      tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
-      tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
+                                            tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
+                                            tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
     Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
     Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
     if(normalCondition(val, scaled_tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) return;
@@ -154,7 +158,7 @@ namespace zsw{
     PointType pt_type=(jpts_[jpt_ind].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
     VertexInfo vertex_info(-1, pt_type, jpts_[jpt_ind].pt_, 0.0);
     std::vector<Chd> chds;
-    tw_->addPointInDelaunay(jpts_[jpt_ind].pt_, vertex_info, chds);
+    tw_->addPointInDelaunaySafe(jpts_[jpt_ind].pt_, vertex_info, chds, cell_key_set_pre, cell_key_set_cur);
     for(Chd chd : chds) { updateJptsInCell(chd, nullptr); }
     for(Chd chd : chds) { chds_queue.push(chd); }
   }
@@ -180,35 +184,25 @@ namespace zsw{
       b<< jpt->pt_[0],jpt->pt_[1],jpt->pt_[2],1;
       Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
       x=pplu.solve(b);
-
-      // if(jpt-&jpts_[0]==15547) {
-      //   std::cerr << "A" << std::endl;
-      //   std::cerr << A << std::endl;
-      //   std::cerr << "b:" << b.transpose() << std::endl;
-      //   std::cerr << "x:" << x.transpose() << std::endl;
-      // }
-
       if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps || x[2]<-zsw::const_val::eps
          || x[3]<-zsw::const_val::eps) { continue; } // jpt not in this cell
       assert((A*x-b).norm()<zsw::const_val::eps);
       Eigen::Matrix<zsw::Scalar,4,1> val;
       for(size_t vi=0; vi<4; ++vi) {
         if(chd->vertex(vi)->info().pt_type_==zsw::INNER_POINT) { val[vi]=-1; }
+        else if(chd->vertex(vi)->info().pt_type_==zsw::ZERO_POINT){ val[vi]=0; }
         else { val[vi]=1; }
       }
-      JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
-      tmp_jpt->val_cur_=val.dot(x);
 
-      // if(tmp_jpt-&jpts_[0]==15547) {
-      //   std::cerr << "A" << std::endl;
-      //   std::cerr << A << std::endl;
-      //   std::cerr << "b:" << b.transpose() << std::endl;
-      //   std::cerr << "x:" << x.transpose() << std::endl;
-      //   std::cerr << "val:" << val.transpose() << std::endl;
-      //   std::cerr << "update jpts_[15547]:" << tmp_jpt->val_cur_
-      //             << " for " << tmp_jpt->val_exp_ << std::endl;
+      // if(jpt-&jpts_[0]==15175) {
+      //   std::cerr << jpt->pt_.transpose() << std::endl;
+      //   std::cerr << cell2str(chd) << std::endl;
+      //   std::cerr << val.transpose() << std::endl;
+      //   std::cerr << "A:\n" << A << std::endl;
       // }
 
+      JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
+      tmp_jpt->val_cur_=val.dot(x);
       if(err_queue!=nullptr) {
         zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
         if(err>1) { err_queue->push(std::make_pair(err, tmp_jpt)); }
@@ -316,7 +310,7 @@ namespace zsw{
                                           std::vector<VertexUpdateData> &vup,
                                           std::vector<JudgePointUpdateData> * jup) const
   {
-    // std::vector<bool> is_updated(jpts_in_bbox.size(), false);
+    std::vector<bool> is_updated(jpts_in_bbox.size(), false);
     for(const VertexTriple &vt : bound_tris) {
       assert(vt.first->info().pt_type_!=zsw::INVALID_POINT);
       assert(vt.second->info().pt_type_!=zsw::INVALID_POINT);
@@ -333,16 +327,16 @@ namespace zsw{
       val[2]=(vt.second->info().pt_type_==zsw::INNER_POINT) ? -1 : 1;
       val[3]=v_pt;
       Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
-      for(size_t i=0; i<jpts_.size(); ++i) {
-        // for(size_t jpt_i=0; jpt_i<jpts_in_bbox.size(); ++jpt_i) {
-        // if(is_updated[jpt_i]) { continue; }
-        // const JudgePoint *jpt=jpts_in_bbox[jpt_i];
-        const JudgePoint *jpt=&jpts_[i];
+      // for(size_t i=0; i<jpts_.size(); ++i) {
+      for(size_t jpt_i=0; jpt_i<jpts_in_bbox.size(); ++jpt_i) {
+        if(is_updated[jpt_i]) { continue; }
+        const JudgePoint *jpt=jpts_in_bbox[jpt_i];
+        // const JudgePoint *jpt=&jpts_[i];
         Eigen::Matrix<zsw::Scalar,4,1> b; b.block<3,1>(0,0)=jpt->pt_; b[3]=1;
         Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
         if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps
            || x[2]<-zsw::const_val::eps || x[3]<-zsw::const_val::eps) { continue; }
-        // is_updated[jpt_i]=true;
+        is_updated[jpt_i]=true;
         zsw::Scalar tmp_val = val.dot(x);
         if(fabs(tmp_val-jpt->val_exp_)>1) { return false; }
         if(jup!=nullptr) { jup->push_back({const_cast<JudgePoint*>(jpt), tmp_val}); }
@@ -454,22 +448,31 @@ namespace zsw{
     }
 
     for(auto tmp_vhd : vhds) {
-      if(tmp_vhd->info().pt_type_==zsw::INNER_POINT) {
-        do {
-          std::vector<TTds::Edge> edges;
-          tds.incident_edges(tmp_vhd, std::back_inserter(edges));
-          auto it=find_if(edges.begin(), edges.end(), [](const TTds::Edge &e){
-              return e.first->vertex(e.second)->info().pt_type_==zsw::OUTER_POINT ||
-              e.first->vertex(e.third)->info().pt_type_==zsw::OUTER_POINT;});
-          if(it==edges.end()) { break; }
-          TTds::Edge &e = *it;
-          Point &pa = e.first->vertex(e.second)->point();
-          Point &pb = e.first->vertex(e.third)->point();
-          Point pt((pa[0]+pb[0])/2.0, (pa[1]+pb[1])/2.0, (pa[2]+pb[2])/2.0);
-          tw_->insertInEdge(e, pt, zsw::ZERO_POINT);
-        } while(1);
-      }
+      assert(tmp_vhd->info().pt_type_==zsw::INNER_POINT);
+      do {
+        std::vector<TTds::Edge> edges;
+        tds.incident_edges(tmp_vhd, std::back_inserter(edges));
+        auto it=find_if(edges.begin(), edges.end(), [](const TTds::Edge &e){
+            return e.first->vertex(e.second)->info().pt_type_==zsw::OUTER_POINT ||
+            e.first->vertex(e.third)->info().pt_type_==zsw::OUTER_POINT;});
+        if(it==edges.end()) { break; }
+        TTds::Edge &e = *it;
+        Point &pa = e.first->vertex(e.second)->point();
+        Point &pb = e.first->vertex(e.third)->point();
+        Point pt((pa[0]+pb[0])/2.0, (pa[1]+pb[1])/2.0, (pa[2]+pb[2])/2.0);
+        tw_->insertInEdge(e, pt, zsw::ZERO_POINT);
+      } while(1);
     }
+
+    // std::cerr << "tds cell size:" << tds.number_of_cells() << std::endl;
+    // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+    //   if(isValidCell(cit)) {
+    //     updateJptsInCell(cit, nullptr);
+    //   }
+    // }
+    // for(const JudgePoint &jpt : jpts_) {
+    //   assert(fabs(jpt.val_cur_-jpt.val_exp_)<1);
+    // }
   }
 
   void Approximation::simpZeroSurface()

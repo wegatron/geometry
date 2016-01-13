@@ -234,7 +234,7 @@ namespace zsw{
     std::cerr << "test passed!!!!!" << std::endl;
   }
 
-  Vhd TriangulationWapper::addPointInDelaunay(
+  Vhd TriangulationWapper::addPointInDelaunaySafe(
                                               const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                               VertexInfo &vertex_info,
                                               std::vector<Chd> &chds,
@@ -262,6 +262,18 @@ namespace zsw{
       cell_key_set_cur->insert(key);
     }
     if(need_create) { delete cell_key_set_pre; }
+    return vhd;
+  }
+
+  Vhd TriangulationWapper::addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                                              VertexInfo &vertex_info,
+                                              std::vector<Chd> &chds)
+  {
+    Point point(pt[0],pt[1], pt[2]);
+    Vhd vhd=delaunay_triangulation_.insert(point);
+    vertex_info.index_=next_v_id_++;
+    vhd->info()=vertex_info;
+    tds_.incident_cells(vhd, std::back_inserter(chds));
     return vhd;
   }
 

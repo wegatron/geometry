@@ -71,12 +71,16 @@ namespace zsw{
   {
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
-    Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+    Vhd addPointInDelaunaySafe(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                            VertexInfo &vertex_info,
                            std::vector<Chd> &chds,
                            std::unordered_set<std::string> *cell_key_set_pre=nullptr, // in
                            std::unordered_set<std::string> *cell_key_set_cur=nullptr //out
                            );
+
+    Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                           VertexInfo &vertex_info,
+                           std::vector<Chd> &chds);
 
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     bool isBoundaryEdge(const TTds::Edge &edge) const;
