@@ -51,9 +51,7 @@ namespace zsw {
                          std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr);
     bool simpBZEdges(std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr,
                      std::unordered_map<std::string,TTds::Edge> *z_map=nullptr);
-    void simpAllEdges() {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    }
+    void simp(const std::string &tmp_output_dir);
 
     void writeZeroSurface(const std::string &filepath) const;
     void writeTetMesh(const std::string &filepath,

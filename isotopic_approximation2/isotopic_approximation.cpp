@@ -400,7 +400,6 @@ namespace zsw{
         if(jup!=nullptr) { jup->push_back({const_cast<JudgePoint*>(jpt), tmp_val}); }
       }
     }
-    std::cerr << "TODO calc vup" << std::endl;
     return true;
   }
 
@@ -454,7 +453,6 @@ namespace zsw{
     std::vector<VertexUpdateData> vup;
     std::vector<JudgePointUpdateData> jup;
     const zsw::Scalar v_pt=(e.first->vertex(e.second)->info().pt_type_==zsw::INNER_POINT) ? -1 : 1;
-    std::cout << "candicate pt size:" << candicate_points.size() << std::endl;
     for(const JudgePoint * jpt_ptr : candicate_points) {
       vup.clear(); jup.clear();
       if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, vup, &jup)
@@ -465,7 +463,7 @@ namespace zsw{
     Vhd vhd=e.first->vertex(e.second);
     tw_->collapseEdge(e, vhd, merge_pt->pt_);
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});
-    updateVertex(vup);
+    //updateVertex(vup);
     boundaryEdgeBack(vhd, edge_map);
     return true;
   }
@@ -505,7 +503,7 @@ namespace zsw{
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=e.first->vertex(e.second);
     tw_->collapseEdge(e, vhd, *merge_pt);
-    updateVertex(vup);
+    //updateVertex(vup);
     zeroEdgeBack(vhd, z_map);
     if(bz_map!=nullptr) { bzEdgeBack(vhd, *bz_map); }
     return true;
@@ -658,6 +656,22 @@ namespace zsw{
     return zb_c_step==0;
   }
 
+  void  Approximation::simp(const std::string &tmp_output_dir)
+  {
+    simpTolerance();
+    writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    mutuallTessellation();
+    writeTetMesh(tmp_output_dir+"mutuall_tessellation.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    simpZeroSurface();
+    writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    std::unordered_map<std::string,TTds::Edge> z_map, bz_map;
+    simpBZEdges(nullptr, &z_map);
+    while(!z_map.empty()) {
+      simpZeroSurface(&z_map, &bz_map);
+      simpBZEdges(&bz_map, &z_map);
+    }
+  }
+
   bool Approximation::tryCollapseBZEdge(TTds::Edge &e, std::unordered_map<std::string,TTds::Edge> &bz_map,
                                         std::unordered_map<std::string,TTds::Edge> *z_map)
   {
@@ -680,7 +694,7 @@ namespace zsw{
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=(e.first->vertex(e.second)->info().pt_type_==zsw::ZERO_POINT) ? e.first->vertex(e.second) : e.first->vertex(e.third);
     tw_->collapseEdge(e, vhd, *merge_pt);
-    updateVertex(vup);
+    //updateVertex(vup);
     bzEdgeBack(vhd, bz_map);
     if(z_map!=nullptr) { zeroEdgeBack(vhd, *z_map); }
     return true;

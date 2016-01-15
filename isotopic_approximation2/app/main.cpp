@@ -37,14 +37,14 @@ void test0(const std::string &file_path,
   // appro.writeTetMesh(output_dir+"mutuall_tessellation.vtk", {zsw::ignore_bbox, zsw::ignore_out});
   // appro.simpZeroSurface();
   // appro.writeTetMesh(output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-  appro.simpAllEdges();
+  appro.simp(output_dir);
   appro.writeTetMesh(output_dir+"simped_final.vtk", {zsw::ignore_bbox, zsw::ignore_out});
 }
 
 int main(int argc, char *argv[])
 {
-  //test0(std::string(argv[1]), std::string(argv[2]), atof(argv[3]), atof(argv[4]), atof(argv[5]));
-  test0("/home/wegatron/workspace/geometry/data/sphere.obj", "/home/wegatron/tmp/", 0.1, 0.03, 0.03);
+  test0(std::string(argv[1]), std::string(argv[2]), atof(argv[3]), atof(argv[4]), atof(argv[5]));
+  //test0("/home/wegatron/workspace/geometry/data/sphere.obj", "/home/wegatron/tmp/", 0.1, 0.03, 0.03);
   // test0("/home/wegatron/workspace/geometry/data/cylinder_smoothed.obj", "/home/wegatron/tmp/", 0.3, 0.1, 0.1);
   //test0("/home/wegatron/workspace/geometry/data/bunny.obj",1.5, 0.5, 0.5);
   return 0;
