@@ -72,19 +72,24 @@ namespace zsw{
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
     Vhd addPointInDelaunaySafe(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                           VertexInfo &vertex_info,
-                           std::vector<Chd> &chds,
-                           std::unordered_set<std::string> *cell_key_set_pre=nullptr, // in
-                           std::unordered_set<std::string> *cell_key_set_cur=nullptr //out
-                           );
+                               VertexInfo &vertex_info,
+                               std::vector<Chd> &chds,
+                               std::unordered_set<std::string> *cell_key_set_pre=nullptr, // in
+                               std::unordered_set<std::string> *cell_key_set_cur=nullptr //out
+                               );
 
     Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                            VertexInfo &vertex_info,
                            std::vector<Chd> &chds);
 
-    bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     bool isBoundaryEdge(const TTds::Edge &edge) const;
+    bool isZeroEdge(const TTds::Edge &e) const;
+    bool isValidCell(Chd chd) const;
+    bool isTolCell(Chd chd) const;
+
+    bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     void calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
+    void calcBoundTrisAdvance(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
     void initCellKeySet(std::unordered_set<std::string> &cell_key_set) const;
 
     void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
@@ -105,11 +110,6 @@ namespace zsw{
     size_t next_v_id_;
   };
 
-
-  bool isTolCell(Chd chd);
-
-  bool isValidCell(Chd chd);
-
   bool ignore_invalid(const TTds::Cell_handle cell);
 
   bool ignore_bbox(const TTds::Cell_handle cell);
@@ -120,11 +120,21 @@ namespace zsw{
 
   bool ignore_out(const TTds::Cell_handle cell);
 
+  bool isConstructTolCell(const PointType pt_type0, const PointType pt_type1,
+                          const PointType pt_type2, const PointType pt_type3,
+                          Eigen::Matrix<zsw::Scalar,4,1> &val);
+
   std::string cell2str(const Chd cell);
 
   std::string cell2key(const Chd chd);
 
+  std::string edge2key(const TTds::Edge &e);
+
   void makeCanonical(VertexTriple &t);
+
+  void writeCellsAndPoints(const std::string &filepath,
+                           std::vector<Eigen::Matrix<zsw::Scalar,3,4>> cells,
+                           std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
 
 }
 #endif /* BASIC_DATA_STRUCTURE_H */

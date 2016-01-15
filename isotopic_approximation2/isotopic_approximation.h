@@ -72,10 +72,14 @@ namespace zsw {
                              std::vector<VertexUpdateData> &vup,
                              std::vector<JudgePointUpdateData> * jup=nullptr) const;
 
+    bool isTolTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
+                                         const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                                         const PointType point_type) const;
+
     void constructKernelRegionJudger(const std::vector<VertexTriple> &bound_tris,
                                      std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const;
 
-    void tryCollapseBoundaryEdge(TTds::Edge &e,
+    bool tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
 
     void tryCollapseZeroEdge(TTds::Edge &e,
@@ -92,15 +96,9 @@ namespace zsw {
 
     void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
 
-    void sampleIncidentCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points)
-    {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    }
+    void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
 
-    void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map)
-    {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    }
+    void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map);
 
     // data access
 

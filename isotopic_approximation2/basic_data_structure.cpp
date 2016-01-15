@@ -19,6 +19,220 @@ namespace zsw{
     next_v_id_=vertices.size();
   }
 
+  Chd findCellLink(const TTds &tds, const size_t index0, const size_t index1)
+  {
+    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+      size_t cnt=0;
+      for(size_t i=0; i<4; ++i) {
+        cnt+=(cit->vertex(i)->info().index_==index0);
+        cnt+=(cit->vertex(i)->info().index_==index1);
+      }
+      if(cnt==2) { return cit; }
+    }
+    std::cerr << "can't find cell link " << index0 << "-" << index1 << std::endl;
+    abort();
+    return nullptr;
+  }
+
+  void writeCells(const std::string &filepath, const Chd *chd_ptr, const size_t n)
+  {
+    std::unordered_map<size_t, Vhd> v_map;
+    for(size_t i=0; i<n; ++i) {
+      for(size_t j=0; j<4; ++j) {
+        v_map[chd_ptr[i]->vertex(j)->info().index_]=chd_ptr[i]->vertex(j);
+      }
+    }
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+        << v_map.size() << " float" << std::endl;
+    std::unordered_map<size_t,size_t> ind_map;
+    size_t ind=0;
+    for(auto it=v_map.begin(); it!=v_map.end(); ++it) {
+      ind_map.insert(std::make_pair(it->first, ind++));
+      ofs << it->second->point()[0] << " " << it->second->point()[1] << " " << it->second->point()[2] << std::endl;
+    }
+    ofs << "CELLS " << n << " " << n*5 << std::endl;
+    for(size_t i=0; i<n; ++i) {
+      ofs << "4 " << ind_map[chd_ptr[i]->vertex(0)->info().index_] << " "
+          << ind_map[chd_ptr[i]->vertex(1)->info().index_] << " "
+          << ind_map[chd_ptr[i]->vertex(2)->info().index_] << " "
+          << ind_map[chd_ptr[i]->vertex(3)->info().index_] << std::endl;
+    }
+    ofs << "CELL_TYPES " << n << std::endl;
+    for(size_t ci=0; ci<n; ++ci) { ofs << "10"<< std::endl; }
+    ofs.close();
+  }
+
+  void writeFace(const std::string &filepath, TTds::Facet_circulator fit)
+  {
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS 3 float" << std::endl;
+    for(size_t i=0; i<4; ++i) {
+      if(i!=fit->second) {
+        ofs << fit->first->vertex(i)->point()[0] << " "
+            << fit->first->vertex(i)->point()[1] << " "
+            << fit->first->vertex(i)->point()[2] << std::endl;
+      }
+    }
+    ofs << "CELLS 1 4\n3 0 1 2\nCELL_TYPES 1\n5" << std::endl;
+    ofs.close();
+  }
+
+  void debugLinkConditionWriteout(const std::string &output_dir, const TTds &tds, TTds::Facet_circulator fit,
+                                  const std::unordered_map<size_t,size_t> &count_map)
+  {
+    struct CellTriple
+    {
+      Chd first,second,third;
+    };
+    writeFace(output_dir+"face.vtk",fit);
+    std::vector<CellTriple> cells;
+    size_t index[3];
+    size_t *ptr=index;
+    for(size_t i=0; i<4; ++i) {      if(i!=fit->second) { *ptr=fit->first->vertex(i)->info().index_; ++ptr; }    }
+    for(auto iter=count_map.begin(); iter!=count_map.end(); ++iter) {
+      if(iter->second==3) {
+        CellTriple ct;
+        ct.first=findCellLink(tds, iter->first, index[0]);
+        ct.second=findCellLink(tds, iter->first, index[1]);
+        ct.third=findCellLink(tds, iter->first, index[2]);
+        cells.push_back(ct);
+      }
+    }
+    size_t ind=0;
+    for(const CellTriple &ct : cells) {
+      // write cell
+      writeCells(output_dir+std::to_string(ind++)+".vtk", &(ct.first), 3);
+    }
+  }
+
+  void writeCellWithIndex(const TTds &tds, const std::string &file_path, Vhd vhd0, Vhd vhd1, const std::string &key_str)
+  {
+    std::cerr << "key_str:" << key_str << std::endl;
+    std::cerr << "edge pt:" << vhd0->point()[0] << " " << vhd0->point()[1] << " "
+              << vhd0->point()[2] << std::endl;
+    std::cerr << "edge pt:" << vhd1->point()[0] << " " << vhd1->point()[1] << " "
+              << vhd1->point()[2] << std::endl;
+    std::istringstream is(key_str);
+    size_t key[2];
+    is>>key[0]>>key[1];
+    Vhd ovhds[2];
+    Vhd *ptr=ovhds;
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      if(vit->info().index_==key[0] || vit->info().index_==key[1]) { *ptr=vit; ++ptr; }
+    }
+
+    std::cerr << "o pt:" << ovhds[0]->point()[0] << " " << ovhds[0]->point()[1] << " "
+              << ovhds[0]->point()[2] << std::endl;
+    std::cerr << "o pt:" << ovhds[1]->point()[0] << " " << ovhds[1]->point()[1] << " "
+              << ovhds[1]->point()[2] << std::endl;
+
+    std::vector<Chd> chds;
+    int vind[4];
+    Chd out_chd;
+    assert(!tds.is_cell(vhd0,vhd1,ovhds[0],ovhds[1], out_chd, vind[0], vind[1], vind[2],vind[3]));
+    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+      size_t cnt=0;
+      for(size_t i=0; i<4; ++i) {
+        cnt+=(cit->vertex(i)==vhd0);
+        cnt+=(cit->vertex(i)==ovhds[0]);
+        cnt+=(cit->vertex(i)==ovhds[1]);
+      }
+      if(cnt>=3) { chds.push_back(cit); break; }
+    }
+    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+      size_t cnt=0;
+      for(size_t i=0; i<4; ++i) {
+        cnt+=(cit->vertex(i)==vhd1);
+        cnt+=(cit->vertex(i)==ovhds[0]);
+        cnt+=(cit->vertex(i)==ovhds[1]);
+      }
+      if(cnt>=3) { chds.push_back(cit); break; }
+    }
+    writeCells(file_path, chds.data(), chds.size());
+  }
+
+  void writeEdge(const TTds &tds, const std::string &file_path, Vhd vhd0, Vhd vhd1)
+  {
+    Chd chd;
+    int i,j;
+    if(tds.is_edge(vhd0, vhd1, chd, i, j)) {      writeCells(file_path, &chd, 1);    }
+    else { std::cerr << "is not edge!!!!!!!!" << std::endl; }
+  }
+
+  bool TriangulationWapper::isSatisfyLinkCondition(const TTds::Edge &edge) const
+  {
+    std::unordered_set<std::string> edge_key_set[2];
+    const Vhd e_vhd[2] = {edge.first->vertex(edge.second), edge.first->vertex(edge.third)};
+    std::vector<Chd> cells;
+    for(size_t evi=0; evi<2; ++evi) {
+      cells.clear();
+      tds_.incident_cells(e_vhd[evi], std::back_inserter(cells));
+      for(Chd chd : cells) {
+        Vhd tmp_vhds[3];
+        size_t cnt=0;
+        for(size_t i=0; i<4; ++i) {
+          if(chd->vertex(i)!=e_vhd[0] && chd->vertex(i)!=e_vhd[1]) {tmp_vhds[cnt++]=chd->vertex(i);}
+        }
+        if(cnt!=3) { continue; }
+        size_t key[3]={tmp_vhds[0]->info().index_,tmp_vhds[1]->info().index_, tmp_vhds[2]->info().index_};
+        std::sort(&key[0],&key[0]+3);
+        edge_key_set[evi].insert(std::to_string(key[0])+" "+std::to_string(key[1]));
+        edge_key_set[evi].insert(std::to_string(key[0])+" "+std::to_string(key[2]));
+        edge_key_set[evi].insert(std::to_string(key[1])+" "+std::to_string(key[2]));
+      }
+    }
+
+    size_t lk_a_b_cnt=0;
+    for(const std::string &key_str : edge_key_set[0]) {
+      if(edge_key_set[1].find(key_str)!=edge_key_set[1].end()) { ++lk_a_b_cnt; }
+    }
+
+    size_t lk_ab_cnt=0;
+    TTds::Cell_circulator cit=tds_.incident_cells(edge);
+    TTds::Cell_circulator done(cit);
+    do{
+      ++lk_ab_cnt;
+      ++cit;
+    }while(cit!=done);
+#if 0
+    {
+      if(lk_a_b_cnt==lk_ab_cnt) { return true; }
+      std::unordered_set<std::string> e_keys;
+      TTds::Cell_circulator check_cit=tds_.incident_cells(edge);
+      TTds::Cell_circulator check_done(cit);
+      size_t inci_i=0;
+      do{
+        size_t tmp_key[2];
+        size_t *ptr=tmp_key;
+        for(size_t i=0; i<4; ++i) {
+          if(check_cit->vertex(i)==e_vhd[0] || check_cit->vertex(i)==e_vhd[1]) {continue;}
+          *ptr=check_cit->vertex(i)->info().index_; ++ptr;
+        }
+        if(tmp_key[0]>tmp_key[1]) { std::swap(tmp_key[0], tmp_key[1]); }
+        e_keys.insert(std::to_string(tmp_key[0])+" "+std::to_string(tmp_key[1]));
+        Chd tmp_chd=check_cit;
+        writeCells("/home/wegatron/tmp/linkcond_debug/debug_incident"+std::to_string(inci_i++)+".vtk", &tmp_chd, 1);
+        ++check_cit;
+      } while(check_cit!=check_done);
+
+      for(const std::string &key_str : edge_key_set[0]) {
+        if(edge_key_set[1].find(key_str)!=edge_key_set[1].end()) {
+          if(e_keys.find(key_str)==e_keys.end()) {
+            writeCellWithIndex(tds_, "/home/wegatron/tmp/linkcond_debug/debug.vtk", e_vhd[0], e_vhd[1], key_str);
+            assert(tds_.is_edge(edge.first, edge.second, edge.third));
+            assert(edge.first->vertex(edge.second)==e_vhd[0] && edge.first->vertex(edge.third)==e_vhd[1]);
+          }
+        }
+      }
+    }
+#endif
+    return lk_a_b_cnt==lk_ab_cnt;
+  }
+
+  #if 0
   bool TriangulationWapper::isSatisfyLinkCondition(const TTds::Edge &edge) const
   {
     TTds::Facet_circulator fit = tds_.incident_facets(edge);
@@ -27,28 +241,31 @@ namespace zsw{
       std::unordered_map<size_t, size_t> count_map;
       for(size_t i=0; i<4; ++i) {
         if(i==fit->second) { continue; }
-
-        assert(tds_.is_cell(edge.first));
-        assert(fit->first->vertex(i) != TTds::Vertex_handle());
-        assert(tds_.is_vertex(fit->first->vertex(i)));
-        assert(tds_.is_valid());
-
         std::vector<Vhd> adj_vhds;
         tds_.adjacent_vertices(fit->first->vertex(i), std::back_inserter(adj_vhds));
         for(Vhd vhd : adj_vhds) {
-          auto iter = count_map.find(vhd->info().index_);
+          assert(vhd->info().index_!=fit->first->vertex(i)->info().index_);
+          auto iter=count_map.find(vhd->info().index_);
           if(iter==count_map.end()) { count_map[vhd->info().index_]=1; }
           else { count_map[vhd->info().index_] = iter->second+1; }
         }
       }
       size_t cnt=0;
       for(auto iter=count_map.begin(); iter!=count_map.end(); ++iter) {
-        if(iter->second==3) { ++cnt; }
+        if(iter->second==3) { ++cnt;}
       }
-      if(cnt!=2) { return false; }
+      if(cnt!=2) {
+#if 1
+        debugLinkConditionWriteout("/home/wegatron/tmp/linkcond_debug/", tds_, fit, count_map);
+        std::cout << __FILE__ << __LINE__ << std::endl;
+        abort();
+#endif
+        return false;
+      }
     } while(++fit!=done);
     return true;
   }
+  #endif
 
   void TriangulationWapper::calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris,
                                           std::vector<Vhd> &opposite_vs) const
@@ -74,6 +291,25 @@ namespace zsw{
       }
     }
   }
+
+  void TriangulationWapper::calcBoundTrisAdvance(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris,
+                                                 std::vector<Vhd> &opposite_vs) const
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    // std::vector<Chd> chds;
+    // Vhd ev[2]={edge.first->vertex(edge.second), edge.first->vertex(edge.third)};
+    // tds_.incident_cells(ev[0], std::back_inserter(chds));
+    // tds_.incident_cells(ev[1], std::back_inserter(chds));
+    // std::unordered_set<Chd, CGAL::Handle_hash_function> incident_cell_set;
+    // for(Chd chd : chds) {
+    //   size_t cnt=0, vind=-1;
+    //   for(size_t i=0; i<4; ++i) { if(chd->vertex(i)==ev[0]) { ++cnt; vind=i; } }
+    //   assert(cnt!=0);
+    //   if(cnt==2) { continue; }
+    //   if(incident_cell_set.find(chd.neighbor(vind))!=incident_cell_set.end()) { continue; }
+    // }
+  }
+
 
   void TriangulationWapper::collapseEdge(TTds::Edge &edge, Vhd merge_vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt)
   {
@@ -170,31 +406,6 @@ namespace zsw{
     return vhd;
   }
 
-  bool TriangulationWapper::isBoundaryEdge(const TTds::Edge &edge) const
-  {
-    if(!tds_.is_edge(edge.first, edge.second, edge.third)) { return false; }
-    zsw::PointType oppo_type;
-    if(edge.first->vertex(edge.second)->info().pt_type_==zsw::INNER_POINT
-       && edge.first->vertex(edge.third)->info().pt_type_==zsw::INNER_POINT) {
-      oppo_type= zsw::OUTER_POINT;
-    } else if(edge.first->vertex(edge.second)->info().pt_type_==zsw::OUTER_POINT
-              && edge.first->vertex(edge.third)->info().pt_type_==zsw::OUTER_POINT) {
-      oppo_type = zsw::INNER_POINT;
-    } else { return false; }
-    CGAL::Container_from_circulator<TTds::Cell_circulator> cells(tds_.incident_cells(edge));
-    bool ret=false;
-    for(auto cell : cells) {
-      if(cell.vertex(0)->info().pt_type_== oppo_type ||
-         cell.vertex(1)->info().pt_type_==oppo_type ||
-         cell.vertex(2)->info().pt_type_==oppo_type ||
-         cell.vertex(3)->info().pt_type_==oppo_type) {
-        ret=true;
-        break;
-      }
-    }
-    return ret;
-  }
-
   void TriangulationWapper::writeVertex(const std::string &filepath, const std::vector<Vhd> &vs) const
   {
     std::ofstream ofs;
@@ -235,12 +446,12 @@ namespace zsw{
   }
 
   Vhd TriangulationWapper::addPointInDelaunaySafe(
-                                              const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                                              VertexInfo &vertex_info,
-                                              std::vector<Chd> &chds,
-                                              std::unordered_set<std::string> *cell_key_set_pre, // in
-                                              std::unordered_set<std::string> *cell_key_set_cur //out
-                                              )
+                                                  const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                                                  VertexInfo &vertex_info,
+                                                  std::vector<Chd> &chds,
+                                                  std::unordered_set<std::string> *cell_key_set_pre, // in
+                                                  std::unordered_set<std::string> *cell_key_set_cur //out
+                                                  )
   {
     Point point(pt[0],pt[1], pt[2]);
     Vhd vhd=delaunay_triangulation_.insert(point);
@@ -286,10 +497,77 @@ namespace zsw{
     }
   }
 
-  bool isValidCell(Chd chd)
+  bool TriangulationWapper::isBoundaryEdge(const TTds::Edge &edge) const
   {
-    return chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(1)->info().pt_type_!=zsw::INVALID_POINT &&
-      chd->vertex(2)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(3)->info().pt_type_!=zsw::INVALID_POINT;
+    if(!tds_.is_edge(edge.first, edge.second, edge.third)) { return false; }
+    zsw::PointType oppo_type;
+    if(edge.first->vertex(edge.second)->info().pt_type_==zsw::INNER_POINT
+       && edge.first->vertex(edge.third)->info().pt_type_==zsw::INNER_POINT) {
+      oppo_type= zsw::OUTER_POINT;
+    } else if(edge.first->vertex(edge.second)->info().pt_type_==zsw::OUTER_POINT
+              && edge.first->vertex(edge.third)->info().pt_type_==zsw::OUTER_POINT) {
+      oppo_type = zsw::INNER_POINT;
+    } else { return false; }
+    CGAL::Container_from_circulator<TTds::Cell_circulator> cells(tds_.incident_cells(edge));
+    bool ret=false;
+    for(auto cell : cells) {
+      if(cell.vertex(0)->info().pt_type_== oppo_type ||
+         cell.vertex(1)->info().pt_type_==oppo_type ||
+         cell.vertex(2)->info().pt_type_==oppo_type ||
+         cell.vertex(3)->info().pt_type_==oppo_type) {
+        ret=true;
+        break;
+      }
+    }
+    return ret;
+  }
+
+  bool TriangulationWapper::isZeroEdge(const TTds::Edge &edge) const
+  {
+    if(!tds_.is_edge(edge.first, edge.second, edge.third)) { return false; }
+    return edge.first->vertex(edge.second)->info().pt_type_==zsw::ZERO_POINT
+      && edge.first->vertex(edge.third)->info().pt_type_==zsw::ZERO_POINT;
+  }
+
+  bool TriangulationWapper::isValidCell(Chd chd) const
+  {
+    return  tds_.is_cell(chd)
+      && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
+      && chd->vertex(1)->info().pt_type_!=zsw::INVALID_POINT
+      && chd->vertex(2)->info().pt_type_!=zsw::INVALID_POINT
+      && chd->vertex(3)->info().pt_type_!=zsw::INVALID_POINT;
+  }
+
+  bool TriangulationWapper::isTolCell(Chd chd) const
+  {
+    if(!tds_.is_cell(chd)) { return false; }
+    size_t i_cnt=0;
+    size_t o_cnt=0;
+    for(size_t i=0; i<4; ++i) {
+      if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT) { ++i_cnt; }
+      else if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT) { ++o_cnt; }
+    }
+    return i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4;
+  }
+
+  bool isConstructTolCell(const PointType pt_type0, const PointType pt_type1,
+                          const PointType pt_type2, const PointType pt_type3,
+                          Eigen::Matrix<zsw::Scalar,4,1> &val)
+  {
+    size_t i_cnt=0;
+    size_t o_cnt=0;
+    if(pt_type0==zsw::INNER_POINT) { ++i_cnt; val[0]=-1; }
+    else if(pt_type0==zsw::OUTER_POINT) { ++o_cnt; val[0]=1; }
+
+    if(pt_type1==zsw::INNER_POINT) { ++i_cnt; val[1]=-1; }
+    else if(pt_type1==zsw::OUTER_POINT) { ++o_cnt; val[1]=1; }
+
+    if(pt_type2==zsw::INNER_POINT) { ++i_cnt; val[2]=-1; }
+    else if(pt_type2==zsw::OUTER_POINT) { ++o_cnt; val[2]=1; }
+
+    if(pt_type3==zsw::INNER_POINT) { ++i_cnt; val[3]=-1; }
+    else if(pt_type3==zsw::OUTER_POINT) { ++o_cnt; val[3]=1; }
+    return i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4;
   }
 
   bool ignore_invalid(const TTds::Cell_handle cell)
@@ -341,6 +619,7 @@ namespace zsw{
 
   std::string cell2key(const Chd chd)
   {
+    // each cell has it's orientation so don't need to sort vertex ind
     std::stringstream ss;
     ss << chd->vertex(0)->info().index_ << "," <<
       chd->vertex(1)->info().index_ << "," <<
@@ -349,19 +628,47 @@ namespace zsw{
     return ss.str();
   }
 
+  std::string edge2key(const TTds::Edge &e)
+  {
+    std::stringstream ss;
+    size_t key[2] = {e.first->vertex(e.second)->info().index_,
+                     e.first->vertex(e.third)->info().index_};
+    if(key[0]>key[1]) { std::swap(key[0], key[1]); }
+    return std::to_string(key[0]) + "," + std::to_string(key[1]);
+  }
+
   void makeCanonical(VertexTriple &t)
   {
     std::sort(&t.first, &t.first+3, [](Vhd a, Vhd b){ return a->info().index_<b->info().index_; });
   }
 
-  bool isTolCell(Chd chd)
+  void writeCellsAndPoints(const std::string &filepath, std::vector<Eigen::Matrix<zsw::Scalar,3,4>> cells,
+                           std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts)
   {
-    size_t i_cnt=0;
-    size_t o_cnt=0;
-    for(size_t i=0; i<4; ++i) {
-      if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT) { ++i_cnt; }
-      else if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT) { ++o_cnt; }
+    std::ofstream ofs;
+    OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+    const size_t n=cells.size()*4+pts.size();
+    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+        << n << " float" << std::endl;
+    for(size_t i=0; i<cells.size(); ++i) {
+      ofs << cells[i].block<3,1>(0,0).transpose() << std::endl;
+      ofs << cells[i].block<3,1>(0,1).transpose() << std::endl;
+      ofs << cells[i].block<3,1>(0,2).transpose() << std::endl;
+      ofs << cells[i].block<3,1>(0,3).transpose() << std::endl;
     }
-    return i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4;
+    for(size_t i=0; i<pts.size(); ++i) {
+      ofs << pts[i].transpose() << std::endl;
+    }
+    ofs <<"CELLS " << cells.size()+pts.size() << " " << 5*cells.size()+2*pts.size() << std::endl;
+    size_t  pt_n=0;
+    for(size_t i=0; i<cells.size(); ++i) {
+      ofs << "4 " << pt_n << " " << pt_n+1 << " " << pt_n+2 << " " << pt_n+3 << std::endl;
+      pt_n+=4;
+    }
+    for(size_t i=0; i<pts.size(); ++i) {      ofs << "1 " << pt_n++ << std::endl;    }
+    ofs << "CELL_TYPES " << cells.size()+pts.size() << std::endl;
+    for(size_t i=0; i<cells.size();++i) {      ofs << "10" << std::endl;    }
+    for(size_t i=0; i<pts.size(); ++i) { ofs<<"1"<< std::endl; }
+    ofs.close();
   }
 }

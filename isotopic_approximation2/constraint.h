@@ -32,11 +32,14 @@ namespace zsw
 
   bool normalCondition(
                        const Eigen::Matrix<zsw::Scalar,4,1> &val,
+                       const Eigen::Matrix<zsw::Scalar,3,4> &scaled_tri_pts,
                        const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts,
                        const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
                        const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
                        std::shared_ptr<zsw::Flann<zsw::Scalar>> inner_kdtree_ptr,
-                       std::shared_ptr<zsw::Flann<zsw::Scalar>> outer_kdtree_ptr);
+                       std::shared_ptr<zsw::Flann<zsw::Scalar>> outer_kdtree_ptr,
+                       bool debug_flag=false,
+                       const std::string *filepath_ptr=nullptr);
 }
 
 

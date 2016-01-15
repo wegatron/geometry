@@ -48,6 +48,8 @@ namespace zsw{
             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
   {
+    tri_sample_r_=tri_sample_r;
+    tet_sample_r_=tet_sample_r;
     inner_jpts_=inner_jpts; outer_jpts_=outer_jpts;
     inner_kdtree_ptr_.reset(new zsw::Flann<zsw::Scalar>(inner_jpts_[0].data(), inner_jpts_.size()));
     outer_kdtree_ptr_.reset(new zsw::Flann<zsw::Scalar>(outer_jpts_[0].data(), outer_jpts_.size()));
@@ -104,7 +106,7 @@ namespace zsw{
     for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
     while(!chds_queue.empty()) {
       Chd chd = chds_queue.front(); chds_queue.pop();
-      if(!isTolCell(chd)) { continue; }
+      if(!tw_->isTolCell(chd)) { continue; }
       cell_key_set[cur].clear();
       checkUpNormalCondition(chd, chds_queue, &cell_key_set[pre], &cell_key_set[cur]);
       swap(pre,cur);
@@ -119,7 +121,7 @@ namespace zsw{
                                              std::unordered_set<std::string> *cell_key_set_pre,
                                              std::unordered_set<std::string> *cell_key_set_cur)
   {
-    assert(isTolCell(chd));
+    assert(tw_->isTolCell(chd));
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
     tri_pts<<
       chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
@@ -133,15 +135,16 @@ namespace zsw{
     Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
                                             tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
                                             tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
-    Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
+    const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
     Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-    if(normalCondition(val, scaled_tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) return;
+    if(normalCondition(val, tri_pts, scaled_tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) return;
 
-    static size_t debug_step=0;
+    // static size_t debug_step=0;
     // std::cerr << "tri_pts:\n" << tri_pts << std::endl;
     //  writeTetMesh("/home/wegatron/tmp/upnorm_"+std::to_string(debug_step++)+".vtk",
     //               {ignore_self_in, ignore_bbox, ignore_self_out});
 
+    // insert point into delaunay triangulation
     Eigen::Matrix<zsw::Scalar,3,1> center;
     calcCircumcenter(tri_pts, center);
     // find the minest
@@ -247,45 +250,73 @@ namespace zsw{
     std::unordered_map<std::string, TTds::Edge> edge_map;
     for(TTds::Edge_iterator eit=tds.edges_begin();
         eit!=tds.edges_end(); ++eit) {
-      if(tw_->isBoundaryEdge(*eit)) {
-        size_t key[2] = {eit->first->vertex(eit->second)->info().index_,
-                         eit->first->vertex(eit->third)->info().index_};
-        if(key[0]>key[1]) { swap(key[0], key[1]); }
-        std::string key_str(std::to_string(key[0]) + "," + std::to_string(key[1]));
-        edge_map.insert(std::make_pair(key_str, *eit));
+      if(!tw_->isBoundaryEdge(*eit)) { continue;  }
+      std::string key_str=edge2key(*eit);
+      edge_map.insert(std::make_pair(key_str, *eit));
 #if 0
-        else {
-          CGAL::Container_from_circulator<TTds::Cell_circulator> cells0(tds.incident_cells(*eit));
-          std::cerr << "cell0:" << std::endl;
-          for(auto cell : cells0) {
-            std::cerr << cell.vertex(0)->info().index_ << " " <<
-              cell.vertex(1)->info().index_ << " " <<
-              cell.vertex(2)->info().index_ << " " <<
-              cell.vertex(3)->info().index_ << std::endl;
-          }
-
-          CGAL::Container_from_circulator<TTds::Cell_circulator> cells1(tds.incident_cells(edge_map[key_str]));
-          std::cerr << "cell1:" << std::endl;
-          for(auto cell : cells1) {
-            std::cerr << cell.vertex(0)->info().index_ << " " <<
-              cell.vertex(1)->info().index_ << " " <<
-              cell.vertex(2)->info().index_ << " " <<
-              cell.vertex(3)->info().index_ << std::endl;
-          }
-          std::cerr << "---------------------" << std::endl;
+      else {
+        CGAL::Container_from_circulator<TTds::Cell_circulator> cells0(tds.incident_cells(*eit));
+        std::cerr << "cell0:" << std::endl;
+        for(auto cell : cells0) {
+          std::cerr << cell.vertex(0)->info().index_ << " " <<
+            cell.vertex(1)->info().index_ << " " <<
+            cell.vertex(2)->info().index_ << " " <<
+            cell.vertex(3)->info().index_ << std::endl;
         }
-#endif
+
+        CGAL::Container_from_circulator<TTds::Cell_circulator> cells1(tds.incident_cells(edge_map[key_str]));
+        std::cerr << "cell1:" << std::endl;
+        for(auto cell : cells1) {
+          std::cerr << cell.vertex(0)->info().index_ << " " <<
+            cell.vertex(1)->info().index_ << " " <<
+            cell.vertex(2)->info().index_ << " " <<
+            cell.vertex(3)->info().index_ << std::endl;
+        }
+        std::cerr << "---------------------" << std::endl;
       }
+#endif
     }
     std::cerr << "edge size:" << edge_map.size() << std::endl;
+    size_t debug_step=0;
     while(!edge_map.empty()) {
       TTds::Edge e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
       if(!tw_->isBoundaryEdge(e)) { continue; }
       std::cout << "try collapse edge:";
       std::cout << e.first->vertex(e.second)->info().index_ << " " <<
         e.first->vertex(e.third)->info().index_ << std::endl;
-      tryCollapseBoundaryEdge(e, edge_map);
+      if(tryCollapseBoundaryEdge(e, edge_map)) {
+        std::cout << "step:" << debug_step << std::endl;
+        // writeTetMesh("/home/wegatron/tmp/sim_tol_"+std::to_string(debug_step++)
+        //              +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+      }
     }
+
+#if 0
+    size_t normal_cond_debug_i=0;
+    for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
+      if(tw_->isTolCell(chd)) {
+        Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
+        tri_pts<<
+          chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+          chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+          chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
+        Eigen::Matrix<zsw::Scalar,4,1> val;
+        for(size_t i=0; i<4; ++i) {
+          if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
+          else { val[i]=1; }
+        }
+        Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
+                                                tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
+                                                tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
+        const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
+        Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
+        std::string filepath("/home/wegatron/tmp/normal_cond_debug/nd_"+std::to_string(normal_cond_debug_i++)+".vtk");
+        normalCondition(val, tri_pts, scaled_tri_pts, inner_jpts_, outer_jpts_,
+                        inner_kdtree_ptr_, outer_kdtree_ptr_,
+                        true, &filepath);
+      }
+    }
+#endif
   }
 
   void Approximation::writeJudgePoints(const std::string &filepath) const
@@ -301,6 +332,29 @@ namespace zsw{
     for(size_t i=0; i<jpts_.size(); ++i) {      ofs << "1 " << i << std::endl;    }
     ofs << "CELL_TYPES " << jpts_.size() << std::endl;
     for(size_t i=0; i<jpts_.size(); ++i) { ofs << "1" << std::endl; }
+  }
+
+  bool Approximation::isTolTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
+                                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                                       const PointType point_type) const
+  {
+    assert(point_type!=zsw::BBOX_POINT && point_type!=zsw::INVALID_POINT);
+    Eigen::Matrix<zsw::Scalar,4,1> val;
+    Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
+    tri_pts.block<3,1>(0,0)=pt;
+    const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
+    for(VertexTriple vt : bound_tris) {
+      if(!isConstructTolCell(point_type, vt.first->info().pt_type_, vt.second->info().pt_type_, vt.third->info().pt_type_, val)) { continue; }
+      tri_pts(0,1)=vt.first->point()[0]; tri_pts(1,1)=vt.first->point()[1]; tri_pts(2,1)=vt.first->point()[2];
+      tri_pts(0,2)=vt.second->point()[0]; tri_pts(1,2)=vt.second->point()[1]; tri_pts(2,2)=vt.second->point()[2];
+      tri_pts(0,3)=vt.third->point()[0]; tri_pts(1,3)=vt.third->point()[1]; tri_pts(2,3)=vt.third->point()[2];
+      Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
+                                              tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
+                                              tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
+      Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
+      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) { return false;}
+    }
+    return true;
   }
 
   bool Approximation::isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
@@ -350,26 +404,37 @@ namespace zsw{
     return true;
   }
 
-  void Approximation::tryCollapseBoundaryEdge(TTds::Edge &e,
+  bool Approximation::tryCollapseBoundaryEdge(TTds::Edge &e,
                                               std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
     const TTds &tds = tw_->getTds();
-    if(!tw_->isSatisfyLinkCondition(e)) { return; }
+    if(!tw_->isSatisfyLinkCondition(e)) {
+      // std::cout << "[INFO] link condition failed!" << std::endl;
+      // std::cout << e.first->vertex(e.second)->point()[0] << " "
+      //           << e.first->vertex(e.second)->point()[1] << " "
+      //           << e.first->vertex(e.second)->point()[2] << std::endl;
+      // std::cout << e.first->vertex(e.third)->point()[0] << " "
+      //           << e.first->vertex(e.third)->point()[1] << " "
+      //           << e.first->vertex(e.third)->point()[2] << std::endl;
+      // writeAdjcentCells("/home/wegatron/tmp/link_cond_adj_cells.vtk", e);
+      // abort();
+      return false;
+    }
     std::vector<VertexTriple> bound_tris;
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
-
-    assert(tds.is_edge(e.first,e.second,e.third));
-
     std::vector<const JudgePoint*> jpts_in_bbox;
     calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
     // candicate merge points in kernel region
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
     std::vector<const JudgePoint*> candicate_points;
+    std::function<bool(zsw::Scalar v)> judge_func;
+    if(e.first->vertex(e.second)->info().pt_type_==zsw::INNER_POINT) {
+      judge_func=[](zsw::Scalar v){ return v<0; };
+    } else { judge_func=[](zsw::Scalar v){ return v>0; }; }
     for(const JudgePoint * jpt_ptr : jpts_in_bbox) {
-      if(jpt_ptr->val_exp_>0 && e.first->vertex(e.second)->info().pt_type_==zsw::INNER_POINT) { continue; }
-      if(jpt_ptr->val_exp_<0 && e.first->vertex(e.second)->info().pt_type_==zsw::OUTER_POINT) { continue; }
+      if(!judge_func(jpt_ptr->val_exp_)) { continue; }
       if(krj.judge(jpt_ptr->pt_)) { candicate_points.push_back(jpt_ptr); }
     }
 
@@ -392,14 +457,17 @@ namespace zsw{
     std::cout << "candicate pt size:" << candicate_points.size() << std::endl;
     for(const JudgePoint * jpt_ptr : candicate_points) {
       vup.clear(); jup.clear();
-      if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, vup, &jup)) { merge_pt=jpt_ptr; break; }
+      if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, vup, &jup)
+         && isTolTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pt_, e.first->vertex(e.second)->info().pt_type_))
+        { merge_pt=jpt_ptr; break; }
     }
-    if(merge_pt==nullptr) { return; }
+    if(merge_pt==nullptr) { return false; }
     Vhd vhd=e.first->vertex(e.second);
     tw_->collapseEdge(e, vhd, merge_pt->pt_);
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});
     updateVertex(vup);
     boundaryEdgeBack(vhd, edge_map);
+    return true;
   }
 
   void Approximation::boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const
@@ -409,10 +477,7 @@ namespace zsw{
     tds.incident_edges(vhd, std::back_inserter(edges));
     for(const TTds::Edge &e : edges) {
       if(!tw_->isBoundaryEdge(e)) { continue; }
-      size_t key[2] = {e.first->vertex(e.second)->info().index_,
-                       e.first->vertex(e.third)->info().index_};
-      if(key[0]>key[1]) { swap(key[0], key[1]); }
-      std::string key_str(std::to_string(key[0]) + "," + std::to_string(key[1]));
+      std::string key_str=edge2key(e);
       edge_map.insert(std::make_pair(key_str, e));
     }
   }
@@ -420,7 +485,7 @@ namespace zsw{
   void Approximation::tryCollapseZeroEdge(TTds::Edge &e,
                                           std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
-    const TTds &tds=tw_->getTds();
+    assert(tw_->isZeroEdge(e));
     if(!tw_->isSatisfyLinkCondition(e)) { return; }
     std::vector<VertexTriple> bound_tris;
     std::vector<Vhd> opposite_vs;
@@ -428,7 +493,7 @@ namespace zsw{
     std::vector<const JudgePoint*> jpts_in_bbox;
     calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> sample_points;
-    sampleIncidentCells(e, sample_points);
+    sampleAdjCells(e, sample_points);
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
     const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt=nullptr;
@@ -442,6 +507,45 @@ namespace zsw{
     tw_->collapseEdge(e, vhd, *merge_pt);
     updateVertex(vup);
     zeroEdgeBack(vhd, edge_map);
+  }
+
+  void Approximation::zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map)
+  {
+    const TTds &tds=tw_->getTds();
+    std::vector<TTds::Edge> edges;
+    tds.incident_edges(vhd, std::back_inserter(edges));
+    for(const TTds::Edge &e : edges) {
+      if(!tw_->isZeroEdge(e)) { continue; }
+      std::string key_str=edge2key(e);
+      edge_map.insert(std::make_pair(key_str, e));
+    }
+  }
+
+  void Approximation::sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const
+  {
+    Vhd vhds[2]={e.first->vertex(e.second), e.first->vertex(e.third)};
+    std::vector<Chd> cells;
+    const TTds &tds=tw_->getTds();
+    tds.incident_cells(e.first->vertex(e.second), std::back_inserter(cells));
+    std::unordered_map<std::string,Chd> cell_map;
+    for(Chd chd : cells) {
+      std::string key_str = cell2key(chd);
+      cell_map[key_str]=chd;
+    }
+    cells.clear();
+    tds.incident_cells(e.first->vertex(e.third), std::back_inserter(cells));
+    for(Chd chd : cells) {
+      std::string key_str = cell2key(chd);
+      cell_map[key_str]=chd;
+    }
+    for(auto it=cell_map.begin(); it!=cell_map.end(); ++it) {
+      Eigen::Matrix<zsw::Scalar,3,1> v0,v1,v2,v3;
+      v0<< it->second->vertex(0)->point()[0],it->second->vertex(0)->point()[1],it->second->vertex(0)->point()[2];
+      v1<< it->second->vertex(1)->point()[0],it->second->vertex(1)->point()[1],it->second->vertex(1)->point()[2];
+      v2<< it->second->vertex(2)->point()[0],it->second->vertex(2)->point()[1],it->second->vertex(2)->point()[2];
+      v3<< it->second->vertex(3)->point()[0],it->second->vertex(3)->point()[1],it->second->vertex(3)->point()[2];
+      sampleTet(v0,v1,v2,v3,tet_sample_r_, sample_points);
+    }
   }
 
   void Approximation::mutuallTessellation()
@@ -486,16 +590,15 @@ namespace zsw{
     std::unordered_map<std::string, TTds::Edge> edge_map;
     for(TTds::Edge_iterator eit=tds.edges_begin();
         eit!=tds.edges_end(); ++eit) {
-      if(eit->first->vertex(eit->second)->info().pt_type_!=zsw::ZERO_POINT
-         || eit->first->vertex(eit->third)->info().pt_type_!=zsw::ZERO_POINT) { continue; }
-      size_t key[2] = {eit->first->vertex(eit->second)->info().index_, eit->first->vertex(eit->third)->info().index_};
-      if(key[0]>key[1]) { swap(key[0],key[1]); }
-      std::string key_str(std::to_string(key[0])+","+std::to_string(key[1]));
+      if(!tw_->isZeroEdge(*eit)) { continue; }
+      std::string key_str=edge2key(*eit);
       edge_map.insert(std::make_pair(key_str, *eit));
     }
     while(!edge_map.empty()) {
-      TTds::Edge &e=edge_map.begin()->second; edge_map.erase(edge_map.begin());
-      if(tds.is_edge(e.first, e.second, e.third)) { continue; }
+      TTds::Edge e=edge_map.begin()->second; edge_map.erase(edge_map.begin());
+      if(!tw_->isZeroEdge(e)) { continue; }
+      std::cout << "[INFO] try collapse zc edge:" << e.first->vertex(e.second)->info().index_
+                << " " << e.first->vertex(e.third)->info().index_ << std::endl;
       tryCollapseZeroEdge(e, edge_map);
     }
   }
