@@ -47,7 +47,13 @@ namespace zsw {
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
     void simpTolerance();
     void mutuallTessellation();
-    void simpZeroSurface();
+    void simpZeroSurface(std::unordered_map<std::string,TTds::Edge> *z_map=nullptr,
+                         std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr);
+    bool simpBZEdges(std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr,
+                     std::unordered_map<std::string,TTds::Edge> *z_map=nullptr);
+    void simpAllEdges() {
+      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    }
 
     void writeZeroSurface(const std::string &filepath) const;
     void writeTetMesh(const std::string &filepath,
@@ -82,8 +88,13 @@ namespace zsw {
     bool tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
 
-    void tryCollapseZeroEdge(TTds::Edge &e,
-                             std::unordered_map<std::string,TTds::Edge> &edge_map);
+    bool tryCollapseZeroEdge(TTds::Edge &e,
+                             std::unordered_map<std::string,TTds::Edge> &z_map,
+                             std::unordered_map<std::string,TTds::Edge> *bz_map);
+
+    bool tryCollapseBZEdge(TTds::Edge &e,
+                           std::unordered_map<std::string, TTds::Edge> &bz_map,
+                           std::unordered_map<std::string,TTds::Edge> *z_map);
 
     //void createJudgePoints();
 
@@ -93,12 +104,14 @@ namespace zsw {
     }
 
     void boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
+    void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map) const;
+    void bzEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
 
     void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
 
     void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
 
-    void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map);
+
 
     // data access
 

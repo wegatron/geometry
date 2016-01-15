@@ -529,6 +529,20 @@ namespace zsw{
       && edge.first->vertex(edge.third)->info().pt_type_==zsw::ZERO_POINT;
   }
 
+  bool TriangulationWapper::isBZEdge(const TTds::Edge &e) const
+  {
+    if(!tds_.is_edge(e.first, e.second, e.third)) { return false; }
+    PointType pt_type[2]={
+      e.first->vertex(e.second)->info().pt_type_,
+      e.first->vertex(e.second)->info().pt_type_
+    };
+    size_t flag[3]={false, false, false};
+    flag[0]=(pt_type[0]==zsw::ZERO_POINT || pt_type[1]==zsw::ZERO_POINT);
+    flag[1]=(pt_type[0]==zsw::INNER_POINT || pt_type[1]==zsw::INNER_POINT);
+    flag[2]=(pt_type[0]==zsw::OUTER_POINT || pt_type[1]==zsw::OUTER_POINT);
+    return flag[0]&&(flag[1]||flag[2]);
+  }
+
   bool TriangulationWapper::isValidCell(Chd chd) const
   {
     return  tds_.is_cell(chd)

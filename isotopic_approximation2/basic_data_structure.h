@@ -84,6 +84,7 @@ namespace zsw{
 
     bool isBoundaryEdge(const TTds::Edge &edge) const;
     bool isZeroEdge(const TTds::Edge &e) const;
+    bool isBZEdge(const TTds::Edge &e) const;
     bool isValidCell(Chd chd) const;
     bool isTolCell(Chd chd) const;
 

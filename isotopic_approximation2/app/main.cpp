@@ -31,12 +31,14 @@ void test0(const std::string &file_path,
   zsw::Approximation appro;
   appro.init(err_epsilon, tri_sample_r, tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
   appro.writeTetMesh(output_dir+"refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-  appro.simpTolerance();
-  appro.writeTetMesh("/home/wegatron/tmp/after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-  appro.mutuallTessellation();
-  appro.writeTetMesh(output_dir+"mutuall_tessellation.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-  appro.simpZeroSurface();
-  appro.writeTetMesh(output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+  // appro.simpTolerance();
+  // appro.writeTetMesh("/home/wegatron/tmp/after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+  // appro.mutuallTessellation();
+  // appro.writeTetMesh(output_dir+"mutuall_tessellation.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+  // appro.simpZeroSurface();
+  // appro.writeTetMesh(output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+  appro.simpAllEdges();
+  appro.writeTetMesh(output_dir+"simped_final.vtk", {zsw::ignore_bbox, zsw::ignore_out});
 }
 
 int main(int argc, char *argv[])
