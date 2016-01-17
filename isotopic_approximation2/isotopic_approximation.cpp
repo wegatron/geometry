@@ -124,7 +124,7 @@ namespace zsw{
     for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
       if(tw_->isBBoxInnerCell(cit)) { updateJptsInCell(cit,nullptr); }
     }
-#if 1
+#if 0
     size_t ind=0;
     for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
       if(!tw_->isTolCell(chd)) { continue; }
@@ -144,8 +144,11 @@ namespace zsw{
       const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
       Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
       std::string filepath=tmp_outdir_+"normal_cond/nc_"+std::to_string(ind++)+".vtk";
-      normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_,
-                      true, &filepath);
+      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_,
+                          true, &filepath)) {
+        std::cerr << "Refine result normal condition failed!!!" << std::endl;
+        abort();
+      }
     }
 #endif
   }
@@ -343,17 +346,16 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
     while(!edge_map.empty()) {
       TTds::Edge e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
       if(!tw_->isBoundaryEdge(e)) { continue; }
-      // std::cout << "try collapse edge:";
-      // std::cout << e.first->vertex(e.second)->info().index_ << " " <<
-      //   e.first->vertex(e.third)->info().index_ << std::endl;
       if(tryCollapseBoundaryEdge(e, edge_map)) {
-        if(b_c_step++%50==0) {  std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;  }
-        // writeTetMesh("/home/wegatron/tmp/sim_tol_"+std::to_string(debug_step++)
-        //              +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+        if(b_c_step++%50==0) {
+          std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;
+          writeTetMesh(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step/50)
+                       +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+        }
       }
     }
     std::cout << "[INFO] boundary collapsed total:" << b_c_step << std::endl;
-#if 1
+#if 0
     size_t normal_cond_debug_i=0;
     for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
       if(tw_->isTolCell(chd)) {
@@ -373,12 +375,48 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
         const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
         Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
         std::string filepath(tmp_outdir_+"normal_cond/nbc_"+std::to_string(normal_cond_debug_i++)+".vtk");
-        normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
-                        inner_kdtree_ptr_, outer_kdtree_ptr_,
-                        true, &filepath);
+        if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
+                            inner_kdtree_ptr_, outer_kdtree_ptr_,
+                            true, &filepath)) {
+          std::cerr << "SimpTolerance result normal cond failed!!!" << std::endl;
+          abort();
+        }
       }
     }
 #endif
+  }
+
+  bool Approximation::checkNormalCondition() const
+  {
+    const TTds &tds=tw_->getTds();
+    size_t normal_cond_debug_i=0;
+    for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
+      if(!tw_->isTolCell(chd)) { continue; }
+      Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
+      tri_pts<<
+        chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+        chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+        chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
+      Eigen::Matrix<zsw::Scalar,4,1> val;
+      for(size_t i=0; i<4; ++i) {
+        if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
+        else { val[i]=1; }
+      }
+      Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
+                                              tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
+                                              tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
+      const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
+      Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
+      std::string filepath(tmp_outdir_+"normal_cond/check_"+std::to_string(normal_cond_debug_i++)+".vtk");
+      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
+                          inner_kdtree_ptr_, outer_kdtree_ptr_,
+                          true, &filepath)) {
+        std::cerr << "normal cond failed!!!" << std::endl;
+        std::cerr << "normal_cond_debug_i=" << normal_cond_debug_i-1 << std::endl;
+        return false;
+      }
+    }
+    return true;
   }
 
   void Approximation::writeJudgePoints(const std::string &filepath) const
@@ -400,7 +438,7 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
                                        const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                        const PointType point_type) const
   {
-    assert(point_type!=zsw::BBOX_POINT && point_type!=zsw::INVALID_POINT);
+    assert(point_type==zsw::INNER_POINT || point_type==zsw::OUTER_POINT);
     Eigen::Matrix<zsw::Scalar,4,1> val;
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
     tri_pts.block<3,1>(0,0)=pt;
@@ -469,18 +507,7 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
                                               std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
     const TTds &tds = tw_->getTds();
-    if(!tw_->isSatisfyLinkCondition(e)) {
-      // std::cout << "[INFO] link condition failed!" << std::endl;
-      // std::cout << e.first->vertex(e.second)->point()[0] << " "
-      //           << e.first->vertex(e.second)->point()[1] << " "
-      //           << e.first->vertex(e.second)->point()[2] << std::endl;
-      // std::cout << e.first->vertex(e.third)->point()[0] << " "
-      //           << e.first->vertex(e.third)->point()[1] << " "
-      //           << e.first->vertex(e.third)->point()[2] << std::endl;
-      // writeAdjcentCells("/home/wegatron/tmp/link_cond_adj_cells.vtk", e);
-      // abort();
-      return false;
-    }
+    if(!tw_->isSatisfyLinkCondition(e)) {      return false;    }
     std::vector<VertexTriple> bound_tris;
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
@@ -527,6 +554,18 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});
     //updateVertex(vup);
     boundaryEdgeBack(vhd, edge_map);
+#if 0
+    if(!checkNormalCondition()) {
+      std::cerr << "merge_pt:" << merge_pt->pt_.transpose() << std::endl;
+      std::cerr << "bound_tris:" << std::endl;
+      for(VertexTriple &vt : bound_tris) {
+        std::cerr << vt.first->point()[0] << " " << vt.first->point()[1] << " " << vt.first->point()[2] << std::endl;
+        std::cerr << vt.second->point()[0] << " " << vt.second->point()[1] << " " << vt.second->point()[2] << std::endl;
+        std::cerr << vt.third->point()[0] << " " << vt.third->point()[1] << " " << vt.third->point()[2] << std::endl;
+      }
+      abort();
+    }
+#endif
     return true;
   }
 
@@ -646,16 +685,6 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
         tw_->insertInEdge(e, pt, zsw::ZERO_POINT);
       } while(1);
     }
-
-    // std::cerr << "tds cell size:" << tds.number_of_cells() << std::endl;
-    // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-    //   if(isValidCell(cit)) {
-    //     updateJptsInCell(cit, nullptr);
-    //   }
-    // }
-    // for(const JudgePoint &jpt : jpts_) {
-    //   assert(fabs(jpt.val_cur_-jpt.val_exp_)<1);
-    // }
   }
 
   void Approximation::simpZeroSurface(std::unordered_map<std::string,TTds::Edge> *z_map,
@@ -720,10 +749,15 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
 
   void  Approximation::simp(const std::string &tmp_output_dir)
   {
+    TTds tmp_tds=tw_->getTds();
+    mutuallTessellation();
+    writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    tw_->setTds(tmp_tds);
+
     simpTolerance();
     writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     mutuallTessellation();
-    writeTetMesh(tmp_output_dir+"mutuall_tessellation.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpZeroSurface();
     writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     std::unordered_map<std::string,TTds::Edge> z_map, bz_map;

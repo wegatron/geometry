@@ -100,6 +100,7 @@ namespace zsw{
     const DelaunayTriangulation &getDelaunay() { return delaunay_triangulation_; }
     const TTds &getTds() const { return tds_; }
     TTds &getTds()  { return tds_; }
+    void setTds(TTds &tds) { tds_=tds; }
 
     void makeHole(Vhd vhd, std::map<VertexTriple, Facet> &outer_map,
                   std::vector<Chd> &hole);

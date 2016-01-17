@@ -1,0 +1,15 @@
+.PHONY : simp_sphere
+simp_sphere: export
+	${APP_EXEC} ${SPHERE} ${SPHERE_OUTPUT_DIR} ${SPHERE_THICK} ${SPHERE_SAMPLE_R} ${SPHERE_SAMPLE_R}
+
+.PHONY : simp_bunny
+simp_bunny: export
+	${APP_EXEC} ${BUNNY} ${BUNNY_OUTPUT_DIR} ${BUNNY_THICK} ${BUNNY_SAMPLE_R} ${BUNNY_SAMPLE_R}
+
+.PHONY : simp_cylinder
+simp_cylinder: export
+	${APP_EXEC} ${CYLINDER} ${CYLINDER_OUTPUT_DIR} ${CYLINDER_THICK} ${CYLINDER_SAMPLE_R} ${CYLINDER_SAMPLE_R}
+	
+.PHONY : simp_fertility
+simp_fertility: export
+	${APP_EXEC} ${FERTILITY} ${FERTILITY_OUTPUT_DIR} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R} ${FERTILITY_SAMPLE_R}

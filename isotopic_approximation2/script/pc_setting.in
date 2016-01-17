@@ -1,0 +1,7 @@
+DATA_DIR =  /home/wegatron/workspace/geometry/data
+APP_OUTPUT_DIR = /home/wegatron/tmp/approximate
+APP_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation2/build-release/bin/appro
+EXPORT_LIB_DIR = /home/wegatron/workspace/geometry/isotopic_approximation2/build-release/lib/
+#APP_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation2/build/bin/appro
+#EXPORT_LIB_DIR = /home/wegatron/workspace/geometry/isotopic_approximation2/build/lib/
+#NORMAL_COND_SCALE = 0.7

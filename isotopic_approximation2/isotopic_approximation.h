@@ -66,6 +66,7 @@ namespace zsw {
     void updateJptsInCell(Chd chd,
                           std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                           ErrorMaxComparison> *err_queue);
+    bool checkNormalCondition() const;
     void checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
                                 std::unordered_set<std::string> *cell_key_set_pre,
                                 std::unordered_set<std::string> *cell_key_set_cur);
@@ -114,10 +115,6 @@ namespace zsw {
     void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
 
 
-
-    // data access
-
-    // for debug
     void testTdsValid();
     void testCollapse();
   private:
