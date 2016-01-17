@@ -15,7 +15,6 @@ void test0(const std::string &file_path,
            const zsw::Scalar tri_sample_r,
            const zsw::Scalar tet_sample_r)
 {
-  std::ofstream ofs;
   zsw::mesh::TriMesh input_mesh;
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     std::cerr << "can't open file " << file_path << std::endl;
@@ -29,6 +28,7 @@ void test0(const std::string &file_path,
   zsw::writePoints(output_dir+"outer_jpts.vtk", outer_jpts);
   zsw::writePoints(output_dir+"bs_jpts.vtk", bs_jpts);
   zsw::Approximation appro;
+  appro.setTmpOutDir(output_dir);
   appro.init(err_epsilon, tri_sample_r, tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
   appro.writeTetMesh(output_dir+"refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   // appro.simpTolerance();

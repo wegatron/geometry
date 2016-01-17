@@ -35,7 +35,8 @@ namespace zsw {
   class Approximation final
   {
   public:
-    Approximation() { normal_cond_scale_=0.7; }
+    Approximation() { normal_cond_scale_=0.7; tmp_outdir_="/home/wegatron/tmp/"; }
+    void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     /* void init(const zsw::Scalar &surf_sample_r, const zsw::Scalar &tet_sample_r, */
     /*           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_vertices, */
     /*           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_vertices); */
@@ -68,6 +69,9 @@ namespace zsw {
     void checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
                                 std::unordered_set<std::string> *cell_key_set_pre,
                                 std::unordered_set<std::string> *cell_key_set_cur);
+    void checkUpBBoxInnerLink(Chd chd, std::queue<Chd> &chds_queue,
+                              std::unordered_set<std::string> *cell_key_set_pre,
+                              std::unordered_set<std::string> *cell_key_set_cur);
 
     bool isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
@@ -127,6 +131,7 @@ namespace zsw {
     zsw::Scalar tri_sample_r_;
     zsw::Scalar tet_sample_r_;
     zsw::Scalar normal_cond_scale_;
+    std::string tmp_outdir_;
   };
 
   void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);

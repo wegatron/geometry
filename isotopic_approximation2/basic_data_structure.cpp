@@ -564,6 +564,20 @@ namespace zsw{
     return i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4;
   }
 
+  bool TriangulationWapper::isBBoxInnerCell(Chd chd) const
+  {
+    if(!tds_.is_cell(chd)) { return false; }
+    return (chd->vertex(0)->info().pt_type_==zsw::INNER_POINT ||
+       chd->vertex(1)->info().pt_type_==zsw::INNER_POINT ||
+       chd->vertex(2)->info().pt_type_==zsw::INNER_POINT ||
+       chd->vertex(3)->info().pt_type_==zsw::INNER_POINT) &&
+      (chd->vertex(0)->info().pt_type_==zsw::BBOX_POINT ||
+       chd->vertex(1)->info().pt_type_==zsw::BBOX_POINT ||
+       chd->vertex(2)->info().pt_type_==zsw::BBOX_POINT ||
+       chd->vertex(3)->info().pt_type_==zsw::BBOX_POINT);
+  }
+
+
   bool isConstructTolCell(const PointType pt_type0, const PointType pt_type1,
                           const PointType pt_type2, const PointType pt_type3,
                           Eigen::Matrix<zsw::Scalar,4,1> &val)
@@ -633,12 +647,13 @@ namespace zsw{
 
   std::string cell2key(const Chd chd)
   {
-    // each cell has it's orientation so don't need to sort vertex ind
+    size_t index[4]={chd->vertex(0)->info().index_,
+                     chd->vertex(1)->info().index_,
+                     chd->vertex(2)->info().index_,
+                     chd->vertex(3)->info().index_};
+    std::sort(&index[0], &index[0]+4);
     std::stringstream ss;
-    ss << chd->vertex(0)->info().index_ << "," <<
-      chd->vertex(1)->info().index_ << "," <<
-      chd->vertex(2)->info().index_ << "," <<
-      chd->vertex(3)->info().index_;
+    ss << index[0] << "," << index[1] << ","  << index[2] << "," << index[3];
     return ss.str();
   }
 
