@@ -9,13 +9,6 @@ namespace zsw{
 
   TriangulationWapper::TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices)
     : delaunay_triangulation_(vertices.begin(), vertices.end()), tds_(delaunay_triangulation_.tds())  {
-    // remove infinite_vertex and cells
-    //    auto vh = delaunay_triangulation_.infinite_vertex();
-    //    delaunay_triangulation_.remove();
-    //    std::list<TTds::Cell_handle> invcells;
-    //    tds_.incident_cells(vh, std::back_inserter(invcells));
-    //    tds_.delete_cells(invcells.begin(), invcells.end()) ;
-    //    tds_.delete_vertex(vh);
     next_v_id_=vertices.size();
   }
 
@@ -468,7 +461,7 @@ namespace zsw{
     for(auto cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
       if(!isValidCell(cit)) { continue; }
       std::string key=cell2key(cit);
-      if(cell_key_set_pre->find(key)==cell_key_set_pre->end()) { chds.push_back(cit); }
+      if(isValidCell(cit) && cell_key_set_pre->find(key)==cell_key_set_pre->end()) { chds.push_back(cit); }
       if(cell_key_set_cur==nullptr) { continue; }
       cell_key_set_cur->insert(key);
     }

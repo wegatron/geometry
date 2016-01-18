@@ -35,86 +35,80 @@ namespace zsw {
   class Approximation final
   {
   public:
-    Approximation() { normal_cond_scale_=0.7; tmp_outdir_="/home/wegatron/tmp/"; }
+    Approximation() { normal_cond_scale_=0.7; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
-    /* void init(const zsw::Scalar &surf_sample_r, const zsw::Scalar &tet_sample_r, */
-    /*           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_vertices, */
-    /*           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_vertices); */
+    void setNeedSmooth(bool need_smooth) { need_smooth_=need_smooth; }
     void init(const zsw::Scalar err_epsilon,
               const zsw::Scalar tri_sample_r,
               const zsw::Scalar tet_sample_r,
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
-    void simpTolerance();
-    void mutuallTessellation();
-    void simpZeroSurface(std::unordered_map<std::string,TTds::Edge> *z_map=nullptr,
-                         std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr);
-    bool simpBZEdges(std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr,
-                     std::unordered_map<std::string,TTds::Edge> *z_map=nullptr);
     void simp(const std::string &tmp_output_dir);
 
     void writeZeroSurface(const std::string &filepath) const;
     void writeTetMesh(const std::string &filepath,
                       std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const;
+
     void writeAdjcentCells(const std::string &filepath, const TTds::Edge &e) const;
     void writeAdjcentCells(const std::string &filepath, const std::vector<Chd> &chds) const;
     void writeJudgePoints(const std::string &filepath) const;
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
 
     void refine();
+    void simpTolerance();
+    void mutuallTessellation();
+  private:
+    void simpZeroSurface(std::unordered_map<std::string,TTds::Edge> *z_map=nullptr,
+                         std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr);
+    bool simpBZEdges(std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr,
+                     std::unordered_map<std::string,TTds::Edge> *z_map=nullptr);
+
     void updateJptsInCell(Chd chd,
                           std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                           ErrorMaxComparison> *err_queue);
-    bool checkNormalCondition() const;
     bool checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
                                 std::unordered_set<std::string> *cell_key_set_pre,
                                 std::unordered_set<std::string> *cell_key_set_cur);
-    /* void checkUpBBoxInnerLink(Chd chd, std::queue<Chd> &chds_queue, */
-    /*                           std::unordered_set<std::string> *cell_key_set_pre, */
-    /*                           std::unordered_set<std::string> *cell_key_set_cur); */
-
     bool isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
                              const zsw::Scalar v_pt,
                              std::vector<VertexUpdateData> &vup,
                              std::vector<JudgePointUpdateData> * jup=nullptr) const;
-
     bool isTolTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
                                          const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                          const PointType point_type) const;
-
     void constructKernelRegionJudger(const std::vector<VertexTriple> &bound_tris,
                                      std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const;
-
     bool tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
-
     bool tryCollapseZeroEdge(TTds::Edge &e,
                              std::unordered_map<std::string,TTds::Edge> &z_map,
                              std::unordered_map<std::string,TTds::Edge> *bz_map);
-
     bool tryCollapseBZEdge(TTds::Edge &e,
                            std::unordered_map<std::string, TTds::Edge> &bz_map,
                            std::unordered_map<std::string,TTds::Edge> *z_map);
-
-    //void createJudgePoints();
-
     void updateVertex(const std::vector<VertexUpdateData> &vup)
     {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
     }
-
     void boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
     void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map) const;
     void bzEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
-
     void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
-
     void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
 
-
+    void updateAllBoundaryVerticesMaxDis();
+    void smoothBoundary();
+    void updateAllZeroVerticesMaxDis();
+    void smoothZeroSurface();
+    zsw::Scalar calcCellVertexMaxDis(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts,
+                                     const PointType pt_type0, const PointType pt_type1,
+                                     const PointType pt_type2, const PointType pt_type3) const;
+    zsw::Scalar calcCellVertexMaxDis(Chd chd) const;
+  public:
+    bool checkNormalCondition() const;
     void testTdsValid();
     void testCollapse();
   private:
@@ -129,6 +123,7 @@ namespace zsw {
     zsw::Scalar tet_sample_r_;
     zsw::Scalar normal_cond_scale_;
     std::string tmp_outdir_;
+    bool need_smooth_;
   };
 
   void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);

@@ -12,35 +12,6 @@ using namespace std;
 
 namespace zsw{
 
-  // void Approximation::init(const zsw::Scalar &surf_sample_r, const zsw::Scalar &tet_sample_r,
-  //                          const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bi_vertices,
-  //                          const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bo_vertices)
-  // {
-  //   surf_sample_r_=surf_sample_r;
-  //   tet_sample_r_=tet_sample_r;
-  //   Eigen::Matrix<zsw::Scalar,3,2> bbox;
-  //   calcBBOX(bo_vertices, bbox);
-  //   zsw::Scalar scale = 0.5*(bbox.block<3,1>(0,0) - bbox.block<3,1>(0,1)).norm();
-  //   Eigen::Matrix<zsw::Scalar,3,1> transform = 0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
-  //   zsw::BoundSphere bs("/home/wegatron/workspace/geometry/data/bound_sphere.obj", scale, transform);
-  //   const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_vertices = bs.getVertices();
-  //   std::vector<std::pair<Point, VertexInfo>> vertices;
-  //   size_t vid=0;
-  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bs_vertices) {
-  //     vertices.push_back({Point(v[0], v[1], v[2]), VertexInfo(vid++, zsw::BBOX_POINT, v, 0.0)});
-  //   }
-  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bi_vertices) {
-  //     vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(vid++, zsw::INNER_POINT, v, 0.0)});
-  //   }
-  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &v : bo_vertices) {
-  //     vertices.push_back({Point(v[0],v[1],v[2]), VertexInfo(vid++, zsw::OUTER_POINT, v, 0.0)});
-  //   }
-  //   tw_.reset(new zsw::TriangulationWapper(vertices));
-  //   createJudgePoints();
-  //   std::cout << "vertices :" << vertices.size() << std::endl;
-  //   std::cout << "judgepoints:" << jpts_.size() << std::endl;
-  // }
-
   void Approximation::init(const zsw::Scalar err_epsilon,
             const zsw::Scalar tri_sample_r,
             const zsw::Scalar tet_sample_r,
@@ -83,6 +54,9 @@ namespace zsw{
     const TTds &tds=tw_->getTds();
     bool add_pt_flag=false;
     do{
+      std::cerr << "key_set_size:" << cell_key_set[pre].size() << std::endl;
+      std::cerr << "cell_size:" << tds.number_of_cells() << std::endl;
+      std::cerr << "vertices_size:" << tds.number_of_vertices() << std::endl;
       for(size_t i=0; i<jpts_.size();++i) {
         zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
         if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
@@ -97,7 +71,7 @@ namespace zsw{
         std::vector<Chd> chds;
         tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds, &cell_key_set[pre], &cell_key_set[cur]);
         swap(pre,cur);
-        for(Chd chd : chds) { updateJptsInCell(chd, &err_queue); }
+        for(Chd chd : chds) { if(tw_->isValidCell(chd)) {updateJptsInCell(chd, &err_queue);} }
       }
       add_pt_flag=false;
       std::queue<Chd> chds_queue;
@@ -114,21 +88,6 @@ namespace zsw{
         if(tw_->isValidCell(cit)) { updateJptsInCell(cit,nullptr); }
       }
     }while(1);
-
-    // // check if exist bbox link inner
-    // writeTetMesh(tmp_outdir_+"before_check_bofore_link.vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
-    // std::cout << "[INFO] " << "start check bbox inner link condition!" << std::endl;
-    // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
-    // while(!chds_queue.empty()) {
-    //   Chd chd = chds_queue.front(); chds_queue.pop();
-    //   if(!tw_->isBBoxInnerCell(chd)) { continue; }
-    //   cell_key_set[cur].clear();
-    //   checkUpBBoxInnerLink(chd, chds_queue, &cell_key_set[pre], &cell_key_set[cur]);
-    //   swap(pre,cur);
-    // }
-    // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-    //   if(tw_->isBBoxInnerCell(cit)) { updateJptsInCell(cit,nullptr); }
-    // }
 #if 0
     size_t ind=0;
     for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
@@ -221,30 +180,15 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
   return false;
 }
 
-  // void Approximation::checkUpBBoxInnerLink(Chd chd, std::queue<Chd> &chds_queue,
-  //                                          std::unordered_set<std::string> *cell_key_set_pre,
-  //                                          std::unordered_set<std::string> *cell_key_set_cur)
-  // {
-  //   Eigen::Matrix<zsw::Scalar,3,1> tmp_pt;
-  //   for(size_t i=0; i<4; ++i) {
-  //     if(chd->vertex(i)->info().pt_type_!=zsw::INNER_POINT) { continue; }
-  //     tmp_pt << chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
-  //     std::vector<size_t> indices;
-  //     std::vector<zsw::Scalar> dist;
-  //     outer_kdtree_ptr_->queryNearest(tmp_pt, indices, dist);
-  //     VertexInfo vertex_info(-1, zsw::OUTER_POINT, outer_jpts_[indices[0]], 0.0);
-  //     std::vector<Chd> chds;
-  //     tw_->addPointInDelaunaySafe(outer_jpts_[indices[0]], vertex_info, chds, cell_key_set_pre, cell_key_set_cur);
-  //     for(Chd chd : chds) { chds_queue.push(chd); }
-  //   }
-  // }
-
   void Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                                        ErrorMaxComparison> *err_queue)
   {
     assert(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
            && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT);
+    if(!(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
+         && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT))
+      { return; }
     // calc jpts in bbox
     std::vector<const JudgePoint*> jpts_in_bbox;
     Vhd vhds[4] = {chd->vertex(0), chd->vertex(1), chd->vertex(2), chd->vertex(3)};
@@ -286,37 +230,6 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
     }
   }
 
-  // void Approximation::createJudgePoints()
-  // {
-  //   const TTds &tds=tw_->getTds();
-  //   Eigen::Matrix<zsw::Scalar,3,4> bi_tri_points;
-  //   Eigen::Matrix<zsw::Scalar,3,4> bo_tri_points;
-  //   for(TTds::Cell_iterator cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-  //     size_t bi_cnt=0;
-  //     size_t bo_cnt=0;
-  //     for(size_t i=0; i<4; ++i) {
-  //       if(cit->vertex(i)->info().pt_type_==zsw::INNER_POINT) {
-  //         bi_tri_points(0,bi_cnt)=cit->vertex(i)->point()[0];
-  //         bi_tri_points(1,bi_cnt)=cit->vertex(i)->point()[1];
-  //         bi_tri_points(2,bi_cnt)=cit->vertex(i)->point()[2];
-  //         ++bi_cnt;
-  //       } else if(cit->vertex(i)->info().pt_type_==zsw::OUTER_POINT) {
-  //         bo_tri_points(0,bo_cnt)=cit->vertex(i)->point()[0];
-  //         bo_tri_points(1,bo_cnt)=cit->vertex(i)->point()[1];
-  //         bo_tri_points(2,bo_cnt)=cit->vertex(i)->point()[2];
-  //         ++bo_cnt;
-  //       }
-  //     }
-  //     if(bi_cnt==3 && bo_cnt==1) { sampleTriangle(bi_tri_points.block<3,3>(0,0), surf_sample_r_, bi_jpts_);}
-  //     else if(bo_cnt==3 && bi_cnt==1) { sampleTriangle(bo_tri_points.block<3,3>(0,0), surf_sample_r_, bo_jpts_); }
-  //   }
-  //   jpts_ptr_bi_.reset(new zsw::Flann<zsw::Scalar>(bi_jpts_[0].data(), bi_jpts_.size()));
-  //   jpts_ptr_bo_.reset(new zsw::Flann<zsw::Scalar>(bo_jpts_[0].data(), bo_jpts_.size()));
-  //   jpts_.reserve(bi_jpts_.size()+bo_jpts_.size());
-  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bi_jpts_) { jpts_.push_back({jpt,-1,-1}); }
-  //   for(const Eigen::Matrix<zsw::Scalar,3,1> &jpt : bo_jpts_) { jpts_.push_back({jpt,1,1}); }
-  // }
-
   void Approximation::simpTolerance()
   {
     const TTds &tds=tw_->getTds();
@@ -326,28 +239,6 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
       if(!tw_->isBoundaryEdge(*eit)) { continue;  }
       std::string key_str=edge2key(*eit);
       edge_map.insert(std::make_pair(key_str, *eit));
-#if 0
-      else {
-        CGAL::Container_from_circulator<TTds::Cell_circulator> cells0(tds.incident_cells(*eit));
-        std::cerr << "cell0:" << std::endl;
-        for(auto cell : cells0) {
-          std::cerr << cell.vertex(0)->info().index_ << " " <<
-            cell.vertex(1)->info().index_ << " " <<
-            cell.vertex(2)->info().index_ << " " <<
-            cell.vertex(3)->info().index_ << std::endl;
-        }
-
-        CGAL::Container_from_circulator<TTds::Cell_circulator> cells1(tds.incident_cells(edge_map[key_str]));
-        std::cerr << "cell1:" << std::endl;
-        for(auto cell : cells1) {
-          std::cerr << cell.vertex(0)->info().index_ << " " <<
-            cell.vertex(1)->info().index_ << " " <<
-            cell.vertex(2)->info().index_ << " " <<
-            cell.vertex(3)->info().index_ << std::endl;
-        }
-        std::cerr << "---------------------" << std::endl;
-      }
-#endif
     }
     std::cout << "[INFO] edge size:" << edge_map.size() << std::endl;
     size_t b_c_step=0;
@@ -757,22 +648,42 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
 
   void  Approximation::simp(const std::string &tmp_output_dir)
   {
+    if(need_smooth_) {
+      updateAllBoundaryVerticesMaxDis();
+      smoothBoundary();
+    }
     TTds tmp_tds=tw_->getTds();
     mutuallTessellation();
     writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     tw_->setTds(tmp_tds);
-
     simpTolerance();
+    if(need_smooth_) {
+      updateAllBoundaryVerticesMaxDis();
+      smoothBoundary();
+    }
     writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     mutuallTessellation();
+
+    if(need_smooth_) {
+      updateAllZeroVerticesMaxDis();
+      smoothZeroSurface();
+    }
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpZeroSurface();
+    if(need_smooth_) {
+      updateAllZeroVerticesMaxDis();
+      smoothZeroSurface();
+    }
     writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     std::unordered_map<std::string,TTds::Edge> z_map, bz_map;
     simpBZEdges(nullptr, &z_map);
     while(!z_map.empty()) {
       simpZeroSurface(&z_map, &bz_map);
       simpBZEdges(&bz_map, &z_map);
+    }
+    if(need_smooth_) {
+      updateAllZeroVerticesMaxDis();
+      smoothZeroSurface();
     }
   }
 
@@ -935,6 +846,26 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
     for(size_t i=0; i<jpts.size(); ++i) {      ofs << "1 " << i << std::endl;    }
     ofs << "CELL_TYPES " << jpts.size() << std::endl;
     for(size_t i=0; i<jpts.size(); ++i) { ofs << "1" << std::endl; }
+  }
+
+  void Approximation::updateAllBoundaryVerticesMaxDis()
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  void Approximation::smoothBoundary()
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  void Approximation::updateAllZeroVerticesMaxDis()
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  void Approximation::smoothZeroSurface()
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
   void Approximation::testTdsValid()

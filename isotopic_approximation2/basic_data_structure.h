@@ -55,8 +55,6 @@ namespace zsw{
   typedef CGAL::Triangulation_vertex_base_with_info_3<VertexInfo, K>    Vb;
   typedef CGAL::Triangulation_hierarchy_vertex_base_3<Vb> Vbh;
   typedef CGAL::Triangulation_data_structure_3<Vb>                    Tds;
-  //Use the Fast_location tag. Default or Compact_location works too.
-  //typedef CGAL::ZswDelaunayTriangulation<K, Tds, CGAL::Fast_location> DelaunayTriangulation;
 
   typedef CGAL::Delaunay_triangulation_3<K, Tds, CGAL::Fast_location> DelaunayTriangulation;
   typedef DelaunayTriangulation::Point                                             Point;
