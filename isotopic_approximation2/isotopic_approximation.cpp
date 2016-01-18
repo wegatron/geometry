@@ -76,54 +76,59 @@ namespace zsw{
     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                         std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                         ErrorMaxComparison> err_queue;
-    for(size_t i=0; i<jpts_.size();++i) {
-      zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
-      if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
-    }
-
     std::cout << "[INFO] " << "refine start!" << std::endl;
     size_t pre=0, cur=1;
     std::unordered_set<std::string> cell_key_set[2];
     tw_->initCellKeySet(cell_key_set[0]);
     const TTds &tds=tw_->getTds();
-    while(!err_queue.empty()) {
-      std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
-      zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
-      if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
-      PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
-      VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
-      std::vector<Chd> chds;
-      //tw_->addPointInDelaunay(jpt_info.second->pt_, vertex_info, chds);
-      tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds, &cell_key_set[pre], &cell_key_set[cur]);
-      swap(pre,cur);
-      for(Chd chd : chds) { updateJptsInCell(chd, &err_queue); }
-      // writeTetMesh("/home/wegatron/tmp/refine_debug_"+std::to_string(debug_step++)+".vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
-    }
-    writeTetMesh(tmp_outdir_+"before_checkUpNormalCondition.vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
-    std::cout << "[INFO] " << "start checkUpNormalCondition!" << std::endl;
-    std::queue<Chd> chds_queue;
-    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
-    while(!chds_queue.empty()) {
-      Chd chd = chds_queue.front(); chds_queue.pop();
-      if(!tw_->isTolCell(chd)) { continue; }
-      cell_key_set[cur].clear();
-      checkUpNormalCondition(chd, chds_queue, &cell_key_set[pre], &cell_key_set[cur]);
-      swap(pre,cur);
-    }
-    // check if exist bbox link inner
-    writeTetMesh(tmp_outdir_+"before_check_bofore_link.vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
-    std::cout << "[INFO] " << "start check bbox inner link condition!" << std::endl;
-    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
-    while(!chds_queue.empty()) {
-      Chd chd = chds_queue.front(); chds_queue.pop();
-      if(!tw_->isBBoxInnerCell(chd)) { continue; }
-      cell_key_set[cur].clear();
-      checkUpBBoxInnerLink(chd, chds_queue, &cell_key_set[pre], &cell_key_set[cur]);
-      swap(pre,cur);
-    }
-    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-      if(tw_->isBBoxInnerCell(cit)) { updateJptsInCell(cit,nullptr); }
-    }
+    bool add_pt_flag=false;
+    do{
+      for(size_t i=0; i<jpts_.size();++i) {
+        zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
+        if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
+      }
+      if(err_queue.empty()) { break; }
+      while(!err_queue.empty()) {
+        std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
+        zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
+        if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
+        PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
+        VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
+        std::vector<Chd> chds;
+        tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds, &cell_key_set[pre], &cell_key_set[cur]);
+        swap(pre,cur);
+        for(Chd chd : chds) { updateJptsInCell(chd, &err_queue); }
+      }
+      add_pt_flag=false;
+      std::queue<Chd> chds_queue;
+      for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
+      while(!chds_queue.empty()) {
+        Chd chd = chds_queue.front(); chds_queue.pop();
+        if(!tw_->isTolCell(chd)) { continue; }
+        cell_key_set[cur].clear();
+        if(!checkUpNormalCondition(chd, chds_queue, &cell_key_set[pre], &cell_key_set[cur])) { add_pt_flag=true; }
+        swap(pre,cur);
+      }
+      if(!add_pt_flag) { break; }
+      for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+        if(tw_->isValidCell(cit)) { updateJptsInCell(cit,nullptr); }
+      }
+    }while(1);
+
+    // // check if exist bbox link inner
+    // writeTetMesh(tmp_outdir_+"before_check_bofore_link.vtk", {ignore_self_in, ignore_bbox, ignore_self_out});
+    // std::cout << "[INFO] " << "start check bbox inner link condition!" << std::endl;
+    // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
+    // while(!chds_queue.empty()) {
+    //   Chd chd = chds_queue.front(); chds_queue.pop();
+    //   if(!tw_->isBBoxInnerCell(chd)) { continue; }
+    //   cell_key_set[cur].clear();
+    //   checkUpBBoxInnerLink(chd, chds_queue, &cell_key_set[pre], &cell_key_set[cur]);
+    //   swap(pre,cur);
+    // }
+    // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+    //   if(tw_->isBBoxInnerCell(cit)) { updateJptsInCell(cit,nullptr); }
+    // }
 #if 0
     size_t ind=0;
     for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
@@ -153,7 +158,7 @@ namespace zsw{
 #endif
   }
 
-void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
+bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
                                            std::unordered_set<std::string> *cell_key_set_pre,
                                            std::unordered_set<std::string> *cell_key_set_cur)
 {
@@ -173,7 +178,9 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
                                           tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
   const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
   Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-  if(normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) return;
+  if(normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) {
+    return true;
+  }
 
   // static size_t debug_step=0;
   // std::cerr << "tri_pts:\n" << tri_pts << std::endl;
@@ -194,7 +201,7 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
   // check if the point is already in
   if(fabs(jpts_[jpt_ind].val_cur_-jpts_[jpt_ind].val_exp_)<zsw::const_val::eps) {
     // already in
-#if 1
+#if 0
     static int ind=0;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> pts;
     std::vector<Eigen::Matrix<zsw::Scalar,3,4>> cells;
@@ -202,7 +209,7 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
     pts.push_back(center); pts.push_back(jpts_[jpt_ind].pt_);
     writeCellsAndPoints(tmp_outdir_+"normal_cond/not_st_nc_"+std::to_string(ind++)+".vtk", cells, pts);
 #endif
-    return;
+    return true;
   }
   // add and update
   PointType pt_type=(jpts_[jpt_ind].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
@@ -211,25 +218,26 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
   tw_->addPointInDelaunaySafe(jpts_[jpt_ind].pt_, vertex_info, chds, cell_key_set_pre, cell_key_set_cur);
   //for(Chd chd : chds) { updateJptsInCell(chd, nullptr); }
   for(Chd chd : chds) { chds_queue.push(chd); }
+  return false;
 }
 
-  void Approximation::checkUpBBoxInnerLink(Chd chd, std::queue<Chd> &chds_queue,
-                                           std::unordered_set<std::string> *cell_key_set_pre,
-                                           std::unordered_set<std::string> *cell_key_set_cur)
-  {
-    Eigen::Matrix<zsw::Scalar,3,1> tmp_pt;
-    for(size_t i=0; i<4; ++i) {
-      if(chd->vertex(i)->info().pt_type_!=zsw::INNER_POINT) { continue; }
-      tmp_pt << chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
-      std::vector<size_t> indices;
-      std::vector<zsw::Scalar> dist;
-      outer_kdtree_ptr_->queryNearest(tmp_pt, indices, dist);
-      VertexInfo vertex_info(-1, zsw::OUTER_POINT, outer_jpts_[indices[0]], 0.0);
-      std::vector<Chd> chds;
-      tw_->addPointInDelaunaySafe(outer_jpts_[indices[0]], vertex_info, chds, cell_key_set_pre, cell_key_set_cur);
-      for(Chd chd : chds) { chds_queue.push(chd); }
-    }
-  }
+  // void Approximation::checkUpBBoxInnerLink(Chd chd, std::queue<Chd> &chds_queue,
+  //                                          std::unordered_set<std::string> *cell_key_set_pre,
+  //                                          std::unordered_set<std::string> *cell_key_set_cur)
+  // {
+  //   Eigen::Matrix<zsw::Scalar,3,1> tmp_pt;
+  //   for(size_t i=0; i<4; ++i) {
+  //     if(chd->vertex(i)->info().pt_type_!=zsw::INNER_POINT) { continue; }
+  //     tmp_pt << chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
+  //     std::vector<size_t> indices;
+  //     std::vector<zsw::Scalar> dist;
+  //     outer_kdtree_ptr_->queryNearest(tmp_pt, indices, dist);
+  //     VertexInfo vertex_info(-1, zsw::OUTER_POINT, outer_jpts_[indices[0]], 0.0);
+  //     std::vector<Chd> chds;
+  //     tw_->addPointInDelaunaySafe(outer_jpts_[indices[0]], vertex_info, chds, cell_key_set_pre, cell_key_set_cur);
+  //     for(Chd chd : chds) { chds_queue.push(chd); }
+  //   }
+  // }
 
   void Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
@@ -751,7 +759,7 @@ void Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
   {
     TTds tmp_tds=tw_->getTds();
     mutuallTessellation();
-    writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     tw_->setTds(tmp_tds);
 
     simpTolerance();
