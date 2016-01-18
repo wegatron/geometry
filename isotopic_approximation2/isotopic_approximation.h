@@ -64,7 +64,7 @@ namespace zsw {
     bool simpBZEdges(std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr,
                      std::unordered_map<std::string,TTds::Edge> *z_map=nullptr);
 
-    void updateJptsInCell(Chd chd,
+    zsw::Scalar updateJptsInCell(Chd chd,
                           std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                           ErrorMaxComparison> *err_queue);
     bool checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
@@ -104,6 +104,7 @@ namespace zsw {
     void smoothZeroSurface();
     void updateAllZeroVerticesMaxDis();
     void calcBoundaryOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const;
+    void calcZeroSurfaceOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const;
   public:
     bool checkNormalCondition() const;
     void testTdsValid();
@@ -123,10 +124,11 @@ namespace zsw {
     bool need_smooth_;
   };
 
-  void calcTetHeight(Chd chd);
-  void calcTetHeightType0(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
+  zsw::Scalar calcZeroTetHeight(Chd chd);
+  zsw::Scalar calcTetHeight(Chd chd);
+  zsw::Scalar calcTetHeightType0(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
                           const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
-  void calcTetHeightType1(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
+  zsw::Scalar calcTetHeightType1(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
                           const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
   void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
   void writePoints(const std::string &filepath, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
