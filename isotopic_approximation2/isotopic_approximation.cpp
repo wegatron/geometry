@@ -236,12 +236,7 @@ namespace zsw{
     bbox.block<3,1>(0,0) = bbox.block<3,1>(0,0)-eps_mat;
     bbox.block<3,1>(0,1) = bbox.block<3,1>(0,1)+eps_mat;
   }
-
-  void Approximation::calcZeroSurfaceOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const
-  {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  }
-
+  
   void Approximation::testTdsValid()
   {
     const TTds &tds=tw_->getTds();

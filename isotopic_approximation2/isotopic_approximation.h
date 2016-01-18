@@ -125,7 +125,7 @@ namespace zsw {
   };
 
   zsw::Scalar calcZeroTetHeight(Chd chd);
-  zsw::Scalar calcTetHeight(Chd chd);
+  zsw::Scalar calcBoundaryTetHeight(Chd chd);
   zsw::Scalar calcTetHeightType0(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
                           const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
   zsw::Scalar calcTetHeightType1(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,

@@ -12,33 +12,6 @@
 using namespace std;
 
 namespace zsw {
-  zsw::Scalar calcTetHeight(Chd chd)
-  {
-    size_t inner_cnt=0;
-    size_t outer_cnt=0;
-    Eigen::Matrix<zsw::Scalar,3,1> inner_pts[4];
-    Eigen::Matrix<zsw::Scalar,3,1> outer_pts[4];
-    for(size_t i=0; i<4; ++i) {
-      if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT) {
-        inner_pts[inner_cnt] << chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
-        ++inner_cnt;
-      } else if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT) {
-        outer_pts[outer_cnt] <<chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
-        ++outer_cnt;
-      }
-    }
-    assert(inner_cnt!=0 && outer_cnt!=0 && inner_cnt+outer_cnt==4);
-    zsw::Scalar ret=0;
-    if(inner_cnt==1) {  ret=calcTetHeightType0(inner_pts[0], outer_pts[0], outer_pts[1], outer_pts[2]); }
-    else if(inner_cnt==2) { ret=calcTetHeightType1(inner_pts[0], inner_pts[1], outer_pts[0], outer_pts[1]); }
-    else { ret=calcTetHeightType0(outer_pts[0], inner_pts[0], inner_pts[1], inner_pts[2]); }
-    return ret;
-  }
-
-  zsw::Scalar calcZeroTetHeight(Chd chd)
-  {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  }
 
   zsw::Scalar calcTetHeightType0(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
                                  const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3)
@@ -68,13 +41,36 @@ namespace zsw {
     for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
       if(!tw_->isTolCell(cit)) { continue; }
       zsw::Scalar val = updateJptsInCell(cit, nullptr);
-      zsw::Scalar h = calcTetHeight(cit);
+      zsw::Scalar h = calcBoundaryTetHeight(cit);
       zsw::Scalar max_dis=2*val/h;
       for(size_t i=0; i<4; ++i) {
         if(cit->vertex(i)->info().max_dis_<-zsw::const_val::eps ||
            cit->vertex(i)->info().max_dis_>max_dis) { cit->vertex(i)->info().max_dis_=max_dis; }
       }
     }
+  }
+
+  zsw::Scalar calcBoundaryTetHeight(Chd chd)
+  {
+    size_t inner_cnt=0;
+    size_t outer_cnt=0;
+    Eigen::Matrix<zsw::Scalar,3,1> inner_pts[4];
+    Eigen::Matrix<zsw::Scalar,3,1> outer_pts[4];
+    for(size_t i=0; i<4; ++i) {
+      if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT) {
+        inner_pts[inner_cnt] << chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
+        ++inner_cnt;
+      } else if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT) {
+        outer_pts[outer_cnt] <<chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
+        ++outer_cnt;
+      }
+    }
+    assert(inner_cnt!=0 && outer_cnt!=0 && inner_cnt+outer_cnt==4);
+    zsw::Scalar ret=0;
+    if(inner_cnt==1) {  ret=calcTetHeightType0(inner_pts[0], outer_pts[0], outer_pts[1], outer_pts[2]); }
+    else if(inner_cnt==2) { ret=calcTetHeightType1(inner_pts[0], inner_pts[1], outer_pts[0], outer_pts[1]); }
+    else { ret=calcTetHeightType0(outer_pts[0], inner_pts[0], inner_pts[1], inner_pts[2]); }
+    return ret;
   }
 
   void Approximation::smoothBoundary()
@@ -147,6 +143,28 @@ namespace zsw {
     }
   }
 
+  zsw::Scalar calcZeroTetHeight(Chd chd)
+  {
+    size_t zero_cnt=0;
+    size_t bound_cnt=0;
+    Eigen::Matrix<zsw::Scalar,3,1> zero_pts[4];
+    Eigen::Matrix<zsw::Scalar,3,1> bound_pts[4];
+    for(size_t i=0; i<4; ++i) {
+      if(chd->vertex(i)->info().pt_type_==zsw::ZERO_POINT) {
+        zero_pts[zero_cnt] << chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
+        ++zero_cnt;
+      } else  {
+        bound_pts[bound_cnt] <<chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
+        ++bound_cnt;
+      }
+    }
+    zsw::Scalar ret=0;
+    if(zero_cnt==1) {  ret=calcTetHeightType0(zero_pts[0], bound_pts[0], bound_pts[1], bound_pts[2]); }
+    else if(zero_cnt==2) { ret=calcTetHeightType1(zero_pts[0], zero_pts[1], bound_pts[0], bound_pts[1]); }
+    else { ret=calcTetHeightType0(zero_pts[0], zero_pts[0], zero_pts[1], bound_pts[2]); }
+    return ret;
+  }
+
   void Approximation::smoothZeroSurface()
   {
     updateAllZeroVerticesMaxDis();
@@ -159,6 +177,19 @@ namespace zsw {
       laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, vit->info().max_dis_);
       Point npt(pos[0],pos[1],pos[2]);
       vit->set_point(npt);
+    }
+  }
+
+  void Approximation::calcZeroSurfaceOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const
+  {
+    std::vector<Vhd> vhds;
+    const TTds &tds=tw_->getTds();
+    tds.adjacent_vertices(vhd, std::back_inserter(vhds));
+    for(Vhd tmp_vhd : vhds) {
+      if(tmp_vhd->info().pt_type_!=zsw::ZERO_POINT) { continue; }
+      Eigen::Matrix<zsw::Scalar,3,1> pt;
+      pt<<tmp_vhd->point()[0], tmp_vhd->point()[1], tmp_vhd->point()[2];
+      ring_pts.push_back(pt);
     }
   }
 }
