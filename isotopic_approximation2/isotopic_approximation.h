@@ -103,10 +103,7 @@ namespace zsw {
     void updateAllBoundaryVerticesMaxDis();
     void smoothZeroSurface();
     void updateAllZeroVerticesMaxDis();
-    zsw::Scalar calcCellVertexMaxDis(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts,
-                                     const PointType pt_type0, const PointType pt_type1,
-                                     const PointType pt_type2, const PointType pt_type3) const;
-    zsw::Scalar calcCellVertexMaxDis(Chd chd) const;
+    void calcBoundaryOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const;
   public:
     bool checkNormalCondition() const;
     void testTdsValid();
@@ -126,6 +123,11 @@ namespace zsw {
     bool need_smooth_;
   };
 
+  void calcTetHeight(Chd chd);
+  void calcTetHeightType0(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
+                          const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
+  void calcTetHeightType1(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
+                          const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
   void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
   void writePoints(const std::string &filepath, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
   void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center);

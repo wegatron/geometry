@@ -180,7 +180,7 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
   return false;
 }
 
-  void Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+  zsw::Scalar Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                                        ErrorMaxComparison> *err_queue)
   {
@@ -188,21 +188,22 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
            && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT);
     if(!(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
          && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT))
-      { return; }
+      { return -1; }
     // calc jpts in bbox
     std::vector<const JudgePoint*> jpts_in_bbox;
     Vhd vhds[4] = {chd->vertex(0), chd->vertex(1), chd->vertex(2), chd->vertex(3)};
     calcJptsInBbox(vhds,4,jpts_in_bbox);
+    Eigen::Matrix<zsw::Scalar,4,4> A;
+    A <<
+      chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+      chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+      chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2],
+      1,1,1,1;
+    Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
+    zsw::Scalar max_fabs_val=0;
     for(const JudgePoint * jpt : jpts_in_bbox) {
-      Eigen::Matrix<zsw::Scalar,4,4> A;
       Eigen::Matrix<zsw::Scalar,4,1> x, b;
-      A <<
-        chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
-        chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
-        chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2],
-        1,1,1,1;
       b<< jpt->pt_[0],jpt->pt_[1],jpt->pt_[2],1;
-      Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
       x=pplu.solve(b);
       if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps || x[2]<-zsw::const_val::eps
          || x[3]<-zsw::const_val::eps) { continue; } // jpt not in this cell
@@ -223,11 +224,13 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
 
       JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
       tmp_jpt->val_cur_=val.dot(x);
+      max_fabs_val=max(fabs(tmp_jpt->val_cur_), max_fabs_val);
       if(err_queue!=nullptr) {
         zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
         if(err>1) { err_queue->push(std::make_pair(err, tmp_jpt)); }
       }
     }
+    return max_fabs_val;
   }
 
   void Approximation::simpTolerance()
@@ -843,7 +846,7 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
     // max dis = 2*val/h
     for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
       if(!tw_->isBoundaryCell(cit)) { continue; }
-      zsw::Scalar val = calcMinJudgeValInCell(cit);
+      zsw::Scalar val = updateJptsInCell(cit);
       zsw::Scalar h = calcTetHeight(cit);
       zsw::Scalar max_dis=2*val/h;
       for(size_t i=0; i<4; ++i) {
@@ -871,6 +874,27 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
         Point npt(pos[0],pos[1],pos[1]);
         vit->set_point(npt);
       }
+    }
+  }
+
+  void Approximation::calcBoundaryOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const
+  {
+    const TTds &tds=tw_->getTds();
+    std::vector<TTds::Edge> edges;
+    tds.incident_edges(vhd, std::back_inserter(edges));
+    for(TTds::Edge &e : edges) {
+      if(!tw_->isBoundaryEdge(e)) { continue; }
+      Eigen::Matrix<zsw::Scalar,3,1> tmp_pt;
+      if(e.first->vertex(e.second)!=vhd) {
+        tmp_pt << e.first->vertex(e.second)->point()[0],
+          e.first->vertex(e.second)->point()[1],
+          e.first->vertex(e.second)->point()[2];
+      } else {
+        tmp_pt << e.first->vertex(e.third)->point()[0],
+          e.first->vertex(e.third)->point()[1],
+          e.first->vertex(e.third)->point()[2];
+      }
+      ring_pts.push_back(tmp_pt);
     }
   }
 
@@ -1007,5 +1031,42 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
       }
     }
 #endif
+  }
+
+  zsw::Scalar calcTetHeight(Chd chd)
+  {
+    size_t inner_cnt=0;
+    size_t outer_cnt=0;
+    Eigen::Matrix<zsw::Scalar,3,1> inner_pts[4];
+    Eigen::Matrix<zsw::Scalar,3,1> outer_pts[4];
+    for(size_t i=0; i<4; ++i) {
+      if(chd->vertex(i).info().pt_type_==zsw::INNER_POINT) {
+        inner_pts[inner_cnt] << chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
+        ++inner_cnt;
+      } else if(chd->vertex(i).info().pt_type_==zsw::OUTER_POINT) {
+        outer_pts[outer_cnt] <<chd->vertex(i)->point()[0], chd->vertex(i)->point()[1], chd->vertex(i)->point()[2];
+        ++outer_cnt;
+      }
+    }
+    assert(inner_cnt!=0 && outer_cnt!=0 && inner_cnt+outer_cnt==4);
+    zsw::Scalar ret=0;
+    if(inner_cnt==1) {  ret=calcTetHeightType0(inner_pts[0], outer_pts[0], outer_pts[1], outer_pts[2]); }
+    else if(inner_cnt==2) { ret=calcTetHeightType1(inner_pts[0], inner_pts[1], outer_pts[0], outer_pts[1]); }
+    else { ret=calcTetHeightType0(outer_pts[0], inner_pts[0], inner_pts[1], inner_pts[2]); }
+    return ret;
+  }
+
+  void calcTetHeightType0(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
+                          const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3)
+  {
+    Eigen::Matrix<zsw::Scalar,3,1> vn=(pt2-pt1).cross(pt3-pt1); vn.normalized();
+    return fabs(vn.dot(pt0-pt1));
+  }
+
+  void calcTetHeightType1(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
+                          const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3)
+  {
+    Eigen::Matrix<zsw::Scalar,3,1> vn=(pt1-pt0).cross(pt3-pt2); vn.normalized();
+    return fabs(vn.dot(pt2-pt0));
   }
 }
