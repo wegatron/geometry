@@ -648,32 +648,20 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
 
   void  Approximation::simp(const std::string &tmp_output_dir)
   {
-    if(need_smooth_) {
-      updateAllBoundaryVerticesMaxDis();
-      smoothBoundary();
-    }
+    if(need_smooth_) {      smoothBoundary();    }
     TTds tmp_tds=tw_->getTds();
     mutuallTessellation();
     writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     tw_->setTds(tmp_tds);
     simpTolerance();
-    if(need_smooth_) {
-      updateAllBoundaryVerticesMaxDis();
-      smoothBoundary();
-    }
+    if(need_smooth_) {      smoothBoundary();    }
     writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     mutuallTessellation();
 
-    if(need_smooth_) {
-      updateAllZeroVerticesMaxDis();
-      smoothZeroSurface();
-    }
+    if(need_smooth_) {      smoothZeroSurface();    }
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpZeroSurface();
-    if(need_smooth_) {
-      updateAllZeroVerticesMaxDis();
-      smoothZeroSurface();
-    }
+    if(need_smooth_) {      smoothZeroSurface();    }
     writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     std::unordered_map<std::string,TTds::Edge> z_map, bz_map;
     simpBZEdges(nullptr, &z_map);
@@ -681,10 +669,7 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
       simpZeroSurface(&z_map, &bz_map);
       simpBZEdges(&bz_map, &z_map);
     }
-    if(need_smooth_) {
-      updateAllZeroVerticesMaxDis();
-      smoothZeroSurface();
-    }
+    if(need_smooth_) {      smoothZeroSurface();    }
   }
 
   bool Approximation::tryCollapseBZEdge(TTds::Edge &e, std::unordered_map<std::string,TTds::Edge> &bz_map,
@@ -850,12 +835,43 @@ bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
 
   void Approximation::updateAllBoundaryVerticesMaxDis()
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    TTds &tds=tw_->getTds();
+    // set each vertex's max dis to -1
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) { vit->info().max_dis_=-1; }
+    // for each tet in tds, calc tet's height h
+    // calc the max jpt val in tet
+    // max dis = 2*val/h
+    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+      if(!tw_->isBoundaryCell(cit)) { continue; }
+      zsw::Scalar val = calcMinJudgeValInCell(cit);
+      zsw::Scalar h = calcTetHeight(cit);
+      zsw::Scalar max_dis=2*val/h;
+      for(size_t i=0; i<4; ++i) {
+        if(cit->vertex(i)->info().max_dis_<-zsw::const_val::eps ||
+           cit->vertex(i)->info().max_dis_>max_dis) { cit->vertex(i)->info().max_dis_=max_dis; }
+      }
+    }
   }
 
   void Approximation::smoothBoundary()
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    PointType pt_type[2] = {zsw::INNER_POINT, zsw::OUTER_POINT};
+    for(size_t up_i=0; up_in<2; ++up_i) {
+      updateAllBoundaryVerticesMaxDis();
+      // boundary smooth
+      for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+        if(vit->info().pt_type_!=pt_type[up_i]) { continue; }
+        // find one ring pts
+        std::vector<Eigen::Matrix<zsw::Scalar,3,1>> ring_pts;
+        calcBoundaryOneRing(vit, ring_pts);
+        Eigen::Matrix<zsw::Scalar,3,1> pos;
+        pos<<vit->point()[0], vit->point()[1], vit->point()[2];
+        // calc smooth n limit it in the sphere r of pos_ori
+        laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, vit->info().max_dis_);
+        Point npt(pos[0],pos[1],pos[1]);
+        vit->set_point(npt);
+      }
+    }
   }
 
   void Approximation::updateAllZeroVerticesMaxDis()

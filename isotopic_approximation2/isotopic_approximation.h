@@ -99,10 +99,10 @@ namespace zsw {
     void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
     void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
 
-    void updateAllBoundaryVerticesMaxDis();
     void smoothBoundary();
-    void updateAllZeroVerticesMaxDis();
+    void updateAllBoundaryVerticesMaxDis();
     void smoothZeroSurface();
+    void updateAllZeroVerticesMaxDis();
     zsw::Scalar calcCellVertexMaxDis(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts,
                                      const PointType pt_type0, const PointType pt_type1,
                                      const PointType pt_type2, const PointType pt_type3) const;
