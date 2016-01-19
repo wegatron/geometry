@@ -441,31 +441,27 @@ namespace zsw{
   Vhd TriangulationWapper::addPointInDelaunaySafe(
                                                   const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                                   VertexInfo &vertex_info,
-                                                  std::vector<Chd> &chds,
-                                                  std::unordered_set<std::string> *cell_key_set_pre, // in
-                                                  std::unordered_set<std::string> *cell_key_set_cur //out
-                                                  )
+                                                  std::vector<Chd> &chds)
   {
     Point point(pt[0],pt[1], pt[2]);
     Vhd vhd=delaunay_triangulation_.insert(point);
     vertex_info.index_=next_v_id_++;
     vhd->info()=vertex_info;
 
-    const bool need_create=(cell_key_set_pre==nullptr);
-    if(need_create) {
-      cell_key_set_pre=new std::unordered_set<std::string>();
-      initCellKeySet(*cell_key_set_pre);
-    }
     chds.clear();
-    if(cell_key_set_cur!=nullptr) { cell_key_set_cur->clear(); }
     for(auto cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
       if(!isValidCell(cit)) { continue; }
-      std::string key=cell2key(cit);
-      if(isValidCell(cit) && cell_key_set_pre->find(key)==cell_key_set_pre->end()) { chds.push_back(cit); }
-      if(cell_key_set_cur==nullptr) { continue; }
-      cell_key_set_cur->insert(key);
+      size_t cur_index[4]={cit->vertex(0)->info().index_, cit->vertex(1)->info().index_,
+                           cit->vertex(2)->info().index_, cit->vertex(3)->info().index_};
+      std::sort(cur_index, cur_index+4);
+      bool flag=false;
+      for(size_t i=0; i<4; ++i) {
+        if(cur_index[i]==cit->info().v_index_[i]) { continue; }
+        cit->info().v_index_[i]=cur_index[i];
+        flag=true;
+      }
+      if(flag) { chds.push_back(cit); }
     }
-    if(need_create) { delete cell_key_set_pre; }
     return vhd;
   }
 
@@ -481,14 +477,14 @@ namespace zsw{
     return vhd;
   }
 
-  void TriangulationWapper::initCellKeySet(std::unordered_set<std::string> &cell_key_set) const
-  {
-    for(auto cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
-      if(!isValidCell(cit)) { continue; }
-      std::string key=cell2key(cit);
-      cell_key_set.insert(key);
-    }
-  }
+  // void TriangulationWapper::initCellKeySet(std::unordered_set<std::string> &cell_key_set) const
+  // {
+  //   for(auto cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
+  //     if(!isValidCell(cit)) { continue; }
+  //     std::string key=cell2key(cit);
+  //     cell_key_set.insert(key);
+  //   }
+  // }
 
   bool TriangulationWapper::isBoundaryEdge(const TTds::Edge &edge) const
   {

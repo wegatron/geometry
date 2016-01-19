@@ -44,6 +44,14 @@ namespace zsw{
     }
   };
 
+  struct CellInfo
+  {
+    size_t v_index_[4];
+    CellInfo() {
+      v_index_[0]=v_index_[1]=v_index_[2]=v_index_[3]=-1;
+    }
+  };
+
   struct JudgePoint
   {
     Eigen::Matrix<zsw::Scalar,3,1> pt_;
@@ -53,15 +61,18 @@ namespace zsw{
 
   typedef CGAL::Exact_predicates_inexact_constructions_kernel         K;
   typedef CGAL::Triangulation_vertex_base_with_info_3<VertexInfo, K>    Vb;
-  typedef CGAL::Triangulation_hierarchy_vertex_base_3<Vb> Vbh;
-  typedef CGAL::Triangulation_data_structure_3<Vb>                    Tds;
+  typedef CGAL::Triangulation_cell_base_with_info_3<CellInfo, K> Cb;
+  typedef CGAL::Triangulation_data_structure_3<Vb, Cb>                    Tds;
 
   typedef CGAL::Delaunay_triangulation_3<K, Tds, CGAL::Fast_location> DelaunayTriangulation;
   typedef DelaunayTriangulation::Point                                             Point;
-  typedef CGAL::Triangulation_data_structure_3<CGAL::Triangulation_hierarchy_vertex_base_3<CGAL::Triangulation_vertex_base_with_info_3<zsw::VertexInfo, CGAL::Epick, CGAL::Triangulation_vertex_base_3<CGAL::Epick, CGAL::Triangulation_ds_vertex_base_3<CGAL::Triangulation_data_structure_3<CGAL::Triangulation_vertex_base_with_info_3<zsw::VertexInfo, CGAL::Epick> > > > > >, CGAL::Triangulation_ds_cell_base_3<void>, CGAL::Sequential_tag>  TTds;
+
+  typedef CGAL::Triangulation_data_structure_3<CGAL::Triangulation_hierarchy_vertex_base_3<CGAL::Triangulation_vertex_base_with_info_3<zsw::VertexInfo, CGAL::Epick, CGAL::Triangulation_vertex_base_3<CGAL::Epick, CGAL::Triangulation_ds_vertex_base_3<Tds > > > >, Cb, CGAL::Sequential_tag> TTds;
+
   typedef TTds::Vertex_handle Vhd;
   typedef TTds::Facet Facet;
   typedef TTds::Cell_handle Chd;
+
   typedef CGAL::Triple<Vhd, Vhd, Vhd> VertexTriple;
   typedef std::pair<Point, VertexInfo> PointData;
 
@@ -71,10 +82,7 @@ namespace zsw{
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
     Vhd addPointInDelaunaySafe(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                VertexInfo &vertex_info,
-                               std::vector<Chd> &chds,
-                               std::unordered_set<std::string> *cell_key_set_pre=nullptr, // in
-                               std::unordered_set<std::string> *cell_key_set_cur=nullptr //out
-                               );
+                               std::vector<Chd> &chds);
 
     Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                            VertexInfo &vertex_info,
@@ -90,7 +98,7 @@ namespace zsw{
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     void calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
     void calcBoundTrisAdvance(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
-    void initCellKeySet(std::unordered_set<std::string> &cell_key_set) const;
+    // void initCellKeySet(std::unordered_set<std::string> &cell_key_set) const;
 
     void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
     Vhd insertInEdge(TTds::Edge &edge, const Point &pt, const PointType pt_type);

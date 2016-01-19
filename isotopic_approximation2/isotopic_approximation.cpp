@@ -174,7 +174,7 @@ namespace zsw{
     std::vector<Chd> cells;
     const TTds &tds=tw_->getTds();
     tds.incident_cells(e.first->vertex(e.second), std::back_inserter(cells));
-    std::unordered_map<std::string,Chd> cell_map;
+    std::map<std::string,Chd> cell_map;
     for(Chd chd : cells) {
       std::string key_str = cell2key(chd);
       cell_map[key_str]=chd;

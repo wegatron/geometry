@@ -18,13 +18,9 @@ namespace zsw{
                         std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                         ErrorMaxComparison> err_queue;
     std::cout << "[INFO] " << "refine start!" << std::endl;
-    size_t pre=0, cur=1;
-    std::unordered_set<std::string> cell_key_set[2];
-    tw_->initCellKeySet(cell_key_set[0]);
     const TTds &tds=tw_->getTds();
     bool add_pt_flag=false;
     do{
-      std::cerr << "key_set_size:" << cell_key_set[pre].size() << std::endl;
       std::cerr << "cell_size:" << tds.number_of_cells() << std::endl;
       std::cerr << "vertices_size:" << tds.number_of_vertices() << std::endl;
       for(size_t i=0; i<jpts_.size();++i) {
@@ -39,8 +35,7 @@ namespace zsw{
         PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
         VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
         std::vector<Chd> chds;
-        tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds, &cell_key_set[pre], &cell_key_set[cur]);
-        swap(pre,cur);
+        tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds);
         for(Chd chd : chds) { if(tw_->isValidCell(chd)) {updateJptsInCell(chd, &err_queue);} }
       }
       add_pt_flag=false;
@@ -49,9 +44,7 @@ namespace zsw{
       while(!chds_queue.empty()) {
         Chd chd = chds_queue.front(); chds_queue.pop();
         if(!tw_->isTolCell(chd)) { continue; }
-        cell_key_set[cur].clear();
-        if(!checkUpNormalCondition(chd, chds_queue, &cell_key_set[pre], &cell_key_set[cur])) { add_pt_flag=true; }
-        swap(pre,cur);
+        if(!checkUpNormalCondition(chd, chds_queue)) { add_pt_flag=true; }
       }
       if(!add_pt_flag) { break; }
       for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
@@ -87,9 +80,7 @@ namespace zsw{
 #endif
   }
 
-  bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue,
-                                             std::unordered_set<std::string> *cell_key_set_pre,
-                                             std::unordered_set<std::string> *cell_key_set_cur)
+  bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue)
   {
     assert(tw_->isTolCell(chd));
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
@@ -144,7 +135,7 @@ namespace zsw{
     PointType pt_type=(jpts_[jpt_ind].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
     VertexInfo vertex_info(-1, pt_type, jpts_[jpt_ind].pt_, 0.0);
     std::vector<Chd> chds;
-    tw_->addPointInDelaunaySafe(jpts_[jpt_ind].pt_, vertex_info, chds, cell_key_set_pre, cell_key_set_cur);
+    tw_->addPointInDelaunaySafe(jpts_[jpt_ind].pt_, vertex_info, chds);
     //for(Chd chd : chds) { updateJptsInCell(chd, nullptr); }
     for(Chd chd : chds) { chds_queue.push(chd); }
     return false;
