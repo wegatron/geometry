@@ -388,9 +388,10 @@ namespace zsw{
     }
   }
 
-  Vhd TriangulationWapper::insertInEdge(TTds::Edge &edge, const Point &pt, const PointType pt_type)
+  Vhd TriangulationWapper::insertInEdge(TTds::Edge &edge, const Point &pt,
+                                        const PointType pt_type, TTds &tds)
   {
-    Vhd vhd = tds_.insert_in_edge(edge);
+    Vhd vhd = tds.insert_in_edge(edge);
     vhd->set_point(pt);
     vhd->info().index_=next_v_id_++;
     vhd->info().pt_type_=pt_type;

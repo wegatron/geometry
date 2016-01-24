@@ -42,7 +42,7 @@ namespace zsw {
       if(!tw_->isTolCell(cit)) { continue; }
       zsw::Scalar val = updateJptsInCell(cit, nullptr);
       zsw::Scalar h = calcBoundaryTetHeight(cit);
-      zsw::Scalar max_dis=2*val/h;
+      zsw::Scalar max_dis=val*h;
       for(size_t i=0; i<4; ++i) {
         if(cit->vertex(i)->info().max_dis_<-zsw::const_val::eps ||
            cit->vertex(i)->info().max_dis_>max_dis) { cit->vertex(i)->info().max_dis_=max_dis; }
@@ -88,8 +88,8 @@ namespace zsw {
         Eigen::Matrix<zsw::Scalar,3,1> pos;
         pos<<vit->point()[0], vit->point()[1], vit->point()[2];
         // calc smooth n limit it in the sphere r of pos_ori
-        laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, vit->info().max_dis_);
-        Point npt(pos[0],pos[1],pos[1]);
+        laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, 1, vit->info().max_dis_);
+        Point npt(pos[0],pos[1],pos[2]);
         vit->set_point(npt);
       }
     }
@@ -133,11 +133,15 @@ namespace zsw {
       zsw::Scalar h=calcZeroTetHeight(cit);
       zsw::Scalar val=updateJptsInCell(cit, nullptr);
       zsw::Scalar max_dis=val*h;
+      // std::cerr << "h:" << h << std::endl;
+      // std::cerr << "val:" << val << std::endl;
+      // std::cerr << "max_dis:" << max_dis << std::endl;
       for(size_t i=0; i<4; ++i) {
         if(cit->vertex(i)->info().pt_type_==zsw::ZERO_POINT &&
            (cit->vertex(i)->info().max_dis_<-zsw::const_val::eps ||
             cit->vertex(i)->info().max_dis_>max_dis)) {
           cit->vertex(i)->info().max_dis_=max_dis;
+          // std::cerr << "updated max_dis:" << max_dis << std::endl;
         }
       }
     }
@@ -161,23 +165,38 @@ namespace zsw {
     zsw::Scalar ret=0;
     if(zero_cnt==1) {  ret=calcTetHeightType0(zero_pts[0], bound_pts[0], bound_pts[1], bound_pts[2]); }
     else if(zero_cnt==2) { ret=calcTetHeightType1(zero_pts[0], zero_pts[1], bound_pts[0], bound_pts[1]); }
-    else { ret=calcTetHeightType0(zero_pts[0], zero_pts[0], zero_pts[1], bound_pts[2]); }
+    else { ret=calcTetHeightType0(zero_pts[0], zero_pts[1], zero_pts[2], bound_pts[0]); }
     return ret;
   }
 
-  void Approximation::smoothZeroSurface()
+  void Approximation::laplaceSmoothZeroSurface()
   {
     updateAllZeroVerticesMaxDis();
     TTds &tds=tw_->getTds();
-    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-      std::vector<Eigen::Matrix<zsw::Scalar,3,1>> ring_pts;
-      calcZeroSurfaceOneRing(vit, ring_pts);
-      Eigen::Matrix<zsw::Scalar,3,1> pos;
-      pos<<vit->point()[0], vit->point()[1], vit->point()[2];
-      laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, vit->info().max_dis_);
-      Point npt(pos[0],pos[1],pos[2]);
-      vit->set_point(npt);
+    const size_t N=20;
+    std::vector<std::pair<Vhd, Eigen::Matrix<zsw::Scalar,3,1>>> vpts;
+    for(size_t times=0; times<N; ++times) {
+      for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+        if(vit->info().pt_type_!=zsw::ZERO_POINT) { continue; }
+        std::vector<Eigen::Matrix<zsw::Scalar,3,1>> ring_pts;
+        calcZeroSurfaceOneRing(vit, ring_pts);
+        Eigen::Matrix<zsw::Scalar,3,1> pos;
+        pos<<vit->point()[0], vit->point()[1], vit->point()[2];
+        // laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, N, vit->info().max_dis_);
+        laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, N, 0.1);
+        vpts.push_back(std::make_pair(vit, pos));
+      }
+      for(std::pair<Vhd, Eigen::Matrix<zsw::Scalar,3,1>> &vpt : vpts) {
+        Point pt(vpt.second[0], vpt.second[1], vpt.second[2]);
+        vpt.first->set_point(pt);
+      }
+      vpts.clear();
     }
+  }
+
+  void Approximation::bilateralSmoothZeroSurface()
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
   void Approximation::calcZeroSurfaceOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const

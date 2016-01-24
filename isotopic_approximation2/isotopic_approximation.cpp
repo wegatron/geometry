@@ -8,6 +8,7 @@
 #include "bound_sphere.h"
 #include "sampling.h"
 #include "smoother.h"
+#include <zswlib/zsw_clock_c11.h>
 
 using namespace std;
 
@@ -45,33 +46,47 @@ namespace zsw{
 
   void  Approximation::simp(const std::string &tmp_output_dir)
   {
-    if(need_smooth_) {      smoothBoundary();    }
+    writeTetMesh(tmp_output_dir+"before_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out}); 
+    // if(need_smooth_) {
+    //   smoothBoundary();
+    //   writeTetMesh(tmp_output_dir+"before_simp_tol_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    // }
     TTds tmp_tds=tw_->getTds();
     mutuallTessellation();
     writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     tw_->setTds(tmp_tds);
-    simpTolerance();
-    if(need_smooth_) {      smoothBoundary();    }
-    writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    mutuallTessellation();
 
-    if(need_smooth_) {      smoothZeroSurface();    }
+    simpTolerance();
+    writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    // if(need_smooth_) {
+    //   smoothBoundary();
+    //   writeTetMesh(tmp_output_dir+"after_simp_tol_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    // }
+    mutuallTessellation();
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    if(need_smooth_) {
+      laplaceSmoothZeroSurface();
+      writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    }
     simpZeroSurface();
-    if(need_smooth_) {      smoothZeroSurface();    }
     writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    if(need_smooth_) {
+      laplaceSmoothZeroSurface();
+      writeTetMesh(tmp_output_dir+"simped_zero_surf_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    }
     std::unordered_map<std::string,TTds::Edge> z_map, bz_map;
     simpBZEdges(nullptr, &z_map);
     while(!z_map.empty()) {
       simpZeroSurface(&z_map, &bz_map);
       simpBZEdges(&bz_map, &z_map);
     }
-    if(need_smooth_) {      smoothZeroSurface();    }
+    if(need_smooth_) {      laplaceSmoothZeroSurface();    }
   }
 
-  zsw::Scalar Approximation::updateJptsInCell(Chd chd, std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
-                                              std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
-                                              ErrorMaxComparison> *err_queue)
+  zsw::Scalar Approximation::updateJptsInCell(Chd chd, /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+                                                         std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+                                                         ErrorMaxComparison> *err_queue) */
+                                              std::vector<JudgePoint*> *updated_jpts)
   {
     assert(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
            && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT);
@@ -103,21 +118,14 @@ namespace zsw{
         else if(chd->vertex(vi)->info().pt_type_==zsw::ZERO_POINT){ val[vi]=0; }
         else { val[vi]=1; }
       }
-
-      // if(jpt-&jpts_[0]==15175) {
-      //   std::cerr << jpt->pt_.transpose() << std::endl;
-      //   std::cerr << cell2str(chd) << std::endl;
-      //   std::cerr << val.transpose() << std::endl;
-      //   std::cerr << "A:\n" << A << std::endl;
-      // }
-
       JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
       tmp_jpt->val_cur_=val.dot(x);
       min_fabs_val=min(fabs(tmp_jpt->val_cur_), min_fabs_val);
-      if(err_queue!=nullptr) {
-        zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
-        if(err>1) { err_queue->push(std::make_pair(err, tmp_jpt)); }
-      }
+      if(updated_jpts!=nullptr) {      updated_jpts->push_back(tmp_jpt); }
+      // if(err_queue!=nullptr) {
+      //   zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
+      //   if(err>1) { err_queue->push(std::make_pair(err, tmp_jpt)); }
+      // }
     }
     return min_fabs_val;
   }

@@ -35,7 +35,7 @@ namespace zsw {
   class Approximation final
   {
   public:
-    Approximation() { normal_cond_scale_=0.7; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
+    Approximation() { normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     void setNeedSmooth(bool need_smooth) { need_smooth_=need_smooth; }
     void init(const zsw::Scalar err_epsilon,
@@ -48,7 +48,8 @@ namespace zsw {
 
     void writeZeroSurface(const std::string &filepath) const;
     void writeTetMesh(const std::string &filepath,
-                      std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs) const;
+                      std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs,
+                      const TTds *tds_ptr=nullptr) const;
 
     void writeAdjcentCells(const std::string &filepath, const TTds::Edge &e) const;
     void writeAdjcentCells(const std::string &filepath, const std::vector<Chd> &chds) const;
@@ -57,16 +58,18 @@ namespace zsw {
 
     void refine();
     void simpTolerance();
-    void mutuallTessellation();
+    void mutuallTessellation(TTds *tds_ptr=nullptr);
   private:
+    JudgePoint * findMaxErrorJpt(zsw::Scalar &error);
     void simpZeroSurface(std::unordered_map<std::string,TTds::Edge> *z_map=nullptr,
                          std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr);
     bool simpBZEdges(std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr,
                      std::unordered_map<std::string,TTds::Edge> *z_map=nullptr);
 
     zsw::Scalar updateJptsInCell(Chd chd,
-                          std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
-                          ErrorMaxComparison> *err_queue);
+                                 /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+                                   ErrorMaxComparison> *err_queue*/
+                                 std::vector<JudgePoint*> * updated_jpts);
     bool checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue);
     bool isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
@@ -99,7 +102,8 @@ namespace zsw {
 
     void smoothBoundary();
     void updateAllBoundaryVerticesMaxDis();
-    void smoothZeroSurface();
+    void laplaceSmoothZeroSurface();
+    void bilateralSmoothZeroSurface();
     void updateAllZeroVerticesMaxDis();
     void calcBoundaryOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const;
     void calcZeroSurfaceOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const;

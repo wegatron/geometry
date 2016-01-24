@@ -29,6 +29,7 @@ void test0(const std::string &file_path,
   zsw::writePoints(output_dir+"bs_jpts.vtk", bs_jpts);
   zsw::Approximation appro;
   appro.setTmpOutDir(output_dir);
+  appro.setNeedSmooth(true);
   appro.init(err_epsilon, tri_sample_r, tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
   appro.writeTetMesh(output_dir+"refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   // appro.simpTolerance();

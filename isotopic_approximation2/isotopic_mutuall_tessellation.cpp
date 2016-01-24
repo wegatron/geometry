@@ -12,9 +12,9 @@
 using namespace std;
 
 namespace zsw{
-  void Approximation::mutuallTessellation()
+  void Approximation::mutuallTessellation(TTds *tds_ptr)
   {
-    const TTds &tds = tw_->getTds();
+    TTds &tds= (tds_ptr==nullptr) ? tw_->getTds() : *tds_ptr;
     std::vector<Vhd> vhds;
     for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
       if(vit->info().pt_type_==zsw::INNER_POINT) { vhds.push_back(vit); }
@@ -33,7 +33,7 @@ namespace zsw{
         Point &pa = e.first->vertex(e.second)->point();
         Point &pb = e.first->vertex(e.third)->point();
         Point pt((pa[0]+pb[0])/2.0, (pa[1]+pb[1])/2.0, (pa[2]+pb[2])/2.0);
-        tw_->insertInEdge(e, pt, zsw::ZERO_POINT);
+        tw_->insertInEdge(e, pt, zsw::ZERO_POINT, tds);
       } while(1);
     }
   }
