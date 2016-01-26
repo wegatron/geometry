@@ -34,7 +34,7 @@ namespace zsw {
   class Approximation final
   {
   public:
-    Approximation() { normal_cond_scale_=0.7; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
+    Approximation() { normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     void setNeedSmooth(bool need_smooth) { need_smooth_=need_smooth; }
     void init(const zsw::Scalar err_epsilon,
