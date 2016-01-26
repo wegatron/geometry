@@ -137,20 +137,6 @@ namespace zsw{
 #endif
   }
 
-  JudgePoint * Approximation::findMaxErrorJpt(zsw::Scalar &error)
-  {
-    JudgePoint *ret=nullptr;
-    error=1.0;
-    for(JudgePoint &jpt : jpts_) {
-      zsw::Scalar tmp_error=fabs(jpt.val_cur_-jpt.val_exp_);
-      if(tmp_error > error) {
-        error=tmp_error;
-        ret=&jpt;
-      }
-    }
-    return ret;
-  }
-
   bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue)
   {
     assert(tw_->isTolCell(chd));
@@ -255,7 +241,7 @@ namespace zsw{
     Eigen::Matrix<zsw::Scalar,3,3> Atr = A.transpose();
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu; pplu.compute(Atr);
     center = pplu.solve(b);
-#if 1
+#if 0
     zsw::Scalar dis[4];
     for(size_t i=0; i<4; ++i) {
       dis[i]=(center-tri_pts.block<3,1>(0,i)).norm();

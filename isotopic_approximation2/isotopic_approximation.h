@@ -59,7 +59,6 @@ namespace zsw {
     void simpTolerance();
     void mutuallTessellation(TTds *tds_ptr=nullptr);
   private:
-    JudgePoint * findMaxErrorJpt(zsw::Scalar &error);
     void simpZeroSurface(std::unordered_map<std::string,TTds::Edge> *z_map=nullptr,
                          std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr);
     bool simpBZEdges(std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr,
