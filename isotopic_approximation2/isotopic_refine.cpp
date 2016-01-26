@@ -16,6 +16,15 @@ using namespace std;
 namespace zsw{
   void Approximation::refine()
   {
+#if 0
+    for(size_t i=0; i<1000; ++i) {
+      testKdtree(outer_kdtree_, outer_jpts_);
+    }
+    for(size_t i=0; i<1000; ++i) {
+      testKdtree(inner_kdtree_, inner_jpts_);
+    }
+    std::cerr << "test_pass!!!" << std::endl;
+#endif
     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                         std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                         ErrorMaxComparison> err_queue;
@@ -31,14 +40,14 @@ namespace zsw{
         if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
       }
       if(err_queue.empty()) { break; }
-      // size_t debug_pt_size=0;
+      size_t debug_pt_size=0;
       // zsw::common::ClockC11 clock;
       while(!err_queue.empty()) {
         std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
         zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
         if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
 
-        // if(++debug_pt_size%100==0) {          std::cerr << "pt_size:" << debug_pt_size << std::endl;        }
+        if(++debug_pt_size%100==0) {          std::cerr << "pt_size:" << debug_pt_size << std::endl;        }
 
         PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
         VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
@@ -65,11 +74,13 @@ namespace zsw{
         }
       }
 
-      // TTds tmp_tds=tw_->getTds();
-      // mutuallTessellation(&tmp_tds);
+      TTds tmp_tds=tw_->getTds();
+      mutuallTessellation(&tmp_tds);
       // if(isZeroTetExist(tmp_tds)) { std::cerr << "Exist Zero tet!!!" << std::endl; }
-      // writeTetMesh("/home/wegatron/tmp/check_normal_cond_"+std::to_string(debug_check_normalcond_time)+".vtk",
-      // {zsw::ignore_bbox, zsw::ignore_out}, &tmp_tds);
+      writeTetMesh("/home/wegatron/tmp/check_normal_cond_"+std::to_string(debug_check_normalcond_time)+".vtk",
+                   {zsw::ignore_bbox, zsw::ignore_out}, &tmp_tds);
+      ++debug_check_normalcond_time;
+      std::cerr << "start checkup normal cond!!!" << std::endl;
       add_pt_flag=false;
       std::queue<Chd> chds_queue;
       for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
@@ -77,7 +88,10 @@ namespace zsw{
       while(!chds_queue.empty()) {
         Chd chd = chds_queue.front(); chds_queue.pop();
         if(!tw_->isTolCell(chd)) { continue; }
-        if(!checkUpNormalCondition(chd, chds_queue)) {          add_pt_flag=true;        }
+        if(!checkUpNormalCondition(chd, chds_queue)) {
+          if(++add_pt_num%100==0) { std::cerr << "add pt_num=" << add_pt_num << std::endl; }
+          add_pt_flag=true;
+        }
       }
       if(!add_pt_flag) { break; }
       std::vector<Chd> chds;
@@ -88,6 +102,7 @@ namespace zsw{
       for(size_t i=0; i<chds.size(); ++i) {
         updateJptsInCell(chds[i],nullptr);
       }
+      //break;
       // std::cerr << "normal cond check end!!!" << std::endl;
     }while(1);
 #if 0
@@ -109,15 +124,15 @@ namespace zsw{
                                               tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
       const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
       Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) {
+      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_)) {
         std::string filepath=tmp_outdir_+"normal_cond/nc_"+std::to_string(ind)+".vtk";
-        if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_,
+        if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_,
                             true, &filepath)) {
           std::cerr << "Refine result normal condition failed on " << ind << std::endl;
           //abort();
         }
+        ++ind;
       }
-      ++ind;
     }
 #endif
   }
@@ -135,76 +150,6 @@ namespace zsw{
     }
     return ret;
   }
-
-//   void Approximation::refine()
-//   {
-//     std::cout << "[INFO] " << "refine start!" << std::endl;
-//     const TTds &tds=tw_->getTds();
-//     bool add_pt_flag=false;
-//     do{
-//       std::cerr << "cell_size:" << tds.number_of_cells() << std::endl;
-//       std::cerr << "vertices_size:" << tds.number_of_vertices() << std::endl;
-//       zsw::Scalar error=1.0;;
-//       zsw::common::ClockC11 clock;
-//       JudgePoint *jpt_ptr=findMaxErrorJpt(error);
-//       if(jpt_ptr==nullptr) { break; }
-//       //size_t debug_pt_size=0;
-//       PointType pt_type= (jpt_ptr->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
-//       VertexInfo vertex_info(-1, pt_type, jpt_ptr->pt_, 0.0);
-//       std::vector<Chd> chds;
-//       std::cerr << "find pt time cost:" << clock.time() << std::endl;
-//       tw_->addPointInDelaunaySafe(jpt_ptr->pt_, vertex_info, chds);
-//       std::cerr << "add pt into delaunay cost:" << clock.time() << std::endl;
-//       //tw_->addPointInDelaunay(jpt_info.second->pt_, vertex_info, chds);
-//       //if(++debug_pt_size%5==0) {          std::cerr << debug_pt_size << std::endl;        }
-// #pragma omp for
-//       for(size_t i=0; i<chds.size(); ++i) {
-//       if(tw_->isValidCell(chds[i])) {updateJptsInCell(chds[i], nullptr);}
-//     }
-//       std::cerr << "update cells in jpt time cost:" << clock.time() << std::endl;
-
-//       // add_pt_flag=false;
-//       // std::queue<Chd> chds_queue;
-//       // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
-//       // while(!chds_queue.empty()) {
-//       //   Chd chd = chds_queue.front(); chds_queue.pop();
-//       //   if(!tw_->isTolCell(chd)) { continue; }
-//       //   if(!checkUpNormalCondition(chd, chds_queue)) { add_pt_flag=true; }
-//       // }
-//       // if(!add_pt_flag) { break; }
-//       // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-//       //   if(tw_->isValidCell(cit)) { updateJptsInCell(cit,nullptr); }
-//       // }
-//     }while(1);
-// #if 0
-//       size_t ind=0;
-//       for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
-//       if(!tw_->isTolCell(chd)) { continue; }
-//       Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
-//       tri_pts<<
-//         chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
-//         chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
-//         chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
-//       Eigen::Matrix<zsw::Scalar,4,1> val;
-//       for(size_t i=0; i<4; ++i) {
-//       if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
-//       else { val[i]=1; }
-//     }
-//       Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
-//       tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
-//         tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
-//       const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
-//       Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-//       std::string filepath=tmp_outdir_+"normal_cond/nc_"+std::to_string(ind++)+".vtk";
-//       if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_,
-//         true, &filepath)) {
-//       std::cerr << "Refine result normal condition failed!!!" << std::endl;
-//       abort();
-//     }
-//     }
-// #endif
-//     }
-
 
   bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue)
   {
@@ -224,17 +169,19 @@ namespace zsw{
                                             tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
     const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
     Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-    if(normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) {
+    if(normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_)) {
       return true;
     }
-    // static size_t ind=0;
-    // std::string filepath=tmp_outdir_+"normal_cond/nc_"+std::to_string(ind)+".vtk";
-    // if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_,
-    //                     true, &filepath)) {
-    //   std::cerr << "Refine result normal condition failed on " << ind << std::endl;
-    // }
-    // ind++;
-
+#if 0
+    static size_t ind=0;
+    std::string filepath=tmp_outdir_+"normal_cond_debug/nc_"+std::to_string(ind)+".vtk";
+    if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_,
+                        true, &filepath)) {
+      std::cerr << "Refine result normal condition failed on " << ind << std::endl;
+    }
+    writeTetMesh(tmp_outdir_+"before_add_"+std::to_string(ind)+".vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    ind++;
+#endif
     // insert point into delaunay triangulation
     Eigen::Matrix<zsw::Scalar,3,1> center;
     calcCircumcenter(tri_pts, center);
@@ -242,10 +189,10 @@ namespace zsw{
     // find the minest
     std::vector<size_t> in_indices;
     std::vector<zsw::Scalar> in_dist;
-    inner_kdtree_ptr_->queryNearest(center, in_indices, in_dist);
+    inner_kdtree_.queryNearest(center, in_indices, in_dist);
     std::vector<size_t> out_indices;
     std::vector<zsw::Scalar> out_dist;
-    outer_kdtree_ptr_->queryNearest(center, out_indices, out_dist);
+    outer_kdtree_.queryNearest(center, out_indices, out_dist);
     size_t jpt_ind = (in_dist[0]<out_dist[0]) ? in_indices[0] : out_indices[0]+inner_jpts_.size();
 
     // std::cerr << "nearest pt:" << jpts_[jpt_ind].pt_ << std::endl;
@@ -284,7 +231,7 @@ namespace zsw{
       Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
       std::string filepath(tmp_outdir_+"normal_cond/check_"+std::to_string(normal_cond_debug_i++)+".vtk");
       if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
-                          inner_kdtree_ptr_, outer_kdtree_ptr_,
+                          inner_kdtree_, outer_kdtree_,
                           true, &filepath)) {
         std::cerr << "normal cond failed!!!" << std::endl;
         std::cerr << "normal_cond_debug_i=" << normal_cond_debug_i-1 << std::endl;
@@ -308,7 +255,7 @@ namespace zsw{
     Eigen::Matrix<zsw::Scalar,3,3> Atr = A.transpose();
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu; pplu.compute(Atr);
     center = pplu.solve(b);
-#if 0
+#if 1
     zsw::Scalar dis[4];
     for(size_t i=0; i<4; ++i) {
       dis[i]=(center-tri_pts.block<3,1>(0,i)).norm();

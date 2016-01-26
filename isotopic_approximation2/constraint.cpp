@@ -41,15 +41,15 @@ bool zsw::normalCondition(
                           const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts,
                           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
                           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-                          std::shared_ptr<zsw::Flann<zsw::Scalar>> inner_kdtree_ptr,
-                          std::shared_ptr<zsw::Flann<zsw::Scalar>> outer_kdtree_ptr,
+                          const zsw::KdTreeWarper &inner_kdtree,
+                          const zsw::KdTreeWarper &outer_kdtree,
                           bool debug_flag,
                           const std::string *filepath_ptr)
 {
   // find the four inner_jpts and four outer_jpts
   std::vector<size_t> in_indices;
   std::vector<zsw::Scalar> in_dist;
-  inner_kdtree_ptr->queryNearest(scaled_tri_pts, in_indices, in_dist);
+  inner_kdtree.queryNearest(scaled_tri_pts, in_indices, in_dist);
 
   assert(fabs((inner_jpts[in_indices[0]]-scaled_tri_pts.block<3,1>(0,0)).squaredNorm()-in_dist[0])<zsw::const_val::eps);
   assert(fabs((inner_jpts[in_indices[1]]-scaled_tri_pts.block<3,1>(0,1)).squaredNorm()-in_dist[1])<zsw::const_val::eps);
@@ -58,7 +58,7 @@ bool zsw::normalCondition(
 
   std::vector<size_t> out_indices;
   std::vector<zsw::Scalar> out_dist;
-  outer_kdtree_ptr->queryNearest(scaled_tri_pts, out_indices, out_dist);
+  outer_kdtree.queryNearest(scaled_tri_pts, out_indices, out_dist);
 
   assert(fabs((outer_jpts[out_indices[0]]-scaled_tri_pts.block<3,1>(0,0)).squaredNorm()-out_dist[0])<zsw::const_val::eps);
   assert(fabs((outer_jpts[out_indices[1]]-scaled_tri_pts.block<3,1>(0,1)).squaredNorm()-out_dist[1])<zsw::const_val::eps);

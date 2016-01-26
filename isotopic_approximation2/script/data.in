@@ -16,7 +16,7 @@ CUBE_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/cube/cube
 CUBE_THICK = 0.06
 CUBE_SAMPLE_R = 0.03
 
-CYLINDER = ${DATA_DIR}/cylinder_smoothed.obj
+CYLINDER = ${DATA_DIR}/cylinder_noised.obj
 CYLINDER_OUTPUT_DIR = ${APP_OUTPUT_DIR}/cylinder/
 CYLINDER_OUTPUT_PREFIX = ${APP_OUTPUT_DIR}/cylinder/cylinder
 CYLINDER_THICK = 0.2

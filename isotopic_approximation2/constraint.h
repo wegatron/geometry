@@ -6,8 +6,8 @@
 #include <Eigen/Dense>
 #include <zswlib/config.h>
 #include <zswlib/const_val.h>
-#include <zswlib/mesh/zsw_flann.h>
 #include "basic_data_structure.h"
+#include "kdtree_warp.h"
 
 namespace zsw
 {
@@ -36,8 +36,8 @@ namespace zsw
                        const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts,
                        const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
                        const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-                       std::shared_ptr<zsw::Flann<zsw::Scalar>> inner_kdtree_ptr,
-                       std::shared_ptr<zsw::Flann<zsw::Scalar>> outer_kdtree_ptr,
+                       const zsw::KdTreeWarper &inner_kdtree,
+                       const zsw::KdTreeWarper &outer_kdtree,
                        bool debug_flag=false,
                        const std::string *filepath_ptr=nullptr);
 }

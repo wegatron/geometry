@@ -66,7 +66,7 @@ namespace zsw{
     ofs << ss.str();
     ofs << "CELL_TYPES " << valid_cells_number << std::endl;
     for(size_t i=0; i<valid_cells_number; ++i) {      ofs << "10" << std::endl;    }
-#if 1
+#if 0
     ofs << "# Append index info:" << std::endl;
     v_index=0;
     for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {

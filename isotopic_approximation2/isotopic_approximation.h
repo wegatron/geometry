@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <queue>
 #include <zswlib/config.h>
-#include <zswlib/mesh/zsw_flann.h>
 #include "basic_data_structure.h"
 #include "constraint.h"
 
@@ -35,7 +34,7 @@ namespace zsw {
   class Approximation final
   {
   public:
-    Approximation() { normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
+    Approximation() { normal_cond_scale_=0.7; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     void setNeedSmooth(bool need_smooth) { need_smooth_=need_smooth; }
     void init(const zsw::Scalar err_epsilon,
@@ -115,8 +114,8 @@ namespace zsw {
     std::vector<JudgePoint> jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> inner_jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> outer_jpts_;
-    std::shared_ptr<zsw::Flann<zsw::Scalar>> inner_kdtree_ptr_;
-    std::shared_ptr<zsw::Flann<zsw::Scalar>> outer_kdtree_ptr_;
+    KdTreeWarper inner_kdtree_;
+    KdTreeWarper outer_kdtree_;
     std::shared_ptr<TriangulationWapper> tw_;
     zsw::Scalar err_epsilon_;
     zsw::Scalar tri_sample_r_;

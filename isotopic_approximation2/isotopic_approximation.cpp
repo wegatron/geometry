@@ -24,8 +24,8 @@ namespace zsw{
     tri_sample_r_=tri_sample_r;
     tet_sample_r_=tet_sample_r;
     inner_jpts_=inner_jpts; outer_jpts_=outer_jpts;
-    inner_kdtree_ptr_.reset(new zsw::Flann<zsw::Scalar>(inner_jpts_[0].data(), inner_jpts_.size()));
-    outer_kdtree_ptr_.reset(new zsw::Flann<zsw::Scalar>(outer_jpts_[0].data(), outer_jpts_.size()));
+    inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
+    outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
     for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, -1, 1}); }
     for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }

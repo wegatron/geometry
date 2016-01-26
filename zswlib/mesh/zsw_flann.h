@@ -11,7 +11,7 @@ namespace zsw {
     class Flann {
   public:
   Flann(ScalarType *data, const size_t points_number) : points(data, points_number, 3) {
-      index.reset(new flann::Index<flann::L2<ScalarType> >(points, flann::KDTreeIndexParams(4)));
+      index.reset(new flann::Index<flann::L2<ScalarType> >(points, flann::KDTreeIndexParams(1)));
       index->buildIndex();
     }
 

@@ -57,7 +57,7 @@ namespace zsw{
         Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
         std::string filepath(tmp_outdir_+"normal_cond/nbc_"+std::to_string(normal_cond_debug_i++)+".vtk");
         if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
-                            inner_kdtree_ptr_, outer_kdtree_ptr_,
+                            inner_kdtree_, outer_kdtree_,
                             true, &filepath)) {
           std::cerr << "SimpTolerance result normal cond failed!!!" << std::endl;
           abort();
@@ -163,7 +163,7 @@ namespace zsw{
                                               tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
                                               tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
       Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_ptr_, outer_kdtree_ptr_)) { return false;}
+      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_)) { return false;}
     }
     return true;
   }
