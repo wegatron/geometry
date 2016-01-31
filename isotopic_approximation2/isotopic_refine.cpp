@@ -14,134 +14,57 @@
 using namespace std;
 
 namespace zsw{
+
   void Approximation::refine()
   {
-#if 0
-    for(size_t i=0; i<1000; ++i) {
-      testKdtree(outer_kdtree_, outer_jpts_);
-    }
-    for(size_t i=0; i<1000; ++i) {
-      testKdtree(inner_kdtree_, inner_jpts_);
-    }
-    std::cerr << "test_pass!!!" << std::endl;
-#endif
+    #if 0
+    testKdtree();
+    #endif
     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                         std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                         ErrorMaxComparison> err_queue;
-    std::cout << "[INFO] " << "refine start!" << std::endl;
-    const TTds &tds=tw_->getTds();
-    bool add_pt_flag=false;
-    size_t debug_check_normalcond_time=0;
+    for(size_t i=0; i<jpts_.size();++i) {
+      zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
+      if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
+    }
+    TTds &tds=tw_->getTds();
+    size_t add_pt_for_err=0;
+    size_t add_pt_for_normal=0;
     do{
-      NZSWLOG("zsw_info") << "cell_size:" << tds.number_of_cells() << std::endl;
-      NZSWLOG("zsw_info") << "vertices_size:" << tds.number_of_vertices() << std::endl;
-      for(size_t i=0; i<jpts_.size();++i) {
-        zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
-        if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
-      }
-      if(err_queue.empty()) { break; }
-      size_t debug_pt_size=0;
-      // zsw::common::ClockC11 clock;
       while(!err_queue.empty()) {
         std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
         zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
         if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
-
-        if(++debug_pt_size%100==0) {          std::cerr << "pt_size:" << debug_pt_size << std::endl;        }
-
         PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
         VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
         std::vector<Chd> chds;
-        // if(debug_pt_size%100==0) { std::cerr << "find pt time cost:" << clock.time() << std::endl;        }
         tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds);
-        // if(debug_pt_size%100==0) {          std::cerr << "add pt into delaunay cost:" << clock.time() << std::endl;        }
-
-        std::vector<std::vector<JudgePoint*>> updated_jpts(chds.size());
-#pragma omp parallel for
-        for(size_t i=0; i<chds.size(); ++i) {
-          if(tw_->isValidCell(chds[i])) { updateJptsInCell(chds[i], &updated_jpts[i]); }
-        }
-        std::set<JudgePoint*> up_jpt_set;
-        for(std::vector<JudgePoint*> up_jpt : updated_jpts) {
-          for(JudgePoint * jpt : up_jpt) {            up_jpt_set.insert(jpt);          }
-        }
-        for(JudgePoint * jpt : up_jpt_set) {
-          zsw::Scalar tmp_err=fabs(jpt->val_cur_-jpt->val_exp_);
-          if(tmp_err>1.0) { err_queue.push(std::make_pair(tmp_err, jpt)); }
-        }
+        if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;  }
+        updateJptsInCells(chds, err_queue);
       }
 
-      // TTds tmp_tds=tw_->getTds();
-      // mutuallTessellation(&tmp_tds);
-      // // if(isZeroTetExist(tmp_tds)) { std::cerr << "Exist Zero tet!!!" << std::endl; }
-      // writeTetMesh("/home/wegatron/tmp/check_normal_cond_"+std::to_string(debug_check_normalcond_time)+".vtk",
-      //              {zsw::ignore_bbox, zsw::ignore_out}, &tmp_tds);
-      // ++debug_check_normalcond_time;
-      NZSWLOG("zsw_log") << "start checkup normal cond!!!" << std::endl;
-      add_pt_flag=false;
-      std::queue<Chd> chds_queue;
-      for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
-      static size_t add_pt_num=0;
-      while(!chds_queue.empty()) {
-        Chd chd = chds_queue.front(); chds_queue.pop();
-        if(!tw_->isTolCell(chd)) { continue; }
-        if(!checkUpNormalCondition(chd, chds_queue)) {
-          if(++add_pt_num%1000==0) {
-            NZSWLOG("zsw_info") << "add pt_num=" << add_pt_num << std::endl;
-            TTds tmp_tds=tw_->getTds();
-            mutuallTessellation(&tmp_tds);
-            writeTetMesh("/home/wegatron/tmp/normal_cond/check_normal_cond_"+std::to_string(add_pt_num)+".vtk",
-                         {zsw::ignore_bbox, zsw::ignore_out}, &tmp_tds);
-          }
-          add_pt_flag=true;
-        }
-      }
-      if(!add_pt_flag) { break; }
-      std::vector<Chd> chds;
+      // find a tet viloate the normal condition
+      bool viloate_normal_cond=false;
+      std::vector<Chd> tmp_chds;
       for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-        if(tw_->isValidCell(cit))  { chds.push_back(cit); }
-      }
-#pragma omp parallel for
-      for(size_t i=0; i<chds.size(); ++i) {
-        updateJptsInCell(chds[i],nullptr);
-      }
-      //std::cerr << "normal cond check end!!!" << std::endl;
-    }while(1);
-#if 0
-    size_t ind=0;
-    for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
-      if(!tw_->isTolCell(chd)) { continue; }
-      Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
-      tri_pts<<
-        chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
-        chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
-        chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
-      Eigen::Matrix<zsw::Scalar,4,1> val;
-      for(size_t i=0; i<4; ++i) {
-        if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
-        else { val[i]=1; }
-      }
-      Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
-                                              tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
-                                              tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
-      const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
-      Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_)) {
-        std::string filepath=tmp_outdir_+"normal_cond/nc_"+std::to_string(ind)+".vtk";
-        if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_,
-                            true, &filepath)) {
-          std::cerr << "Refine result normal condition failed on " << ind << std::endl;
-          //abort();
+        if(!cit->info().satisfy_normal_cond_ && !checkUpNormalCondition(cit, tmp_chds)) {
+        if(++add_pt_for_normal%50==0) { NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl;  }
+          viloate_normal_cond=true;
+          break;
         }
-        ++ind;
       }
-    }
-#endif
+      if(viloate_normal_cond) { updateJptsInCells(tmp_chds, err_queue); }
+      else { break; }
+    }while(true);
+    #if 0
+    checkNormalCondition();
+    #endif
   }
 
-  bool Approximation::checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue)
+  bool Approximation::checkUpNormalCondition(Chd chd, std::vector<Chd> &chds)
   {
     assert(tw_->isTolCell(chd));
+    chd->info().satisfy_normal_cond_=true;
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
     tri_pts<<
       chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
@@ -188,45 +111,10 @@ namespace zsw{
     // add and update
     PointType pt_type=(jpts_[jpt_ind].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
     VertexInfo vertex_info(-1, pt_type, jpts_[jpt_ind].pt_, 0.0);
-    std::vector<Chd> chds;
     //writeTetMesh("/home/wegatron/tmp/before_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     tw_->addPointInDelaunaySafe(jpts_[jpt_ind].pt_, vertex_info, chds);
     //writeTetMesh("/home/wegatron/tmp/after_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    for(Chd chd : chds) { chds_queue.push(chd); }
     return false;
-  }
-
-  bool Approximation::checkNormalCondition() const
-  {
-    const TTds &tds=tw_->getTds();
-    size_t normal_cond_debug_i=0;
-    for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
-      if(!tw_->isTolCell(chd)) { continue; }
-      Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
-      tri_pts<<
-        chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
-        chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
-        chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
-      Eigen::Matrix<zsw::Scalar,4,1> val;
-      for(size_t i=0; i<4; ++i) {
-        if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
-        else { val[i]=1; }
-      }
-      Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
-                                              tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
-                                              tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
-      const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
-      Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-      std::string filepath(tmp_outdir_+"normal_cond/check_"+std::to_string(normal_cond_debug_i++)+".vtk");
-      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
-                          inner_kdtree_, outer_kdtree_,
-                          true, &filepath)) {
-        std::cerr << "normal cond failed!!!" << std::endl;
-        std::cerr << "normal_cond_debug_i=" << normal_cond_debug_i-1 << std::endl;
-        return false;
-      }
-    }
-    return true;
   }
 
   void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center)

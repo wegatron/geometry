@@ -15,6 +15,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp -fPIC")
 # add_subdirectory(src)
 
 add_executable(appro main.cpp)
+add_executable(calcBBox calcBBox.cpp)
 
 target_link_libraries(appro
   iso_app
@@ -22,6 +23,11 @@ target_link_libraries(appro
   ${OPENMESH_LIBRARIES}
   ${CGAL_LIBRARY}
   ${GMP_LIBRARIES}
+  )
+
+target_link_libraries(calcBBox
+    zswlib
+    ${OPENMESH_LIBRARIES}
   )
 
 # add_library(lib_name SHARED headers src)

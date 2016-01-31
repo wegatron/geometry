@@ -130,6 +130,28 @@ namespace zsw{
     return min_fabs_val;
   }
 
+  void Approximation::updateJptsInCells(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+                                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+                                        ErrorMaxComparison> &err_queue)
+  {
+    std::vector<std::vector<JudgePoint*>> updated_jpts(chds.size());
+#pragma omp parallel for
+    for(size_t i=0; i<chds.size(); ++i) {
+      if(tw_->isValidCell(chds[i])) {
+        updateJptsInCell(chds[i], &updated_jpts[i]);
+        chds[i]->info().satisfy_normal_cond_=false;
+      }
+    }
+    std::set<JudgePoint*> up_jpt_set;
+    for(std::vector<JudgePoint*> up_jpt : updated_jpts) {
+      for(JudgePoint * jpt : up_jpt) {            up_jpt_set.insert(jpt);          }
+    }
+    for(JudgePoint * jpt : up_jpt_set) {
+      zsw::Scalar tmp_err=fabs(jpt->val_cur_-jpt->val_exp_);
+      if(tmp_err>1.0) { err_queue.push(std::make_pair(tmp_err, jpt)); }
+    }
+  }
+
   bool Approximation::isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
                                           const std::vector<const JudgePoint*> &jpts_in_bbox,
                                           const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,

@@ -47,8 +47,10 @@ namespace zsw{
   struct CellInfo
   {
     size_t v_index_[4];
+    bool satisfy_normal_cond_;
     CellInfo() {
       v_index_[0]=v_index_[1]=v_index_[2]=v_index_[3]=-1;
+      satisfy_normal_cond_=false;
     }
   };
 

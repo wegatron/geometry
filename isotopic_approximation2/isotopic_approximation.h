@@ -68,7 +68,12 @@ namespace zsw {
                                  /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                                    ErrorMaxComparison> *err_queue*/
                                  std::vector<JudgePoint*> * updated_jpts);
-    bool checkUpNormalCondition(Chd chd, std::queue<Chd> &chds_queue);
+
+    void updateJptsInCells(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+                           std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+                           ErrorMaxComparison> &err_queue);
+
+    bool checkUpNormalCondition(Chd chd, std::vector<Chd> &chds_queue);
     bool isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
@@ -109,6 +114,7 @@ namespace zsw {
     bool checkNormalCondition() const;
     void testTdsValid();
     void testCollapse();
+    void testKdtree();
   private:
     std::vector<JudgePoint> jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> inner_jpts_;
@@ -127,9 +133,9 @@ namespace zsw {
   zsw::Scalar calcZeroTetHeight(Chd chd);
   zsw::Scalar calcBoundaryTetHeight(Chd chd);
   zsw::Scalar calcTetHeightType0(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
-                          const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
+                                 const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
   zsw::Scalar calcTetHeightType1(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
-                          const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
+                                 const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
   void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
   void writePoints(const std::string &filepath, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
   void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center);

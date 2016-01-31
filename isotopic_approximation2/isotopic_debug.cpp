@@ -31,4 +31,49 @@ namespace zsw{
       }
     }
   }
+
+  void Approximation::testKdtree()
+  {
+    for(size_t i=0; i<1000; ++i) {
+      testKdtree(outer_kdtree_, outer_jpts_);
+    }
+    for(size_t i=0; i<1000; ++i) {
+      testKdtree(inner_kdtree_, inner_jpts_);
+    }
+    std::cerr << "kdtree test_pass!!!" << std::endl;
+  }
+
+  bool Approximation::checkNormalCondition() const
+  {
+    const TTds &tds=tw_->getTds();
+    size_t normal_cond_debug_i=0;
+    for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
+      if(!tw_->isTolCell(chd)) { continue; }
+      Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
+      tri_pts<<
+        chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+        chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+        chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
+      Eigen::Matrix<zsw::Scalar,4,1> val;
+      for(size_t i=0; i<4; ++i) {
+        if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
+        else { val[i]=1; }
+      }
+      Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
+                                              tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
+                                              tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
+      const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
+      Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
+      std::string filepath(tmp_outdir_+"normal_cond/check_"+std::to_string(normal_cond_debug_i++)+".vtk");
+      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
+                          inner_kdtree_, outer_kdtree_,
+                          true, &filepath)) {
+        std::cerr << "normal cond failed!!!" << std::endl;
+        std::cerr << "normal_cond_debug_i=" << normal_cond_debug_i-1 << std::endl;
+        return false;
+      }
+    }
+    return true;
+  }
+
 }
