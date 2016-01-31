@@ -33,8 +33,8 @@ namespace zsw{
     bool add_pt_flag=false;
     size_t debug_check_normalcond_time=0;
     do{
-      std::cerr << "cell_size:" << tds.number_of_cells() << std::endl;
-      std::cerr << "vertices_size:" << tds.number_of_vertices() << std::endl;
+      NZSWLOG("zsw_info") << "cell_size:" << tds.number_of_cells() << std::endl;
+      NZSWLOG("zsw_info") << "vertices_size:" << tds.number_of_vertices() << std::endl;
       for(size_t i=0; i<jpts_.size();++i) {
         zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
         if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
@@ -52,11 +52,8 @@ namespace zsw{
         PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
         VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
         std::vector<Chd> chds;
-
         // if(debug_pt_size%100==0) { std::cerr << "find pt time cost:" << clock.time() << std::endl;        }
-
         tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds);
-
         // if(debug_pt_size%100==0) {          std::cerr << "add pt into delaunay cost:" << clock.time() << std::endl;        }
 
         std::vector<std::vector<JudgePoint*>> updated_jpts(chds.size());
@@ -74,13 +71,13 @@ namespace zsw{
         }
       }
 
-      TTds tmp_tds=tw_->getTds();
-      mutuallTessellation(&tmp_tds);
-      // if(isZeroTetExist(tmp_tds)) { std::cerr << "Exist Zero tet!!!" << std::endl; }
-      writeTetMesh("/home/wegatron/tmp/check_normal_cond_"+std::to_string(debug_check_normalcond_time)+".vtk",
-                   {zsw::ignore_bbox, zsw::ignore_out}, &tmp_tds);
-      ++debug_check_normalcond_time;
-      std::cerr << "start checkup normal cond!!!" << std::endl;
+      // TTds tmp_tds=tw_->getTds();
+      // mutuallTessellation(&tmp_tds);
+      // // if(isZeroTetExist(tmp_tds)) { std::cerr << "Exist Zero tet!!!" << std::endl; }
+      // writeTetMesh("/home/wegatron/tmp/check_normal_cond_"+std::to_string(debug_check_normalcond_time)+".vtk",
+      //              {zsw::ignore_bbox, zsw::ignore_out}, &tmp_tds);
+      // ++debug_check_normalcond_time;
+      NZSWLOG("zsw_log") << "start checkup normal cond!!!" << std::endl;
       add_pt_flag=false;
       std::queue<Chd> chds_queue;
       for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) { chds_queue.push(cit); }
@@ -89,7 +86,13 @@ namespace zsw{
         Chd chd = chds_queue.front(); chds_queue.pop();
         if(!tw_->isTolCell(chd)) { continue; }
         if(!checkUpNormalCondition(chd, chds_queue)) {
-          if(++add_pt_num%100==0) { std::cerr << "add pt_num=" << add_pt_num << std::endl; }
+          if(++add_pt_num%1000==0) {
+            NZSWLOG("zsw_info") << "add pt_num=" << add_pt_num << std::endl;
+            TTds tmp_tds=tw_->getTds();
+            mutuallTessellation(&tmp_tds);
+            writeTetMesh("/home/wegatron/tmp/normal_cond/check_normal_cond_"+std::to_string(add_pt_num)+".vtk",
+                         {zsw::ignore_bbox, zsw::ignore_out}, &tmp_tds);
+          }
           add_pt_flag=true;
         }
       }
@@ -102,8 +105,7 @@ namespace zsw{
       for(size_t i=0; i<chds.size(); ++i) {
         updateJptsInCell(chds[i],nullptr);
       }
-      //break;
-      // std::cerr << "normal cond check end!!!" << std::endl;
+      //std::cerr << "normal cond check end!!!" << std::endl;
     }while(1);
 #if 0
     size_t ind=0;

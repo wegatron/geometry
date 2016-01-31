@@ -5,10 +5,18 @@ simp_sphere: export
 .PHONY : simp_bunny
 simp_bunny: export
 	${APP_EXEC} ${BUNNY} ${BUNNY_OUTPUT_DIR} ${BUNNY_THICK} ${BUNNY_SAMPLE_R} ${BUNNY_SAMPLE_R}
+	
+.PHONY : simp_bunny_noised
+simp_bunny_noised: export
+	${APP_EXEC} ${BUNNY_NOISED} ${BUNNY_NOISED_OUTPUT_DIR} ${BUNNY_NOISED_THICK} ${BUNNY_NOISED_SAMPLE_R} ${BUNNY_NOISED_SAMPLE_R}
 
 .PHONY : simp_cylinder
 simp_cylinder: export
 	${APP_EXEC} ${CYLINDER} ${CYLINDER_OUTPUT_DIR} ${CYLINDER_THICK} ${CYLINDER_SAMPLE_R} ${CYLINDER_SAMPLE_R}
+	
+.PHONY : simp_cylinder_noised
+simp_cylinder_noised: export
+	${APP_EXEC} ${CYLINDER_NOISED} ${CYLINDER_NOISED_OUTPUT_DIR} ${CYLINDER_NOISED_THICK} ${CYLINDER_NOISED_SAMPLE_R} ${CYLINDER_NOISED_SAMPLE_R}
 	
 .PHONY : simp_fertility
 simp_fertility: export

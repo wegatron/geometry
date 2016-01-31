@@ -20,7 +20,7 @@ void genNoise(const zsw::Scalar min_val, const zsw::Scalar max_val, zsw::mesh::T
   for(zsw::mesh::TriMesh::VertexIter vit=in_mesh.vertices_begin(); vit!=in_mesh.vertices_end(); ++vit) {
     double dis_val = distribution(generator);
     const Eigen::Matrix<zsw::Scalar, 3, 1> &ep = in_mesh.point(*vit);
-    if(ep[1]>-24.7659) { continue; }
+    // if(ep[1]>-24.7659) { continue; }
     Eigen::Matrix<zsw::Scalar, 3, 1> offset = in_mesh.normal(*vit) * dis_val;
     in_mesh.set_point(*vit, ep+offset);
   }

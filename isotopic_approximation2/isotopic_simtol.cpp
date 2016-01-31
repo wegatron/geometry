@@ -22,20 +22,25 @@ namespace zsw{
       std::string key_str=edge2key(*eit);
       edge_map.insert(std::make_pair(key_str, *eit));
     }
-    std::cout << "[INFO] edge size:" << edge_map.size() << std::endl;
+    NZSWLOG("zsw_info") << "edge size:" << edge_map.size() << std::endl;
     size_t b_c_step=0;
+    size_t try_b_c_step=0;
     while(!edge_map.empty()) {
       TTds::Edge e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
       if(!tw_->isBoundaryEdge(e)) { continue; }
       if(tryCollapseBoundaryEdge(e, edge_map)) {
-        if(b_c_step++%50==0) {
-          std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;
+        if(++b_c_step%50==0) {
+          NZSWLOG("zsw_info") << "boundary collapsed:" << b_c_step << std::endl;
           writeTetMesh(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step/50)
                        +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
         }
       }
+      if(++try_b_c_step%100==0) {
+        NZSWLOG("zsw_info") << "try boundary collapsed:" << try_b_c_step << std::endl;
+      }
     }
-    std::cout << "[INFO] boundary collapsed total:" << b_c_step << std::endl;
+    NZSWLOG("zsw_info") << "boundary collapsed total:" << b_c_step << std::endl;
+    NZSWLOG("zsw_info") << "boundary collapsed suc:" << b_c_step*1.0/try_b_c_step << std::endl;
 #if 0
     size_t normal_cond_debug_i=0;
     for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {

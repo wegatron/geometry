@@ -14,16 +14,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp -fPIC")
 
 # add_subdirectory(src)
 
-add_executable(approximate main.cpp)
+#add_executable(approximate main.cpp)
 add_executable(gen_noise noise_maker.cpp)
 
-target_link_libraries(approximate
-  isotropic_approximate
-  zswlib
-  ${OPENMESH_LIBRARIES}
-  ${CGAL_LIBRARY}
-  ${GMP_LIBRARIES}
-  )
+# target_link_libraries(approximate
+#   isotropic_approximate
+#   zswlib
+#   ${OPENMESH_LIBRARIES}
+#   ${CGAL_LIBRARY}
+#   ${GMP_LIBRARIES}
+#   )
 
 target_link_libraries(gen_noise zswlib ${OPENMESH_LIBRARIES})
 # add_library(lib_name SHARED headers src)
