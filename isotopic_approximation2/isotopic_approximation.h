@@ -114,7 +114,7 @@ namespace zsw {
     bool checkNormalCondition() const;
     void testTdsValid();
     void testCollapse();
-    void testKdtree();
+    void testKdtree() const;
   private:
     std::vector<JudgePoint> jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> inner_jpts_;

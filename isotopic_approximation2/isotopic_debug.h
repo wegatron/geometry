@@ -6,7 +6,7 @@
 namespace zsw
 {
   bool isZeroTetExist(const TTds &tds);
-  void testKdtree(const KdTreeWarper &kdtree, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &jpts);
+  void testKdtreeFunc(const KdTreeWarper &kdtree, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &jpts);
 }
 
 #endif /* ISOTOPIC_DEBUG_H */

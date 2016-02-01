@@ -16,7 +16,7 @@ namespace zsw{
     return false;
   }
 
-  void testKdtree(const KdTreeWarper &kdtree, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &jpts)
+  void testKdtreeFunc(const KdTreeWarper &kdtree, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &jpts)
   {
     Eigen::Matrix<zsw::Scalar,3,1> q_pt=Eigen::Matrix<zsw::Scalar,3,1>::Random();
     std::vector<size_t> indices;
@@ -32,13 +32,13 @@ namespace zsw{
     }
   }
 
-  void Approximation::testKdtree()
+  void Approximation::testKdtree() const
   {
     for(size_t i=0; i<1000; ++i) {
-      testKdtree(outer_kdtree_, outer_jpts_);
+      testKdtreeFunc(outer_kdtree_, outer_jpts_);
     }
     for(size_t i=0; i<1000; ++i) {
-      testKdtree(inner_kdtree_, inner_jpts_);
+      testKdtreeFunc(inner_kdtree_, inner_jpts_);
     }
     std::cerr << "kdtree test_pass!!!" << std::endl;
   }
@@ -66,11 +66,14 @@ namespace zsw{
       Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
       std::string filepath(tmp_outdir_+"normal_cond/check_"+std::to_string(normal_cond_debug_i++)+".vtk");
       if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
-                          inner_kdtree_, outer_kdtree_,
-                          true, &filepath)) {
-        std::cerr << "normal cond failed!!!" << std::endl;
-        std::cerr << "normal_cond_debug_i=" << normal_cond_debug_i-1 << std::endl;
-        return false;
+                          inner_kdtree_, outer_kdtree_)) {
+        if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
+                            inner_kdtree_, outer_kdtree_,
+                            true, &filepath)) {
+          std::cerr << "normal cond failed!!!" << std::endl;
+          std::cerr << "normal_cond_debug_i=" << normal_cond_debug_i-1 << std::endl;
+          return false;
+        }
       }
     }
     return true;

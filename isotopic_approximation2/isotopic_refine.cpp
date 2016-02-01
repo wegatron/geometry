@@ -14,12 +14,11 @@
 using namespace std;
 
 namespace zsw{
-
   void Approximation::refine()
   {
-    #if 0
+#if 0
     testKdtree();
-    #endif
+#endif
     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                         std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                         ErrorMaxComparison> err_queue;
@@ -48,23 +47,22 @@ namespace zsw{
       std::vector<Chd> tmp_chds;
       for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
         if(!cit->info().satisfy_normal_cond_ && !checkUpNormalCondition(cit, tmp_chds)) {
-        if(++add_pt_for_normal%50==0) { NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl;  }
+          if(++add_pt_for_normal%50==0) { NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl; }
           viloate_normal_cond=true;
           break;
         }
       }
       if(viloate_normal_cond) { updateJptsInCells(tmp_chds, err_queue); }
       else { break; }
-    }while(true);
-    #if 0
+    } while(true);
+#if 1
     checkNormalCondition();
-    #endif
+#endif
   }
 
   bool Approximation::checkUpNormalCondition(Chd chd, std::vector<Chd> &chds)
   {
-    assert(tw_->isTolCell(chd));
-    chd->info().satisfy_normal_cond_=true;
+    if(!tw_->isTolCell(chd)) { return true; }
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
     tri_pts<<
       chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
@@ -81,6 +79,7 @@ namespace zsw{
     const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
     Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
     if(normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_)) {
+      chd->info().satisfy_normal_cond_=true;
       return true;
     }
 #if 0
@@ -117,40 +116,40 @@ namespace zsw{
     return false;
   }
 
-  void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center)
-  {
-    Eigen::Matrix<zsw::Scalar,3,1> n0,n1,n2;
-    Eigen::Matrix<zsw::Scalar,3,3> A;
-    n0=A.block<3,1>(0,0)=tri_pts.block<3,1>(0,1)-tri_pts.block<3,1>(0,0);
-    n1=A.block<3,1>(0,1)=tri_pts.block<3,1>(0,2)-tri_pts.block<3,1>(0,0);
-    n2=A.block<3,1>(0,2)=tri_pts.block<3,1>(0,3)-tri_pts.block<3,1>(0,0);
-    Eigen::Matrix<zsw::Scalar,3,1> b;
-    b[0] = 0.5*(A.block<3,1>(0,0)).dot(tri_pts.block<3,1>(0,1)+tri_pts.block<3,1>(0,0));
-    b[1] = 0.5*(A.block<3,1>(0,1)).dot(tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,0));
-    b[2] = 0.5*(A.block<3,1>(0,2)).dot(tri_pts.block<3,1>(0,3)+tri_pts.block<3,1>(0,0));
-    Eigen::Matrix<zsw::Scalar,3,3> Atr = A.transpose();
-    Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu; pplu.compute(Atr);
-    center = pplu.solve(b);
+    void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center)
+    {
+      Eigen::Matrix<zsw::Scalar,3,1> n0,n1,n2;
+      Eigen::Matrix<zsw::Scalar,3,3> A;
+      n0=A.block<3,1>(0,0)=tri_pts.block<3,1>(0,1)-tri_pts.block<3,1>(0,0);
+      n1=A.block<3,1>(0,1)=tri_pts.block<3,1>(0,2)-tri_pts.block<3,1>(0,0);
+      n2=A.block<3,1>(0,2)=tri_pts.block<3,1>(0,3)-tri_pts.block<3,1>(0,0);
+      Eigen::Matrix<zsw::Scalar,3,1> b;
+      b[0] = 0.5*(A.block<3,1>(0,0)).dot(tri_pts.block<3,1>(0,1)+tri_pts.block<3,1>(0,0));
+      b[1] = 0.5*(A.block<3,1>(0,1)).dot(tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,0));
+      b[2] = 0.5*(A.block<3,1>(0,2)).dot(tri_pts.block<3,1>(0,3)+tri_pts.block<3,1>(0,0));
+      Eigen::Matrix<zsw::Scalar,3,3> Atr = A.transpose();
+      Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu; pplu.compute(Atr);
+      center = pplu.solve(b);
 #if 0
-    zsw::Scalar dis[4];
-    for(size_t i=0; i<4; ++i) {
-      dis[i]=(center-tri_pts.block<3,1>(0,i)).norm();
-    }
-    for(size_t i=1; i<4; ++i) {
-      if(fabs(dis[i]-dis[i-1]) > zsw::const_val::eps) {
-        std::cerr << Atr << std::endl;
-        std::cerr << "---------------" << std::endl;
-        std::cerr << n0.transpose() << std::endl;
-        std::cerr << n1.transpose() << std::endl;
-        std::cerr << n2.transpose() << std::endl;
-        std::cerr << "err:" << (A*center-b).norm() << std::endl;
-        std::cerr << fabs(dis[i]-dis[i-1]) << std::endl;
-        std::cerr << "--" << n0.dot(center)-b[0]<< std::endl;
-        std::cerr << "--" << n1.dot(center)-b[1] << std::endl;
-        std::cerr << "--" << n2.dot(center)-b[2] << std::endl;
-        abort();
+      zsw::Scalar dis[4];
+      for(size_t i=0; i<4; ++i) {
+        dis[i]=(center-tri_pts.block<3,1>(0,i)).norm();
       }
-    }
+      for(size_t i=1; i<4; ++i) {
+        if(fabs(dis[i]-dis[i-1]) > zsw::const_val::eps) {
+          std::cerr << Atr << std::endl;
+          std::cerr << "---------------" << std::endl;
+          std::cerr << n0.transpose() << std::endl;
+          std::cerr << n1.transpose() << std::endl;
+          std::cerr << n2.transpose() << std::endl;
+          std::cerr << "err:" << (A*center-b).norm() << std::endl;
+          std::cerr << fabs(dis[i]-dis[i-1]) << std::endl;
+          std::cerr << "--" << n0.dot(center)-b[0]<< std::endl;
+          std::cerr << "--" << n1.dot(center)-b[1] << std::endl;
+          std::cerr << "--" << n2.dot(center)-b[2] << std::endl;
+          abort();
+        }
+      }
 #endif
+    }
   }
-}
