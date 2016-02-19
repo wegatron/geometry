@@ -79,4 +79,22 @@ namespace zsw{
     return true;
   }
 
+  bool checkZeroPlane(const Plane &plane, Chd chd)
+  {
+    Eigen::Matrix<zsw::Scalar,3,1> pt;
+    zsw::Scalar dis[4];
+    for(size_t i=0; i<4; ++i) {
+      pt[0] = chd->vertex(i)->point()[0];
+      pt[1] = chd->vertex(i)->point()[1];
+      pt[2] = chd->vertex(i)->point()[2];
+      dis[i] = (pt-plane.v0_).dot(plane.normal_);
+      if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT){
+        if(dis[i]<0) { return false; }
+      } else if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT) {
+        if(dis[i]>0) { return false; }
+        dis[i]=-dis[i];
+      }
+    }
+    return fabs(dis[1]-dis[0])<zsw::const_val::eps && fabs(dis[2]-dis[0])<zsw::const_val::eps && fabs(dis[3]-dis[0])<zsw::const_val::eps;
+  }
 }

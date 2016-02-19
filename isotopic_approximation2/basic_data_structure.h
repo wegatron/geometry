@@ -21,6 +21,13 @@ namespace zsw{
     INNER_POINT=8
   };
 
+  struct Plane
+  {
+    Eigen::Matrix<zsw::Scalar,3,1> normal_;
+    Eigen::Matrix<zsw::Scalar,3,1> v0_;
+    zsw::Scalar d_;
+  };
+
   struct VertexInfo
   {
     size_t index_;
@@ -94,12 +101,21 @@ namespace zsw{
     bool isZeroEdge(const TTds::Edge &e) const;
     bool isBZEdge(const TTds::Edge &e) const;
     bool isValidCell(Chd chd) const;
-    bool isTolCell(Chd chd) const;
+
+    /// \brief judge if the tetrahedron is a tolerance cell.
+    ///
+    /// judge is the tetrahedron is a tolerance cell(construct by and only by outer and inner points).
+    ///
+    /// \param chd, cell handler
+    /// \return 0 if isnot a tolerance cell, or return inner points' count.
+    size_t isTolCell(Chd chd) const;
     bool isBBoxInnerCell(Chd chd) const;
 
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     void calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
     void calcBoundTrisAdvance(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
+    void calcAdjZeroSupportPlanes(const TTds::Edge &edge, std::vector<Plane> &adj_zero_support_planes) const;
+
     // void initCellKeySet(std::unordered_set<std::string> &cell_key_set) const;
 
     void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
@@ -147,6 +163,8 @@ namespace zsw{
   void writeCellsAndPoints(const std::string &filepath,
                            std::vector<Eigen::Matrix<zsw::Scalar,3,4>> cells,
                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
+  bool inFront(const Plane &plane, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
 
+  zsw::Scalar disToPlane(const Eigen::Matrix<zsw::Scalar,3,1> &pt, const Plane &plane);
 }
 #endif /* BASIC_DATA_STRUCTURE_H */

@@ -2,8 +2,9 @@
 
 #include <fstream>
 #include <unordered_map>
-
 #include <zswlib/error_ctrl.h>
+
+#include "isotopic_debug.h"
 
 namespace zsw{
 
@@ -225,7 +226,7 @@ namespace zsw{
     return lk_a_b_cnt==lk_ab_cnt;
   }
 
-  #if 0
+#if 0
   bool TriangulationWapper::isSatisfyLinkCondition(const TTds::Edge &edge) const
   {
     TTds::Facet_circulator fit = tds_.incident_facets(edge);
@@ -258,7 +259,7 @@ namespace zsw{
     } while(++fit!=done);
     return true;
   }
-  #endif
+#endif
 
   void TriangulationWapper::calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris,
                                           std::vector<Vhd> &opposite_vs) const
@@ -303,6 +304,55 @@ namespace zsw{
     // }
   }
 
+  void TriangulationWapper::calcAdjZeroSupportPlanes(const TTds::Edge &edge, std::vector<Plane> &adj_zero_support_planes) const
+  {
+    std::list<TTds::Cell_handle> tmp_cells[2];
+    tds_.incident_cells(edge.first->vertex(edge.second), std::back_inserter(tmp_cells[0]));
+    tds_.incident_cells(edge.first->vertex(edge.third), std::back_inserter(tmp_cells[1]));
+    std::vector<TTds::Cell_handle> cells; cells.reserve(tmp_cells[0].size()+tmp_cells[1].size());
+    std::set<std::string> cell_key;
+    for(size_t i=0; i<2; ++i) {
+      for(TTds::Cell_handle chd : tmp_cells[i]) {
+        std::string key=cell2key(chd);
+        if(cell_key.find(key)!=cell_key.end()) { continue; }
+        cell_key.insert(key);
+        cells.push_back(chd);
+      }
+    }
+    Eigen::Matrix<zsw::Scalar,3,1> in_pts[4];
+    Eigen::Matrix<zsw::Scalar,3,1> out_pts[4];
+    Plane pl;
+    for(auto cit : cells) {
+      size_t in_j=0;
+      size_t out_j=0;
+      for(size_t i=0; i<4; ++i) {
+        if(cit->vertex(i)->info().pt_type_==zsw::INNER_POINT) {
+          in_pts[in_j][0]=cit->vertex(i)->point()[0];
+          in_pts[in_j][1]=cit->vertex(i)->point()[1];
+          in_pts[in_j][2]=cit->vertex(i)->point()[2];
+          ++in_j;
+        } else {
+          out_pts[out_j][0]=cit->vertex(i)->point()[0];
+          out_pts[out_j][1]=cit->vertex(i)->point()[1];
+          out_pts[out_j][2]=cit->vertex(i)->point()[2];
+          ++out_j;
+        }
+      }
+      if(in_j+out_j!=4 || in_j==0 || in_j==4) { continue; } // not tol cell
+      //calc zero plane
+      if(in_j==1) { pl.normal_ = (out_pts[1]-out_pts[0]).cross(out_pts[2]-out_pts[0]); }
+      else if(in_j==2) { pl.normal_ = (out_pts[1]-out_pts[0]).cross(in_pts[1]-in_pts[0]); }
+      else { pl.normal_ = (in_pts[1]-in_pts[0]).cross(in_pts[2]-in_pts[0]); }
+      pl.normal_.normalize();
+      if(pl.normal_.dot(out_pts[0]-in_pts[0]) <0 ) { pl.normal_=-pl.normal_; }
+      pl.v0_ = (in_pts[0]+out_pts[0])*0.5;
+      pl.d_=-pl.v0_.dot(pl.normal_);
+#if 1
+      if(!checkZeroPlane(pl, cit)) { abort(); }
+#endif
+      adj_zero_support_planes.push_back(pl);
+    }
+  }
 
   void TriangulationWapper::collapseEdge(TTds::Edge &edge, Vhd merge_vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt)
   {
@@ -542,7 +592,7 @@ namespace zsw{
       && chd->vertex(3)->info().pt_type_!=zsw::INVALID_POINT;
   }
 
-  bool TriangulationWapper::isTolCell(Chd chd) const
+  size_t TriangulationWapper::isTolCell(Chd chd) const
   {
     if(!tds_.is_cell(chd)) { return false; }
     size_t i_cnt=0;
@@ -551,16 +601,17 @@ namespace zsw{
       if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT) { ++i_cnt; }
       else if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT) { ++o_cnt; }
     }
-    return i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4;
+    if(i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4) { return i_cnt; }
+    return 0;
   }
 
   bool TriangulationWapper::isBBoxInnerCell(Chd chd) const
   {
     if(!tds_.is_cell(chd)) { return false; }
     return (chd->vertex(0)->info().pt_type_==zsw::INNER_POINT ||
-       chd->vertex(1)->info().pt_type_==zsw::INNER_POINT ||
-       chd->vertex(2)->info().pt_type_==zsw::INNER_POINT ||
-       chd->vertex(3)->info().pt_type_==zsw::INNER_POINT) &&
+            chd->vertex(1)->info().pt_type_==zsw::INNER_POINT ||
+            chd->vertex(2)->info().pt_type_==zsw::INNER_POINT ||
+            chd->vertex(3)->info().pt_type_==zsw::INNER_POINT) &&
       (chd->vertex(0)->info().pt_type_==zsw::BBOX_POINT ||
        chd->vertex(1)->info().pt_type_==zsw::BBOX_POINT ||
        chd->vertex(2)->info().pt_type_==zsw::BBOX_POINT ||
