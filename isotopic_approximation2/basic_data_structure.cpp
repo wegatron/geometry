@@ -592,7 +592,7 @@ namespace zsw{
       && chd->vertex(3)->info().pt_type_!=zsw::INVALID_POINT;
   }
 
-  size_t TriangulationWapper::isTolCell(Chd chd) const
+  bool TriangulationWapper::isTolCell(Chd chd) const
   {
     if(!tds_.is_cell(chd)) { return false; }
     size_t i_cnt=0;
@@ -601,8 +601,7 @@ namespace zsw{
       if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT) { ++i_cnt; }
       else if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT) { ++o_cnt; }
     }
-    if(i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4) { return i_cnt; }
-    return 0;
+    if(i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4) { return true; }
   }
 
   bool TriangulationWapper::isBBoxInnerCell(Chd chd) const

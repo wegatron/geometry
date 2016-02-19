@@ -98,8 +98,9 @@ namespace zsw{
         bool is_in_front=true;
         zsw::Scalar sum_sq_dis=0.0;
         for(const Plane &plane : adj_zero_support_planes) {
-          if(!inFront(plane, jpt_ptr->pt_)) { is_in_front=false; break; }
-          sum_sq_dis+=disToPlane(jpt_ptr->pt_, plane);
+          if(plane.normal_.dot(jpt_ptr->pt_ - plane.v0_) <0) { is_in_front=false; break; }
+          zsw::Scalar tmp=plane.normal_.dot(jpt_ptr->pt_ - plane.v0_);
+          sum_sq_dis+=tmp*tmp;
         }
         if(is_in_front) { candicate_points.push_back(std::make_pair(jpt_ptr, sum_sq_dis)); }
       }
