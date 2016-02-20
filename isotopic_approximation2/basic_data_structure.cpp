@@ -347,7 +347,7 @@ namespace zsw{
       if(pl.normal_.dot(out_pts[0]-in_pts[0]) <0 ) { pl.normal_=-pl.normal_; }
       pl.v0_ = (in_pts[0]+out_pts[0])*0.5;
       pl.d_=-pl.v0_.dot(pl.normal_);
-#if 1
+#if 0
       if(!checkZeroPlane(pl, cit)) { abort(); }
 #endif
       adj_zero_support_planes.push_back(pl);

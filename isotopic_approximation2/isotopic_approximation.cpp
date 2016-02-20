@@ -64,23 +64,23 @@ namespace zsw{
     // }
     mutuallTessellation();
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-    if(need_smooth_) {
-      laplaceSmoothZeroSurface();
-      writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-    }
+    // if(need_smooth_) {
+    //   laplaceSmoothZeroSurface();
+    //   writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    // }
     simpZeroSurface();
     writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-    if(need_smooth_) {
-      laplaceSmoothZeroSurface();
-      writeTetMesh(tmp_output_dir+"simped_zero_surf_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-    }
+    // if(need_smooth_) {
+    //   laplaceSmoothZeroSurface();
+    //   writeTetMesh(tmp_output_dir+"simped_zero_surf_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    // }
     std::unordered_map<std::string,TTds::Edge> z_map, bz_map;
     simpBZEdges(nullptr, &z_map);
     while(!z_map.empty()) {
       simpZeroSurface(&z_map, &bz_map);
       simpBZEdges(&bz_map, &z_map);
     }
-    if(need_smooth_) {      laplaceSmoothZeroSurface();    }
+    // if(need_smooth_) {      laplaceSmoothZeroSurface();    }
   }
 
   zsw::Scalar Approximation::updateJptsInCell(Chd chd, /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
