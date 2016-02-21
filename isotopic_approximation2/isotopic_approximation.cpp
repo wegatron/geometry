@@ -74,13 +74,12 @@ namespace zsw{
     //   laplaceSmoothZeroSurface();
     //   writeTetMesh(tmp_output_dir+"simped_zero_surf_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     // }
-    std::unordered_map<std::string,TTds::Edge> z_map, bz_map;
-    simpBZEdges(nullptr, &z_map);
-    while(!z_map.empty()) {
-      simpZeroSurface(&z_map, &bz_map);
-      simpBZEdges(&bz_map, &z_map);
-    }
-    // if(need_smooth_) {      laplaceSmoothZeroSurface();    }
+    //std::unordered_map<std::string,TTds::Edge> z_map, bz_map;
+    simpBZEdges();
+    // while(!z_map.empty()) {
+    //   simpZeroSurface(&z_map, &bz_map);
+    //   simpBZEdges(&bz_map, &z_map);
+    // }
   }
 
   zsw::Scalar Approximation::updateJptsInCell(Chd chd, /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
@@ -191,7 +190,7 @@ namespace zsw{
            || x[2]<-zsw::const_val::eps || x[3]<-zsw::const_val::eps) { continue; }
         is_updated[jpt_i]=true;
         zsw::Scalar tmp_val = val.dot(x);
-        if(fabs(tmp_val-jpt->val_exp_)>1) { return false; }
+        if(fabs(tmp_val-jpt->val_exp_)>1-alpha_) { return false; }
         if(jup!=nullptr) { jup->push_back({const_cast<JudgePoint*>(jpt), tmp_val}); }
       }
     }

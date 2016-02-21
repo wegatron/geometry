@@ -13,35 +13,29 @@ using namespace std;
 
 namespace zsw{
 
-  bool Approximation::simpBZEdges(std::unordered_map<std::string,TTds::Edge> *bz_map,
-                                  std::unordered_map<std::string,TTds::Edge> *z_map)
+  void Approximation::simpBZEdges()
   {
-    bool bz_map_create=(bz_map==nullptr);
-    if(bz_map_create) {
-      bz_map=new std::unordered_map<std::string, TTds::Edge>();
-      const TTds &tds=tw_->getTds();
-      for(auto eit=tds.edges_begin(); eit!=tds.edges_end(); ++eit) {
-        if(!tw_->isBZEdge(*eit)) { continue; }
-        std::string key_str=edge2key(*eit);
-        bz_map->insert(std::make_pair(key_str, *eit));
-      }
+    std::unordered_map<std::string, TTds::Edge> bz_map;
+    const TTds &tds=tw_->getTds();
+    for(auto eit=tds.edges_begin(); eit!=tds.edges_end(); ++eit) {
+      if(!tw_->isBZEdge(*eit)) { continue; }
+      std::string key_str=edge2key(*eit);
+      bz_map.insert(std::make_pair(key_str, *eit));
     }
 
     size_t zb_c_step=0;
-    while(!bz_map->empty()) {
-      TTds::Edge e=bz_map->begin()->second; bz_map->erase(bz_map->begin());
-      if(!tw_->isBZEdge(e)) { continue; }
-      if(tryCollapseBZEdge(e, *bz_map, z_map)) {
-        if(zb_c_step++%50==0) { std::cout << "[INFO] zb collapsed " << zb_c_step << std::endl; }
+    while(!bz_map.empty()) {
+      TTds::Edge e=bz_map.begin()->second; bz_map.erase(bz_map.begin());
+      if(!tw_->isBZEdge(e) && !tw_->isZeroEdge(e)) { continue; }
+      if(tryCollapseBZEdge(e, bz_map)) {
+        std::cout << "[INFO] all edge collapsed " << zb_c_step << std::endl;
+        ++zb_c_step;
       }
     }
-    if(bz_map_create) { delete bz_map; }
     std::cout << "[INFO] zb collapsed total:" << zb_c_step << std::endl;
-    return zb_c_step==0;
   }
 
-  bool Approximation::tryCollapseBZEdge(TTds::Edge &e, std::unordered_map<std::string,TTds::Edge> &bz_map,
-                                        std::unordered_map<std::string,TTds::Edge> *z_map)
+  bool Approximation::tryCollapseBZEdge(TTds::Edge &e, std::unordered_map<std::string,TTds::Edge> &bz_map)
   {
     if(!tw_->isSatisfyLinkCondition(e)) { return false; }
     std::vector<VertexTriple> bound_tris;
@@ -61,10 +55,19 @@ namespace zsw{
     }
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=(e.first->vertex(e.second)->info().pt_type_==zsw::ZERO_POINT) ? e.first->vertex(e.second) : e.first->vertex(e.third);
+    //Vhd vhd=e.first->vertex(e.second); vhd->info().pt_type_==zsw::ZERO_POINT;
+#if 0
+    static size_t cnt=0;
+    ++cnt;
+    if(cnt==58) {
+    writeAdjcentCells("/home/wegatron/tmp/adj_cell.vtk", e);
+    writeJudgePoints("/home/wegatron/tmp/jpts_in_bbox.vtk", jpts_in_bbox);
+  }
+#endif
     tw_->collapseEdge(e, vhd, *merge_pt);
     //updateVertex(vup);
     bzEdgeBack(vhd, bz_map);
-    if(z_map!=nullptr) { zeroEdgeBack(vhd, *z_map); }
+    // if(z_map!=nullptr) { zeroEdgeBack(vhd, *z_map); }
     return true;
   }
 
@@ -74,7 +77,7 @@ namespace zsw{
     std::vector<TTds::Edge> edges;
     tds.incident_edges(vhd, std::back_inserter(edges));
     for(const TTds::Edge &e : edges) {
-      if(!tw_->isBZEdge(e)) { continue; }
+      if(!tw_->isBZEdge(e) || !tw_->isZeroEdge(e)) { continue; }
       std::string key_str=edge2key(e);
       edge_map.insert(std::make_pair(key_str, e));
     }

@@ -13,40 +13,34 @@ using namespace std;
 
 namespace zsw{
 
-  void Approximation::simpZeroSurface(std::unordered_map<std::string,TTds::Edge> *z_map,
-                                      std::unordered_map<std::string,TTds::Edge> *bz_map)
+  void Approximation::simpZeroSurface()
   {
-    const bool z_map_create=(z_map==nullptr);
-    if(z_map_create) {
-      z_map=new std::unordered_map<std::string, TTds::Edge>();
-      const TTds &tds = tw_->getTds();
-      for(TTds::Edge_iterator eit=tds.edges_begin();
-          eit!=tds.edges_end(); ++eit) {
-        if(!tw_->isZeroEdge(*eit)) { continue; }
-        std::string key_str=edge2key(*eit);
-        z_map->insert(std::make_pair(key_str, *eit));
-      }
+    std::unordered_map<std::string, TTds::Edge> z_map;
+    const TTds &tds = tw_->getTds();
+    for(TTds::Edge_iterator eit=tds.edges_begin();
+        eit!=tds.edges_end(); ++eit) {
+      if(!tw_->isZeroEdge(*eit)) { continue; }
+      std::string key_str=edge2key(*eit);
+      z_map.insert(std::make_pair(key_str, *eit));
     }
     size_t z_c_step=0;
     size_t try_z_c_step=0;
-    while(!z_map->empty()) {
-      TTds::Edge e=z_map->begin()->second; z_map->erase(z_map->begin());
+    while(!z_map.empty()) {
+      TTds::Edge e=z_map.begin()->second; z_map.erase(z_map.begin());
       if(!tw_->isZeroEdge(e)) { continue; }
       // std::cout << "[INFO] try collapse zc edge:" << e.first->vertex(e.second)->info().index_
       //           << " " << e.first->vertex(e.third)->info().index_ << std::endl;
-      if(tryCollapseZeroEdge(e, *z_map, bz_map)) {
+      if(tryCollapseZeroEdge(e, z_map)) {
         if(++z_c_step%50==0) { NZSWLOG("zsw_info") << "zero edge collapsed " << z_c_step << std::endl; }
       }
       if(++try_z_c_step%100==0) { NZSWLOG("zsw_info") << "try zero edge collapsed " << try_z_c_step << std::endl; }
     }
-    if(z_map_create) { delete z_map; }
     NZSWLOG("zsw_info") << "zero edge collapsed total:" << z_c_step << std::endl;
     NZSWLOG("zsw_info") << "zero edge collapse suc:" << z_c_step*1.0/try_z_c_step << std::endl;
   }
 
   bool Approximation::tryCollapseZeroEdge(TTds::Edge &e,
-                                          std::unordered_map<std::string,TTds::Edge> &z_map,
-                                          std::unordered_map<std::string,TTds::Edge> *bz_map)
+                                          std::unordered_map<std::string,TTds::Edge> &z_map)
   {
     if(!tw_->isSatisfyLinkCondition(e)) { return false; }
     std::vector<VertexTriple> bound_tris;
@@ -69,7 +63,6 @@ namespace zsw{
     tw_->collapseEdge(e, vhd, *merge_pt);
     //updateVertex(vup);
     zeroEdgeBack(vhd, z_map);
-    if(bz_map!=nullptr) { bzEdgeBack(vhd, *bz_map); }
     return true;
   }
 

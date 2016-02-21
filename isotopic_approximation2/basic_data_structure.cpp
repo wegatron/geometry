@@ -574,7 +574,7 @@ namespace zsw{
     if(!tds_.is_edge(e.first, e.second, e.third)) { return false; }
     PointType pt_type[2]={
       e.first->vertex(e.second)->info().pt_type_,
-      e.first->vertex(e.second)->info().pt_type_
+      e.first->vertex(e.third)->info().pt_type_
     };
     size_t flag[3]={false, false, false};
     flag[0]=(pt_type[0]==zsw::ZERO_POINT || pt_type[1]==zsw::ZERO_POINT);

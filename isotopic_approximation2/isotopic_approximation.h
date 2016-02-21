@@ -34,7 +34,7 @@ namespace zsw {
   class Approximation final
   {
   public:
-    Approximation() { normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
+    Approximation() { alpha_=0.2; normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     void setNeedSmooth(bool need_smooth) { need_smooth_=need_smooth; }
     void init(const zsw::Scalar err_epsilon,
@@ -59,10 +59,8 @@ namespace zsw {
     void simpTolerance();
     void mutuallTessellation(TTds *tds_ptr=nullptr);
   private:
-    void simpZeroSurface(std::unordered_map<std::string,TTds::Edge> *z_map=nullptr,
-                         std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr);
-    bool simpBZEdges(std::unordered_map<std::string,TTds::Edge> *bz_map=nullptr,
-                     std::unordered_map<std::string,TTds::Edge> *z_map=nullptr);
+    void simpZeroSurface();
+    void simpBZEdges();
 
     zsw::Scalar updateJptsInCell(Chd chd,
                                  /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
@@ -88,11 +86,9 @@ namespace zsw {
     bool tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
     bool tryCollapseZeroEdge(TTds::Edge &e,
-                             std::unordered_map<std::string,TTds::Edge> &z_map,
-                             std::unordered_map<std::string,TTds::Edge> *bz_map);
+                             std::unordered_map<std::string,TTds::Edge> &z_map);
     bool tryCollapseBZEdge(TTds::Edge &e,
-                           std::unordered_map<std::string, TTds::Edge> &bz_map,
-                           std::unordered_map<std::string,TTds::Edge> *z_map);
+                           std::unordered_map<std::string, TTds::Edge> &bz_map);
     void updateVertex(const std::vector<VertexUpdateData> &vup)
     {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
@@ -126,6 +122,7 @@ namespace zsw {
     zsw::Scalar tri_sample_r_;
     zsw::Scalar tet_sample_r_;
     zsw::Scalar normal_cond_scale_;
+    zsw::Scalar alpha_;
     std::string tmp_outdir_;
     bool need_smooth_;
   };
