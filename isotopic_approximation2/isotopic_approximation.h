@@ -78,7 +78,7 @@ namespace zsw {
                              const zsw::Scalar v_pt,
                              std::vector<VertexUpdateData> &vup,
                              std::vector<JudgePointUpdateData> * jup=nullptr) const;
-    bool isTolTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
+    bool isTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
                                          const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                          const PointType point_type) const;
     void constructKernelRegionJudger(const std::vector<VertexTriple> &bound_tris,

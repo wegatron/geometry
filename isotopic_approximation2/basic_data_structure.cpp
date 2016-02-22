@@ -618,24 +618,30 @@ namespace zsw{
   }
 
 
-  bool isConstructTolCell(const PointType pt_type0, const PointType pt_type1,
+  bool isConstructTZCell(const PointType pt_type0, const PointType pt_type1,
                           const PointType pt_type2, const PointType pt_type3,
                           Eigen::Matrix<zsw::Scalar,4,1> &val)
   {
     size_t i_cnt=0;
     size_t o_cnt=0;
+    size_t z_cnt=0;
     if(pt_type0==zsw::INNER_POINT) { ++i_cnt; val[0]=-1; }
     else if(pt_type0==zsw::OUTER_POINT) { ++o_cnt; val[0]=1; }
+    else if(pt_type0==zsw::ZERO_POINT) { ++z_cnt; val[0]=0; }
 
     if(pt_type1==zsw::INNER_POINT) { ++i_cnt; val[1]=-1; }
     else if(pt_type1==zsw::OUTER_POINT) { ++o_cnt; val[1]=1; }
+    else if(pt_type1==zsw::ZERO_POINT) { ++z_cnt; val[1]=0; }
 
     if(pt_type2==zsw::INNER_POINT) { ++i_cnt; val[2]=-1; }
     else if(pt_type2==zsw::OUTER_POINT) { ++o_cnt; val[2]=1; }
+    else if(pt_type2==zsw::ZERO_POINT) { ++z_cnt; val[2]=0; }
 
     if(pt_type3==zsw::INNER_POINT) { ++i_cnt; val[3]=-1; }
     else if(pt_type3==zsw::OUTER_POINT) { ++o_cnt; val[3]=1; }
-    return i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4;
+    else if(pt_type3==zsw::ZERO_POINT) { ++z_cnt; val[3]=0; }
+
+    return (z_cnt!=0 && (i_cnt==0 || o_cnt==0)) || (i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4);
   }
 
   bool ignore_invalid(const TTds::Cell_handle cell)

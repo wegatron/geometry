@@ -56,7 +56,9 @@ namespace zsw{
     std::vector<VertexUpdateData> vup;
     for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : sample_points) {
       vup.clear(); // can't parallel
-      if(krj.judge(pt) && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
+      if(krj.judge(pt) &&
+         isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)
+         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
     }
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=e.first->vertex(e.second);

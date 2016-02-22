@@ -28,8 +28,9 @@ namespace zsw{
       TTds::Edge e=bz_map.begin()->second; bz_map.erase(bz_map.begin());
       if(!tw_->isBZEdge(e) && !tw_->isZeroEdge(e)) { continue; }
       if(tryCollapseBZEdge(e, bz_map)) {
-        std::cout << "[INFO] all edge collapsed " << zb_c_step << std::endl;
-        ++zb_c_step;
+        if(++zb_c_step%50==0) {
+          std::cout << "[INFO] all edge collapsed " << zb_c_step << std::endl;
+        }
       }
     }
     std::cout << "[INFO] zb collapsed total:" << zb_c_step << std::endl;
@@ -51,7 +52,9 @@ namespace zsw{
     std::vector<VertexUpdateData> vup;
     for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : sample_points) {
       vup.clear(); // can't parallel
-      if(krj.judge(pt) && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
+      if(krj.judge(pt) &&
+         isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT) &&
+         isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
     }
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=(e.first->vertex(e.second)->info().pt_type_==zsw::ZERO_POINT) ? e.first->vertex(e.second) : e.first->vertex(e.third);
@@ -60,9 +63,9 @@ namespace zsw{
     static size_t cnt=0;
     ++cnt;
     if(cnt==58) {
-    writeAdjcentCells("/home/wegatron/tmp/adj_cell.vtk", e);
-    writeJudgePoints("/home/wegatron/tmp/jpts_in_bbox.vtk", jpts_in_bbox);
-  }
+      writeAdjcentCells("/home/wegatron/tmp/adj_cell.vtk", e);
+      writeJudgePoints("/home/wegatron/tmp/jpts_in_bbox.vtk", jpts_in_bbox);
+    }
 #endif
     tw_->collapseEdge(e, vhd, *merge_pt);
     //updateVertex(vup);

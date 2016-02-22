@@ -125,8 +125,8 @@ namespace zsw{
     for(std::pair<const JudgePoint*, zsw::Scalar> &cd_pt : candicate_points) {
       const JudgePoint *jpt_ptr=cd_pt.first;
       vup.clear(); jup.clear();
-      if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, vup, &jup)
-         && isTolTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pt_, e.first->vertex(e.second)->info().pt_type_))
+      if(isTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pt_, e.first->vertex(e.second)->info().pt_type_)
+         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, vup, &jup))
         { merge_pt=jpt_ptr; break; }
     }
     if(merge_pt==nullptr) { return false; }
@@ -150,38 +150,39 @@ namespace zsw{
     return true;
   }
 
-      void Approximation::boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const
-      {
-        const TTds &tds=tw_->getTds();
-        std::vector<TTds::Edge> edges;
-        tds.incident_edges(vhd, std::back_inserter(edges));
-        for(const TTds::Edge &e : edges) {
-          if(!tw_->isBoundaryEdge(e)) { continue; }
-          std::string key_str=edge2key(e);
-          edge_map.insert(std::make_pair(key_str, e));
-        }
-      }
-
-      bool Approximation::isTolTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
-                                                          const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                                                          const PointType point_type) const
-      {
-        assert(point_type==zsw::INNER_POINT || point_type==zsw::OUTER_POINT);
-        Eigen::Matrix<zsw::Scalar,4,1> val;
-        Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
-        tri_pts.block<3,1>(0,0)=pt;
-        const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
-        for(VertexTriple vt : bound_tris) {
-          if(!isConstructTolCell(point_type, vt.first->info().pt_type_, vt.second->info().pt_type_, vt.third->info().pt_type_, val)) { continue; }
-          tri_pts(0,1)=vt.first->point()[0]; tri_pts(1,1)=vt.first->point()[1]; tri_pts(2,1)=vt.first->point()[2];
-          tri_pts(0,2)=vt.second->point()[0]; tri_pts(1,2)=vt.second->point()[1]; tri_pts(2,2)=vt.second->point()[2];
-          tri_pts(0,3)=vt.third->point()[0]; tri_pts(1,3)=vt.third->point()[1]; tri_pts(2,3)=vt.third->point()[2];
-          Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
-                                                  tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
-                                                  tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
-          Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-          if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_)) { return false;}
-        }
-        return true;
-      }
+  void Approximation::boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const
+  {
+    const TTds &tds=tw_->getTds();
+    std::vector<TTds::Edge> edges;
+    tds.incident_edges(vhd, std::back_inserter(edges));
+    for(const TTds::Edge &e : edges) {
+      if(!tw_->isBoundaryEdge(e)) { continue; }
+      std::string key_str=edge2key(e);
+      edge_map.insert(std::make_pair(key_str, e));
     }
+  }
+
+  bool Approximation::isTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
+                                                   const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                                                   const PointType point_type) const
+  {
+    assert(point_type==zsw::INNER_POINT || point_type==zsw::OUTER_POINT || point_type==zsw::ZERO_POINT);
+    Eigen::Matrix<zsw::Scalar,4,1> val;
+    Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
+    tri_pts.block<3,1>(0,0)=pt;
+    const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
+    for(VertexTriple vt : bound_tris) {
+      if(!isConstructTZCell(point_type, vt.first->info().pt_type_, vt.second->info().pt_type_, vt.third->info().pt_type_, val))
+        { continue; }
+      tri_pts(0,1)=vt.first->point()[0]; tri_pts(1,1)=vt.first->point()[1]; tri_pts(2,1)=vt.first->point()[2];
+      tri_pts(0,2)=vt.second->point()[0]; tri_pts(1,2)=vt.second->point()[1]; tri_pts(2,2)=vt.second->point()[2];
+      tri_pts(0,3)=vt.third->point()[0]; tri_pts(1,3)=vt.third->point()[1]; tri_pts(2,3)=vt.third->point()[2];
+      Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
+                                              tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
+                                              tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
+      Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
+      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_)) { return false;}
+    }
+    return true;
+  }
+}

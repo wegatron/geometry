@@ -141,7 +141,8 @@ namespace zsw{
 
   bool ignore_out(const TTds::Cell_handle cell);
 
-  bool isConstructTolCell(const PointType pt_type0, const PointType pt_type1,
+  // can construct a tolerance cell or a cell with zero point
+  bool isConstructTZCell(const PointType pt_type0, const PointType pt_type1,
                           const PointType pt_type2, const PointType pt_type3,
                           Eigen::Matrix<zsw::Scalar,4,1> &val);
 
