@@ -55,7 +55,11 @@ namespace zsw{
       }
 
       assert(i==3);
-
+#ifdef TEST_OUR_IDEA
+      std::cout << "Testing our idea x scaled to 0.25!!!" << std::endl;
+      in_tri=block<1,3>(0,0)*0.25;
+      out_tri=block<1,3>(0,0)*0.25;
+#endif
       sampleTriangle(in_tri, tri_sample_r, inner_jpts);
       sampleTriangle(out_tri, tri_sample_r, outer_jpts);
     }
