@@ -85,26 +85,30 @@ namespace zsw{
     // candicate merge points in kernel region
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
-    std::vector<std::pair<const JudgePoint*, zsw::Scalar>> candicate_points;
     std::function<bool(zsw::Scalar v)> judge_func;
     if(e.first->vertex(e.second)->info().pt_type_==zsw::INNER_POINT) {
       judge_func=[](zsw::Scalar v){ return v<0; };
     } else { judge_func=[](zsw::Scalar v){ return v>0; }; }
     std::vector<Plane> adj_zero_support_planes;
     tw_->calcAdjZeroSupportPlanes(e, adj_zero_support_planes);
-    for(const JudgePoint * jpt_ptr : jpts_in_bbox) {
-      if(!judge_func(jpt_ptr->val_exp_)) { continue; }
-      if(krj.judge(jpt_ptr->pt_)) {
-        bool is_in_front=true;
-        zsw::Scalar sum_sq_dis=0.0;
+    std::vector<bool> is_candicate(jpts_in_bbox.size(), false);
+    std::vector<std::pair<const JudgePoint*, zsw::Scalar>> tmp_points(jpts_in_bbox.size(), std::make_pair(nullptr,0.0));
+#pragma omp parallel for
+    for(size_t i=0; i<jpts_in_bbox.size(); ++i) {
+      tmp_points[i].first=jpts_in_bbox[i];
+      tmp_points[i].second=0.0;
+      if(!judge_func(jpts_in_bbox[i]->val_exp_)) { continue; }
+      if(krj.judge(jpts_in_bbox[i]->pt_)) {
+        is_candicate[i]=true;
         for(const Plane &plane : adj_zero_support_planes) {
-          if(plane.normal_.dot(jpt_ptr->pt_ - plane.v0_) <0) { is_in_front=false; break; }
-          zsw::Scalar tmp=plane.normal_.dot(jpt_ptr->pt_ - plane.v0_);
-          sum_sq_dis+=tmp*tmp;
+          if(plane.normal_.dot(jpts_in_bbox[i]->pt_ - plane.v0_) <0) { is_candicate[i]=false; break; }
+          zsw::Scalar tmp=plane.normal_.dot(jpts_in_bbox[i]->pt_ - plane.v0_);
+          tmp_points[i].second+=tmp*tmp;
         }
-        if(is_in_front) { candicate_points.push_back(std::make_pair(jpt_ptr, sum_sq_dis)); }
       }
     }
+    std::vector<std::pair<const JudgePoint*, zsw::Scalar>> candicate_points;
+    for(size_t i=0; i<is_candicate.size(); ++i) { if(is_candicate[i]) { candicate_points.push_back(tmp_points[i]); } }
 #if 0
     // test adj info and jpts selection is right
     writeAdjcentCells("/home/wegatron/tmp/adj_cell.vtk", e);
