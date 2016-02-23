@@ -55,8 +55,8 @@ namespace zsw{
       if(viloate_normal_cond) { updateJptsInCells(tmp_chds, err_queue); }
       else { break; }
     } while(true);
-#if 1
-    checkNormalCondition();
+#if 0
+    checkNormalcondition();
 #endif
   }
 
