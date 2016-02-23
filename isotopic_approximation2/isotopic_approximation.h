@@ -79,16 +79,17 @@ namespace zsw {
                              std::vector<VertexUpdateData> &vup,
                              std::vector<JudgePointUpdateData> * jup=nullptr) const;
     bool isTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
-                                         const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                                         const PointType point_type) const;
+                                      const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+                                      const PointType point_type) const;
     void constructKernelRegionJudger(const std::vector<VertexTriple> &bound_tris,
                                      std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const;
     bool tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
-    bool tryCollapseZeroEdge(TTds::Edge &e,
-                             std::unordered_map<std::string,TTds::Edge> &z_map);
+    /* bool tryCollapseZeroEdge(TTds::Edge &e, */
+    /*                          std::unordered_map<std::string,TTds::Edge> &z_map); */
     bool tryCollapseBZEdge(TTds::Edge &e,
-                           std::unordered_map<std::string, TTds::Edge> &bz_map);
+                           std::unordered_map<std::string, TTds::Edge> &bz_map,
+                           bool is_bz_back=false);
     void updateVertex(const std::vector<VertexUpdateData> &vup)
     {
       std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;

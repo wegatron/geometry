@@ -30,7 +30,7 @@ namespace zsw{
       if(!tw_->isZeroEdge(e)) { continue; }
       // std::cout << "[INFO] try collapse zc edge:" << e.first->vertex(e.second)->info().index_
       //           << " " << e.first->vertex(e.third)->info().index_ << std::endl;
-      if(tryCollapseZeroEdge(e, z_map)) {
+      if(tryCollapseBZEdge(e, z_map)) {
         if(++z_c_step%50==0) { NZSWLOG("zsw_info") << "zero edge collapsed " << z_c_step << std::endl; }
       }
       if(++try_z_c_step%100==0) { NZSWLOG("zsw_info") << "try zero edge collapsed " << try_z_c_step << std::endl; }
@@ -39,8 +39,9 @@ namespace zsw{
     NZSWLOG("zsw_info") << "zero edge collapse suc:" << z_c_step*1.0/try_z_c_step << std::endl;
   }
 
-  bool Approximation::tryCollapseZeroEdge(TTds::Edge &e,
-                                          std::unordered_map<std::string,TTds::Edge> &z_map)
+  bool Approximation::tryCollapseBZEdge(TTds::Edge &e,
+                                        std::unordered_map<std::string,TTds::Edge> &z_map,
+                                        bool is_bz_back)
   {
     if(!tw_->isSatisfyLinkCondition(e)) { return false; }
     std::vector<VertexTriple> bound_tris;
@@ -78,10 +79,12 @@ namespace zsw{
     }
     if(merge_pt==nullptr) { return false; }
 #endif
-    Vhd vhd=e.first->vertex(e.second);
+    //Vhd vhd=e.first->vertex(e.second);
+    Vhd vhd=(e.first->vertex(e.second)->info().pt_type_==zsw::ZERO_POINT) ? e.first->vertex(e.second) : e.first->vertex(e.third);
     tw_->collapseEdge(e, vhd, *merge_pt);
     //updateVertex(vup);
-    zeroEdgeBack(vhd, z_map);
+    if(is_bz_back) { bzEdgeBack(vhd, z_map); }
+    else { zeroEdgeBack(vhd, z_map); }
     return true;
   }
 
