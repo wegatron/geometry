@@ -67,6 +67,11 @@ namespace zsw{
 #endif
   }
 
+  void Approximation::upgradeRefine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
   bool Approximation::checkUpNormalCondition(Chd chd, std::vector<Chd> &chds)
   {
     if(!tw_->isTolCell(chd)) { return true; }
@@ -123,40 +128,40 @@ namespace zsw{
     return false;
   }
 
-    void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center)
-    {
-      Eigen::Matrix<zsw::Scalar,3,1> n0,n1,n2;
-      Eigen::Matrix<zsw::Scalar,3,3> A;
-      n0=A.block<3,1>(0,0)=tri_pts.block<3,1>(0,1)-tri_pts.block<3,1>(0,0);
-      n1=A.block<3,1>(0,1)=tri_pts.block<3,1>(0,2)-tri_pts.block<3,1>(0,0);
-      n2=A.block<3,1>(0,2)=tri_pts.block<3,1>(0,3)-tri_pts.block<3,1>(0,0);
-      Eigen::Matrix<zsw::Scalar,3,1> b;
-      b[0] = 0.5*(A.block<3,1>(0,0)).dot(tri_pts.block<3,1>(0,1)+tri_pts.block<3,1>(0,0));
-      b[1] = 0.5*(A.block<3,1>(0,1)).dot(tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,0));
-      b[2] = 0.5*(A.block<3,1>(0,2)).dot(tri_pts.block<3,1>(0,3)+tri_pts.block<3,1>(0,0));
-      Eigen::Matrix<zsw::Scalar,3,3> Atr = A.transpose();
-      Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu; pplu.compute(Atr);
-      center = pplu.solve(b);
+  void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center)
+  {
+    Eigen::Matrix<zsw::Scalar,3,1> n0,n1,n2;
+    Eigen::Matrix<zsw::Scalar,3,3> A;
+    n0=A.block<3,1>(0,0)=tri_pts.block<3,1>(0,1)-tri_pts.block<3,1>(0,0);
+    n1=A.block<3,1>(0,1)=tri_pts.block<3,1>(0,2)-tri_pts.block<3,1>(0,0);
+    n2=A.block<3,1>(0,2)=tri_pts.block<3,1>(0,3)-tri_pts.block<3,1>(0,0);
+    Eigen::Matrix<zsw::Scalar,3,1> b;
+    b[0] = 0.5*(A.block<3,1>(0,0)).dot(tri_pts.block<3,1>(0,1)+tri_pts.block<3,1>(0,0));
+    b[1] = 0.5*(A.block<3,1>(0,1)).dot(tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,0));
+    b[2] = 0.5*(A.block<3,1>(0,2)).dot(tri_pts.block<3,1>(0,3)+tri_pts.block<3,1>(0,0));
+    Eigen::Matrix<zsw::Scalar,3,3> Atr = A.transpose();
+    Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,3,3>> pplu; pplu.compute(Atr);
+    center = pplu.solve(b);
 #if 0
-      zsw::Scalar dis[4];
-      for(size_t i=0; i<4; ++i) {
-        dis[i]=(center-tri_pts.block<3,1>(0,i)).norm();
-      }
-      for(size_t i=1; i<4; ++i) {
-        if(fabs(dis[i]-dis[i-1]) > zsw::const_val::eps) {
-          std::cerr << Atr << std::endl;
-          std::cerr << "---------------" << std::endl;
-          std::cerr << n0.transpose() << std::endl;
-          std::cerr << n1.transpose() << std::endl;
-          std::cerr << n2.transpose() << std::endl;
-          std::cerr << "err:" << (A*center-b).norm() << std::endl;
-          std::cerr << fabs(dis[i]-dis[i-1]) << std::endl;
-          std::cerr << "--" << n0.dot(center)-b[0]<< std::endl;
-          std::cerr << "--" << n1.dot(center)-b[1] << std::endl;
-          std::cerr << "--" << n2.dot(center)-b[2] << std::endl;
-          abort();
-        }
-      }
-#endif
+    zsw::Scalar dis[4];
+    for(size_t i=0; i<4; ++i) {
+      dis[i]=(center-tri_pts.block<3,1>(0,i)).norm();
     }
+    for(size_t i=1; i<4; ++i) {
+      if(fabs(dis[i]-dis[i-1]) > zsw::const_val::eps) {
+        std::cerr << Atr << std::endl;
+        std::cerr << "---------------" << std::endl;
+        std::cerr << n0.transpose() << std::endl;
+        std::cerr << n1.transpose() << std::endl;
+        std::cerr << n2.transpose() << std::endl;
+        std::cerr << "err:" << (A*center-b).norm() << std::endl;
+        std::cerr << fabs(dis[i]-dis[i-1]) << std::endl;
+        std::cerr << "--" << n0.dot(center)-b[0]<< std::endl;
+        std::cerr << "--" << n1.dot(center)-b[1] << std::endl;
+        std::cerr << "--" << n2.dot(center)-b[2] << std::endl;
+        abort();
+      }
+    }
+#endif
   }
+}

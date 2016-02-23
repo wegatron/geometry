@@ -31,7 +31,11 @@ namespace zsw{
     for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }
     std::cout << "[INFO] inner judge point size:" << inner_jpts_.size() << std::endl;
     std::cout << "[INFO] outer judge point size:" << outer_jpts_.size() << std::endl;
+#if 0
     refine(bs_jpts);
+#else
+    upgradeRefine(bs_jpts);
+#endif
     std::cout << "[INFO] refine complete, init finished!" << std::endl;
     std::cout << "[INFO] vertex size:" << tw_->getTds().number_of_vertices() << std::endl;
     std::cout << "[INFO] cell size:" << tw_->getTds().number_of_cells() << std::endl;
