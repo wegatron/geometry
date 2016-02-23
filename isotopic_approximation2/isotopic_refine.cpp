@@ -19,6 +19,10 @@ namespace zsw{
 #if 0
     testKdtree();
 #endif
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, -1, 1}); }
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }
+    inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
+    outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
     std::vector<std::pair<Point, VertexInfo>> init_vertices;
     init_vertices.reserve(bs_jpts.size());
     for(size_t ind=0; ind<bs_jpts.size(); ++ind) {
@@ -48,7 +52,6 @@ namespace zsw{
         if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;  }
         updateJptsInCells(chds, err_queue);
       }
-
       // find a tet viloate the normal condition
       bool viloate_normal_cond=false;
       std::vector<Chd> tmp_chds;
@@ -67,9 +70,24 @@ namespace zsw{
 #endif
   }
 
-  void Approximation::upgradeRefine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
+  void Approximation::upgradeRefine(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    // scale inner_jpts_, outer_jpts_ bs_jpts in x direction by 0.25
+    for(size_t i=0; i<inner_jpts_.size(); ++i) { inner_jpts_[i][0]*=0.25; }
+    for(size_t i=0; i<outer_jpts_.size(); ++i) { outer_jpts_[i][0]*=0.25; }
+    for(size_t i=0; i<bs_jpts.size(); ++i) { bs_jpts[i][0]*=0.25; }
+    // deformed refine
+    refine(bs_jpts);
+    //writeTetMesh("/home/wegatron/tmp/deformed_refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    // scale back jpts_, inner_jpts_, outer_jpts_ in x direction
+    for(size_t i=0; i<inner_jpts_.size(); ++i) { inner_jpts_[i][0]=inner_jpts_[i][0]*4; }
+    for(size_t i=0; i<outer_jpts_.size(); ++i) { outer_jpts_[i][0]=outer_jpts_[i][0]*4; }
+    // get deform back the tetmesh
+    TTds &tds=tw_->getTds();
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      if(vit->info().pt_type_==zsw::INVALID_POINT) { continue; }
+      vit->set_point(Point(vit->point()[0]*4, vit->point()[1], vit->point()[2]));
+    }
   }
 
   bool Approximation::checkUpNormalCondition(Chd chd, std::vector<Chd> &chds)

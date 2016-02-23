@@ -19,18 +19,14 @@ namespace zsw{
                            const zsw::Scalar tet_sample_r,
                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-                           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
+                           std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
   {
     tri_sample_r_=tri_sample_r;
     tet_sample_r_=tet_sample_r;
     inner_jpts_=inner_jpts; outer_jpts_=outer_jpts;
-    inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
-    outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
-    jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, -1, 1}); }
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }
     std::cout << "[INFO] inner judge point size:" << inner_jpts_.size() << std::endl;
     std::cout << "[INFO] outer judge point size:" << outer_jpts_.size() << std::endl;
+    jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
 #if 0
     refine(bs_jpts);
 #else

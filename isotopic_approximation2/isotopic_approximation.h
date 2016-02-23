@@ -42,7 +42,7 @@ namespace zsw {
               const zsw::Scalar tet_sample_r,
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-              const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
+              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
     void simp(const std::string &tmp_output_dir);
 
     void writeZeroSurface(const std::string &filepath) const;
@@ -58,7 +58,7 @@ namespace zsw {
     void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
 
     // refine using our idea
-    void upgradeRefine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
+    void upgradeRefine(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
 
     void simpTolerance();
     void mutuallTessellation(TTds *tds_ptr=nullptr);
