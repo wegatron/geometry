@@ -19,7 +19,7 @@ namespace zsw{
                            const zsw::Scalar tet_sample_r,
                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-                           std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
+                           const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
   {
     tri_sample_r_=tri_sample_r;
     tet_sample_r_=tet_sample_r;
@@ -29,16 +29,9 @@ namespace zsw{
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
     for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, -1, 1}); }
     for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }
-    std::vector<std::pair<Point, VertexInfo>> init_vertices;
-    init_vertices.reserve(bs_jpts.size());
-    for(size_t ind=0; ind<bs_jpts.size(); ++ind) {
-      const Eigen::Matrix<zsw::Scalar,3,1> &pt=bs_jpts[ind];
-      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, pt, 0)));
-    }
-    tw_.reset(new TriangulationWapper(init_vertices));
     std::cout << "[INFO] inner judge point size:" << inner_jpts_.size() << std::endl;
     std::cout << "[INFO] outer judge point size:" << outer_jpts_.size() << std::endl;
-    refine();
+    refine(bs_jpts);
     std::cout << "[INFO] refine complete, init finished!" << std::endl;
     std::cout << "[INFO] vertex size:" << tw_->getTds().number_of_vertices() << std::endl;
     std::cout << "[INFO] cell size:" << tw_->getTds().number_of_cells() << std::endl;

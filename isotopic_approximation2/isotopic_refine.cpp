@@ -14,11 +14,18 @@
 using namespace std;
 
 namespace zsw{
-  void Approximation::refine()
+  void Approximation::refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
   {
 #if 0
     testKdtree();
 #endif
+    std::vector<std::pair<Point, VertexInfo>> init_vertices;
+    init_vertices.reserve(bs_jpts.size());
+    for(size_t ind=0; ind<bs_jpts.size(); ++ind) {
+      const Eigen::Matrix<zsw::Scalar,3,1> &pt=bs_jpts[ind];
+      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, pt, 0)));
+    }
+    tw_.reset(new TriangulationWapper(init_vertices));
     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                         std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                         ErrorMaxComparison> err_queue;
