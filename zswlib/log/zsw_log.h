@@ -70,30 +70,27 @@ namespace zsw{
   };
 
   inline std::string getTime()
-    {
-      time_t now = time(0);
-      tm *localtm = localtime(&now);
-      std::stringstream ss;
-      ss << "[" << localtm->tm_year+1900 << "-" << localtm->tm_mon+1 << "-" << localtm->tm_mday
-         << "-" << localtm->tm_hour
-         << ":" << localtm->tm_min
-         << ":" << localtm->tm_sec << "] ";
-      return ss.str();
-    }
+  {
+    time_t now = time(0);
+    tm *localtm = localtime(&now);
+    std::stringstream ss;
+    ss << "[" << localtm->tm_year+1900 << "-" << localtm->tm_mon+1 << "-" << localtm->tm_mday
+       << "-" << localtm->tm_hour
+       << ":" << localtm->tm_min
+       << ":" << localtm->tm_sec << "] ";
+    return ss.str();
+  }
 
   class ZswLog{
   public:
+    static void resetLogFile(const std::string &log_file) { p_instance = std::shared_ptr<ZswLog>(new ZswLog(log_file)); }
     static std::shared_ptr<ZswLog> getInstance(const std::string& log_type){
-      if(p_instance == NULL){
-        p_instance = std::shared_ptr<ZswLog>(new ZswLog());
-      }
+      if(p_instance == NULL){ p_instance = std::shared_ptr<ZswLog>(new ZswLog()); }
       p_instance->setCLogtype(log_type);
       return p_instance;
     }
 
-    void setCLogtype(const std::string &clog_type) {
-      clog_type_ = clog_type;
-    }
+    void setCLogtype(const std::string &clog_type) { clog_type_ = clog_type;  }
     void log(const std::string& info);
     template<typename T>
       CompositOstream& operator << (const T& t)
@@ -107,9 +104,14 @@ namespace zsw{
       return os;
     }
   private:
-  ZswLog(): isos_ready_(false), os(1),clog_type_("") { init(); }
-    void init();
-
+#ifdef WIN32
+  ZswLog(const std::string log_file="C:\\users\\wegatron\\AppData\\Local\\Temp\\zswlog.log"):
+    isos_ready_(false), os(1),clog_type_("") { init(log_file); }
+#else
+  ZswLog(const std::string log_file="/tmp/zswlog.log"):
+    isos_ready_(false), os(1),clog_type_("") { init(log_file); }
+#endif
+    void init(const std::string &log_file);
     std::string clog_type_;
     bool isos_ready_;
     CompositOstream os;
@@ -121,6 +123,9 @@ namespace zsw{
 }//end of namespace
 
 #ifdef ZSW_LOG_ACTIVE
+#define RESETLOG_FILE(log_file) do{             \
+    zsw::ZswLog::resetLogFile(log_file);        \
+  }while(0)
 #define ZSWLOG(log_type, info) do{                      \
     zsw::pZswLog log = zsw::ZswLog::getInstance(log_type);      \
     log->log(info);                           \

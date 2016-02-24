@@ -15,6 +15,7 @@ void test0(const std::string &file_path,
            const zsw::Scalar tri_sample_r,
            const zsw::Scalar tet_sample_r)
 {
+  RESETLOG_FILE(output_dir+"log");
   zsw::mesh::TriMesh input_mesh;
   if(!OpenMesh::IO::read_mesh(input_mesh, file_path)) {
     std::cerr << "can't open file " << file_path << std::endl;

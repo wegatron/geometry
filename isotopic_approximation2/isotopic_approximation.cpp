@@ -27,7 +27,7 @@ namespace zsw{
     std::cout << "[INFO] inner judge point size:" << inner_jpts_.size() << std::endl;
     std::cout << "[INFO] outer judge point size:" << outer_jpts_.size() << std::endl;
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
-#if 0
+#if 1
     refine(bs_jpts);
 #else
     upgradeRefine(bs_jpts);
@@ -39,40 +39,24 @@ namespace zsw{
 
   void  Approximation::simp(const std::string &tmp_output_dir)
   {
-    writeTetMesh(tmp_output_dir+"before_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out}); 
-    // if(need_smooth_) {
-    //   smoothBoundary();
-    //   writeTetMesh(tmp_output_dir+"before_simp_tol_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    // }
+    writeTetMesh(tmp_output_dir+"before_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     TTds tmp_tds=tw_->getTds();
     mutuallTessellation();
     writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     tw_->setTds(tmp_tds);
 
+    zsw::common::ClockC11 clock;
     simpTolerance();
+    NZSWLOG("info") << "simp_tol cost:" << clock.time() << std::endl;
     writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    // if(need_smooth_) {
-    //   smoothBoundary();
-    //   writeTetMesh(tmp_output_dir+"after_simp_tol_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    // }
     mutuallTessellation();
+    NZSWLOG("info") << "mutuallTessellation cost:" << clock.time() << std::endl;
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-    // if(need_smooth_) {
-    //   laplaceSmoothZeroSurface();
-    //   writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-    // }
     simpZeroSurface();
+    NZSWLOG("info") << "simp_zero surf cost:" << clock.time() << std::endl;
     writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-    // if(need_smooth_) {
-    //   laplaceSmoothZeroSurface();
-    //   writeTetMesh(tmp_output_dir+"simped_zero_surf_smoothed.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-    // }
-    //std::unordered_map<std::string,TTds::Edge> z_map, bz_map;
     simpBZEdges();
-    // while(!z_map.empty()) {
-    //   simpZeroSurface(&z_map, &bz_map);
-    //   simpBZEdges(&bz_map, &z_map);
-    // }
+    NZSWLOG("info") << "simp_bz cost:" << clock.time() << std::endl;
   }
 
   zsw::Scalar Approximation::updateJptsInCell(Chd chd, /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,

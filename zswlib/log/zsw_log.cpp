@@ -9,9 +9,9 @@ using namespace std;
 using namespace zsw;
 
 #ifdef WIN32
-static const string log_path_prefix="C:\\users\\wegatron\\AppData\\Local\\Temp\\zswlog";
+static string log_path_prefix="C:\\users\\wegatron\\AppData\\Local\\Temp\\zswlog";
 #else
-static const string log_path_prefix="/tmp/zswlog";
+static string log_path_prefix="/tmp/zswlog";
 #endif /* WIN32 */
 
 static pair<string, int> log_types[] = {
@@ -20,20 +20,19 @@ static pair<string, int> log_types[] = {
 };
 
 pZswLog ZswLog::p_instance;
-
-void zsw::ZswLog::init()
+void zsw::ZswLog::init(const std::string &log_file)
 {
   int log_type_size = sizeof(log_types)/sizeof(pair<string,int>);
   for (int i=0; i<log_type_size; ++i)
   {
 	  log_type_map.insert(log_types[i]);
   }
-  string file_path = log_path_prefix + ".log";
-  std::shared_ptr<std::ofstream> ofs_ptr(new ofstream(file_path.c_str(), std::fstream::app));
+  std::shared_ptr<std::ofstream> ofs_ptr(new ofstream(log_file.c_str(), std::fstream::app));
   if(!ofs_ptr || !(*ofs_ptr)|| !ofs_ptr->good()) {
-    cerr << "[WARNING] can not open log file: " << file_path << "to write!" << endl;
+    cerr << "[WARNING] can not open log file: " << log_file << "to write!" << endl;
     return;
   }
+  os.clear();
   os.addOstream(ofs_ptr);
   isos_ready_ = true;
 }
