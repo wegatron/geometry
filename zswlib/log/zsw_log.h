@@ -96,7 +96,6 @@ namespace zsw{
       CompositOstream& operator << (const T& t)
       {
         os << "# [" << clog_type_ << "] "<< getTime() << t;
-        os << t;
         return os;
       }
     CompositOstream& operator<<(std::ostream& (*__pf)(std::ostream&)) {

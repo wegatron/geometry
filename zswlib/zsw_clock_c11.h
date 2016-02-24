@@ -9,11 +9,10 @@ namespace zsw {
     class ClockC11
     {
       typedef  std::chrono::high_resolution_clock::time_point TimePoint;
-
     public:
-      ClockC11() {
-        cur_time_ = start_time_ = std::chrono::high_resolution_clock::now();
-      }
+      ClockC11() { cur_time_ = start_time_ = std::chrono::high_resolution_clock::now(); }
+      void clearAll() { cur_time_ = start_time_ = std::chrono::high_resolution_clock::now(); }
+      void clearCur() { cur_time_ = std::chrono::high_resolution_clock::now(); }
       std::string time() {
         TimePoint pre_time = cur_time_;
         cur_time_ =  std::chrono::high_resolution_clock::now();
