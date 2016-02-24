@@ -24,17 +24,19 @@ namespace zsw{
     tri_sample_r_=tri_sample_r;
     tet_sample_r_=tet_sample_r;
     inner_jpts_=inner_jpts; outer_jpts_=outer_jpts;
-    std::cout << "[INFO] inner judge point size:" << inner_jpts_.size() << std::endl;
-    std::cout << "[INFO] outer judge point size:" << outer_jpts_.size() << std::endl;
+    NZSWLOG("zsw_info") << "inner judge point size:" << inner_jpts_.size() << std::endl;
+    NZSWLOG("zsw_info") << "outer judge point size:" << outer_jpts_.size() << std::endl;
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
+    clock_.clearCur();
 #if 1
     refine(bs_jpts);
 #else
     upgradeRefine(bs_jpts);
 #endif
-    std::cout << "[INFO] refine complete, init finished!" << std::endl;
-    std::cout << "[INFO] vertex size:" << tw_->getTds().number_of_vertices() << std::endl;
-    std::cout << "[INFO] cell size:" << tw_->getTds().number_of_cells() << std::endl;
+    NZSWLOG("zsw_info") << "refine time cost" << clock_.time() << std::endl;
+    NZSWLOG("zsw_info") << "refine complete, init finished!" << std::endl;
+    NZSWLOG("zsw_info") << "vertex size:" << tw_->getTds().number_of_vertices() << std::endl;
+    NZSWLOG("zsw_info") << "cell size:" << tw_->getTds().number_of_cells() << std::endl;
   }
 
   void  Approximation::simp(const std::string &tmp_output_dir)
@@ -44,19 +46,19 @@ namespace zsw{
     mutuallTessellation();
     writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     tw_->setTds(tmp_tds);
-
-    zsw::common::ClockC11 clock;
+    clock_.clearCur();
     simpTolerance();
-    NZSWLOG("info") << "simp_tol cost:" << clock.time() << std::endl;
+    NZSWLOG("zsw_info") << "simp_tol time cost:" << clock_.time() << std::endl;
     writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     mutuallTessellation();
-    NZSWLOG("info") << "mutuallTessellation cost:" << clock.time() << std::endl;
+    NZSWLOG("zsw_info") << "mutuall tessellation time cost:" << clock_.time() << std::endl;
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpZeroSurface();
-    NZSWLOG("info") << "simp_zero surf cost:" << clock.time() << std::endl;
+    NZSWLOG("zsw_info") << "simp_zero surf time cost:" << clock_.time() << std::endl;
     writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpBZEdges();
-    NZSWLOG("info") << "simp_bz cost:" << clock.time() << std::endl;
+    NZSWLOG("zsw_info") << "simp_bz time cost:" << clock_.time() << std::endl;
+    NZSWLOG("zsw_info") << "total time cost:" << clock_.totalTime() << std::endl;
   }
 
   zsw::Scalar Approximation::updateJptsInCell(Chd chd, /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,

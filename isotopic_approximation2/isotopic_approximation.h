@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <queue>
 #include <zswlib/config.h>
+#include <zswlib/zsw_clock_c11.h>
 #include "basic_data_structure.h"
 #include "constraint.h"
 
@@ -130,6 +131,7 @@ namespace zsw {
     zsw::Scalar alpha_;
     std::string tmp_outdir_;
     bool need_smooth_;
+    zsw::common::ClockC11 clock_;
   };
 
   zsw::Scalar calcZeroTetHeight(Chd chd);
