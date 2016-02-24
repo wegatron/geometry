@@ -122,29 +122,6 @@ namespace zsw{
            return a.second<b.second;
          });
     const zsw::Scalar v_pt=(e.first->vertex(e.second)->info().pt_type_==zsw::INNER_POINT) ? -1 : 1;
-#if 1
-    std::vector<std::vector<VertexUpdateData>> tmp_vups(candicate_points.size());
-    std::vector<std::vector<JudgePointUpdateData>> tmp_jups(candicate_points.size());
-    size_t suc_id=-1;
-    #pragma omp parallel for
-    for(size_t i=0; i<candicate_points.size(); ++i) {
-      if(suc_id<i) { continue; }
-      std::pair<const JudgePoint*, zsw::Scalar> &cd_pt=candicate_points[i];
-      const JudgePoint *jpt_ptr=cd_pt.first;
-      if(isTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pt_, e.first->vertex(e.second)->info().pt_type_)
-         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, tmp_vups[i], &tmp_jups[i]))
-        {
-          #pragma omp critical
-          {
-            suc_id=min(i,suc_id);
-          }
-        }
-    }
-    if(suc_id==-1) { return false; }
-    const JudgePoint *merge_pt=candicate_points[suc_id].first;
-    std::vector<VertexUpdateData> &vup=tmp_vups[suc_id];
-    std::vector<JudgePointUpdateData> &jup=tmp_jups[suc_id];
-#else
     const JudgePoint *merge_pt=nullptr;
     std::vector<VertexUpdateData> vup;
     std::vector<JudgePointUpdateData> jup;
@@ -156,7 +133,6 @@ namespace zsw{
         { merge_pt=jpt_ptr; break; }
     }
     if(merge_pt==nullptr) { return false; }
-#endif
     Vhd vhd=e.first->vertex(e.second);
     tw_->collapseEdge(e, vhd, merge_pt->pt_);
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});

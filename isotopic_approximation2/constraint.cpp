@@ -47,24 +47,29 @@ bool zsw::normalCondition(
                           const std::string *filepath_ptr)
 {
   // find the four inner_jpts and four outer_jpts
-  std::vector<size_t> in_indices;
-  std::vector<zsw::Scalar> in_dist;
-  inner_kdtree.queryNearest(scaled_tri_pts, in_indices, in_dist);
+  std::vector<size_t> in_indices; in_indices.reserve(4);
+  std::vector<zsw::Scalar> in_dist; in_dist.reserve(4);
+  std::vector<size_t> out_indices; out_indices.reserve(4);
+  std::vector<zsw::Scalar> out_dist; out_dist.reserve(4);
+
+#pragma omp parallel sections
+  {
+#pragma omp section
+    { inner_kdtree.queryNearest(scaled_tri_pts, in_indices, in_dist); }
+#pragma omp section
+    { outer_kdtree.queryNearest(scaled_tri_pts, out_indices, out_dist); }
+  }
 
   assert(fabs((inner_jpts[in_indices[0]]-scaled_tri_pts.block<3,1>(0,0)).squaredNorm()-in_dist[0])<zsw::const_val::eps);
   assert(fabs((inner_jpts[in_indices[1]]-scaled_tri_pts.block<3,1>(0,1)).squaredNorm()-in_dist[1])<zsw::const_val::eps);
   assert(fabs((inner_jpts[in_indices[2]]-scaled_tri_pts.block<3,1>(0,2)).squaredNorm()-in_dist[2])<zsw::const_val::eps);
   assert(fabs((inner_jpts[in_indices[3]]-scaled_tri_pts.block<3,1>(0,3)).squaredNorm()-in_dist[3])<zsw::const_val::eps);
 
-  std::vector<size_t> out_indices;
-  std::vector<zsw::Scalar> out_dist;
-  outer_kdtree.queryNearest(scaled_tri_pts, out_indices, out_dist);
-
   assert(fabs((outer_jpts[out_indices[0]]-scaled_tri_pts.block<3,1>(0,0)).squaredNorm()-out_dist[0])<zsw::const_val::eps);
   assert(fabs((outer_jpts[out_indices[1]]-scaled_tri_pts.block<3,1>(0,1)).squaredNorm()-out_dist[1])<zsw::const_val::eps);
   assert(fabs((outer_jpts[out_indices[2]]-scaled_tri_pts.block<3,1>(0,2)).squaredNorm()-out_dist[2])<zsw::const_val::eps);
   assert(fabs((outer_jpts[out_indices[3]]-scaled_tri_pts.block<3,1>(0,3)).squaredNorm()-out_dist[3])<zsw::const_val::eps);
-
+#if 0
   if(debug_flag){
     assert(filepath_ptr!=nullptr);
     std::vector<Eigen::Matrix<zsw::Scalar,3,4>> cell_out;
@@ -81,41 +86,69 @@ bool zsw::normalCondition(
     pts.push_back(outer_jpts[out_indices[3]]);
     writeCellsAndPoints(*filepath_ptr, cell_out, pts);
   }
-
+#endif
   // judge if can classify the eight point
   Eigen::Matrix<zsw::Scalar,4,4> A;
   A.block<3,4>(0,0)=tri_pts;
   A(3,0)=A(3,1)=A(3,2)=A(3,3)=1;
-  Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
-  for(size_t in=0;in<4; ++in) {
-    Eigen::Matrix<zsw::Scalar,4,1> b;
-    b.block<3,1>(0,0)=inner_jpts[in_indices[in]]; b(3,0)=1;
+  Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu;pplu.compute(A);
+  size_t violate_cnt=0;
+#pragma omp parallel for
+  for(size_t ind=0; ind<8; ++ind) {
+    if(violate_cnt>0) { continue; }
+    Eigen::Matrix<zsw::Scalar,4,1> b; b(3,0)=1;
+    if(ind<4) { b.block<3,1>(0,0)=inner_jpts[in_indices[ind]]; }
+    else { b.block<3,1>(0,0)=outer_jpts[out_indices[ind-4]]; }
     Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
-    if(val.dot(x)>0) {
-        if(debug_flag) {
-            std::cerr << "dot:" << val.dot(x) << std::endl;
-            std::cerr << "inner jpt:" << inner_jpts[in_indices[in]].transpose() << std::endl;
-            std::cerr << "val:" << val.transpose() << std::endl;
-            std::cerr << "x:" << x.transpose() << std::endl;
-            std::cerr << "A" << A << std::endl;
-          }
-      return false;
+    if(ind<4) {
+#pragma omp atomic
+      violate_cnt += (val.dot(x)>0);
+    } else {
+#pragma omp atomic
+      violate_cnt += (val.dot(x)<0);
     }
   }
-  for(size_t out=0; out<4; ++out) {
-    Eigen::Matrix<zsw::Scalar,4,1> b;
-    b.block<3,1>(0,0)=outer_jpts[out_indices[out]]; b(3,0)=1;
-    Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
-    if(val.dot(x)<0) {
-        if(debug_flag) {
-            std::cerr << "dot:" << val.dot(x) << std::endl;
-            std::cerr << "outer jpt:" << outer_jpts[out_indices[out]].transpose() << std::endl;
-            std::cerr << "val:" << val.transpose() << std::endl;
-            std::cerr << "x:" << x.transpose() << std::endl;
-            std::cerr << "A" << A << std::endl;
-          }
-      return false;
-    }
-  }
-  return true;
+  // #pragma omp parallel for
+  //   for(size_t in=0;in<4; ++in) {
+  //     if(violate_cnt>0) { continue; }
+  //     Eigen::Matrix<zsw::Scalar,4,1> b;
+  //     b.block<3,1>(0,0)=inner_jpts[in_indices[in]]; b(3,0)=1;
+  //     Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
+  // #pragma omp atomic
+  //     violate_cnt += (val.dot(x)>0);
+  // #if 0
+  //     if(val.dot(x)>0) {
+  //     if(debug_flag) {
+  //     std::cerr << "dot:" << val.dot(x) << std::endl;
+  //     std::cerr << "inner jpt:" << inner_jpts[in_indices[in]].transpose() << std::endl;
+  //     std::cerr << "val:" << val.transpose() << std::endl;
+  //     std::cerr << "x:" << x.transpose() << std::endl;
+  //     std::cerr << "A" << A << std::endl;
+  //   }
+  //     return false;
+  // #endif
+  //}
+  //   }
+  // #pragma omp parallel for
+  //   for(size_t out=0; out<4; ++out) {
+  //     if(violate_cnt>0) { continue; }
+  //     Eigen::Matrix<zsw::Scalar,4,1> b;
+  //     b.block<3,1>(0,0)=outer_jpts[out_indices[out]]; b(3,0)=1;
+  //     Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
+  // #pragma omp atomic
+  //     violate_cnt += (val.dot(x)<0);
+  // #if 0
+  //     if(val.dot(x)<0) {
+  //     if(debug_flag) {
+  //     std::cerr << "dot:" << val.dot(x) << std::endl;
+  //     std::cerr << "outer jpt:" << outer_jpts[out_indices[out]].transpose() << std::endl;
+  //     std::cerr << "val:" << val.transpose() << std::endl;
+  //     std::cerr << "x:" << x.transpose() << std::endl;
+  //     std::cerr << "A" << A << std::endl;
+  //   }
+  //     return false;
+  //   }
+  // #endif
+  // }
+  return violate_cnt==0;
 }

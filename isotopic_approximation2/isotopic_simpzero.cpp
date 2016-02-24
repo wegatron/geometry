@@ -52,22 +52,6 @@ namespace zsw{
     sampleAdjCells(e, sample_points);
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
-#if 1
-    std::vector<std::vector<VertexUpdateData>> tmp_vups;
-    const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt=nullptr;
-#pragma omp parallel for
-    for(size_t i=0; i<sample_points.size(); ++i) {
-      if(merge_pt!=nullptr) { continue; }
-      const Eigen::Matrix<zsw::Scalar,3,1> &pt=sample_points[i];
-      if(krj.judge(pt) &&
-         isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)
-         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, tmp_vups[i], nullptr)) {
-        merge_pt=&sample_points[i];
-      }
-    }
-    if(merge_pt==nullptr) { return false; }
-    std::vector<VertexUpdateData> &vup=tmp_vups[merge_pt-&sample_points[0]];
-#else
     const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt=nullptr;
     std::vector<VertexUpdateData> vup;
     for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : sample_points) {
@@ -77,7 +61,6 @@ namespace zsw{
          && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
     }
     if(merge_pt==nullptr) { return false; }
-#endif
     //Vhd vhd=e.first->vertex(e.second);
     Vhd vhd=(e.first->vertex(e.second)->info().pt_type_==zsw::ZERO_POINT) ? e.first->vertex(e.second) : e.first->vertex(e.third);
     tw_->collapseEdge(e, vhd, *merge_pt);
