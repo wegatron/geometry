@@ -22,18 +22,19 @@ namespace zsw{
       std::string key_str=edge2key(*eit);
       bz_map.insert(std::make_pair(key_str, *eit));
     }
-
     size_t zb_c_step=0;
+    size_t zb_total=0;
     while(!bz_map.empty()) {
       TTds::Edge e=bz_map.begin()->second; bz_map.erase(bz_map.begin());
       if(!tw_->isBZEdge(e) && !tw_->isZeroEdge(e)) { continue; }
+      if(zb_total++ % 100==0) { std::cout  << "[INFO] all edge tried collapsed " << zb_total << std::endl; }
       if(tryCollapseBZEdge(e, bz_map, true)) {
-        if(++zb_c_step%50==0) {
-          std::cout << "[INFO] all edge collapsed " << zb_c_step << std::endl;
-        }
+        if(++zb_c_step%50==0) { std::cout << "[INFO] all edge collapsed " << zb_c_step << std::endl; }
       }
     }
-    std::cout << "[INFO] zb collapsed total:" << zb_c_step << std::endl;
+    NZSWLOG("zsw_log") << "zb tried collapse:" << zb_total << std::endl;
+    NZSWLOG("zsw_log") << "zb collapsed total:" << zb_c_step << std::endl;
+    NZSWLOG("zsw_log") << "zb collapsed suc:" << zb_c_step*1.0/zb_total << std::endl;
   }
 
   // bool Approximation::tryCollapseBZEdge(TTds::Edge &e, std::unordered_map<std::string,TTds::Edge> &bz_map)

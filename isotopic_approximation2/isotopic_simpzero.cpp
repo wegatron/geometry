@@ -28,13 +28,12 @@ namespace zsw{
     while(!z_map.empty()) {
       TTds::Edge e=z_map.begin()->second; z_map.erase(z_map.begin());
       if(!tw_->isZeroEdge(e)) { continue; }
-      // std::cout << "[INFO] try collapse zc edge:" << e.first->vertex(e.second)->info().index_
-      //           << " " << e.first->vertex(e.third)->info().index_ << std::endl;
       if(tryCollapseBZEdge(e, z_map)) {
-        if(++z_c_step%50==0) { NZSWLOG("zsw_info") << "zero edge collapsed " << z_c_step << std::endl; }
+        if(++z_c_step%50==0) { std::cout << "[INFO] zero edge collapsed " << z_c_step << std::endl; }
       }
-      if(++try_z_c_step%100==0) { NZSWLOG("zsw_info") << "try zero edge collapsed " << try_z_c_step << std::endl; }
+      if(++try_z_c_step%100==0) { std::cout << "[INFO] try zero edge collapsed " << try_z_c_step << std::endl; }
     }
+    NZSWLOG("zsw_info") << "zero edge try collapse:" << try_z_c_step << std::endl;
     NZSWLOG("zsw_info") << "zero edge collapsed total:" << z_c_step << std::endl;
     NZSWLOG("zsw_info") << "zero edge collapse suc:" << z_c_step*1.0/try_z_c_step << std::endl;
   }

@@ -30,15 +30,14 @@ namespace zsw{
       if(!tw_->isBoundaryEdge(e)) { continue; }
       if(tryCollapseBoundaryEdge(e, edge_map)) {
         if(++b_c_step%50==0) {
-          NZSWLOG("zsw_info") << "boundary collapsed:" << b_c_step << std::endl;
+          std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;
           writeTetMesh(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step/50)
                        +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
         }
       }
-      if(++try_b_c_step%100==0) {
-        NZSWLOG("zsw_info") << "try boundary collapsed:" << try_b_c_step << std::endl;
-      }
+      if(++try_b_c_step%100==0) { std::cout << "[INFO] try boundary collapsed:" << try_b_c_step << std::endl; }
     }
+    NZSWLOG("zsw_info") << "boundary tried collapse:" << try_b_c_step << std::endl;
     NZSWLOG("zsw_info") << "boundary collapsed total:" << b_c_step << std::endl;
     NZSWLOG("zsw_info") << "boundary collapsed suc:" << b_c_step*1.0/try_b_c_step << std::endl;
 #if 0
