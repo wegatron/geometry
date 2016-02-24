@@ -148,45 +148,6 @@ namespace zsw{
                                           std::vector<VertexUpdateData> &vup,
                                           std::vector<JudgePointUpdateData> * jup) const
   {
-#if 1
-    std::vector<bool> is_updated(jpts_in_bbox.size(), false);
-    for(const VertexTriple &vt : bound_tris) {
-      assert(vt.first->info().pt_type_!=zsw::INVALID_POINT);
-      assert(vt.second->info().pt_type_!=zsw::INVALID_POINT);
-      assert(vt.third->info().pt_type_!=zsw::INVALID_POINT);
-
-      Eigen::Matrix<zsw::Scalar,4,4> A;
-      A(0,0)=vt.first->point()[0]; A(1,0)=vt.first->point()[1];  A(2,0)=vt.first->point()[2]; A(3,0)=1;
-      A(0,1)=vt.second->point()[0]; A(1,1)=vt.second->point()[1];  A(2,1)=vt.second->point()[2]; A(3,1)=1;
-      A(0,2)=vt.third->point()[0]; A(1,2)=vt.third->point()[1];  A(2,2)=vt.third->point()[2]; A(3,2)=1;
-      A.block<3,1>(0,3)=merge_pt; A(3,3)=1;
-      Eigen::Matrix<zsw::Scalar,4,1> val;
-      if(vt.first->info().pt_type_==zsw::INNER_POINT) { val[0]=-1; }
-      else if(vt.first->info().pt_type_==zsw::ZERO_POINT) { val[0]=0; }
-      else { val[0]=1; }
-      if(vt.second->info().pt_type_==zsw::INNER_POINT) { val[1]=-1; }
-      else if(vt.second->info().pt_type_==zsw::ZERO_POINT) { val[1]=0; }
-      else { val[1]=1; }
-      if(vt.third->info().pt_type_==zsw::INNER_POINT) { val[2]=-1; }
-      else if(vt.third->info().pt_type_==zsw::ZERO_POINT) { val[2]=0; }
-      else { val[2]=1; }
-      val[3]=v_pt;
-      Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
-      for(size_t jpt_i=0; jpt_i<jpts_in_bbox.size(); ++jpt_i) {
-        if(is_updated[jpt_i]) { continue; }
-        const JudgePoint *jpt=jpts_in_bbox[jpt_i];
-        Eigen::Matrix<zsw::Scalar,4,1> b; b.block<3,1>(0,0)=jpt->pt_; b[3]=1;
-        Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
-        if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps
-           || x[2]<-zsw::const_val::eps || x[3]<-zsw::const_val::eps) { continue; }
-        is_updated[jpt_i]=true;
-        zsw::Scalar tmp_val = val.dot(x);
-        if(fabs(tmp_val-jpt->val_exp_)>1-alpha_) { return false; }
-        if(jup!=nullptr) { jup->push_back({const_cast<JudgePoint*>(jpt), tmp_val}); }
-      }
-    }
-    return true;
-#else
     std::vector<bool> is_updated(jpts_in_bbox.size(), false);
     size_t false_cnt=0;
     for(const VertexTriple &vt : bound_tris) {
@@ -211,28 +172,30 @@ namespace zsw{
       else { val[2]=1; }
       val[3]=v_pt;
       Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
-      if(jup!=nullptr) { jup->resize(jpts_in_bbox.size()); }
-      //#pragma omp parallel for
-        for(size_t jpt_i=0; jpt_i<jpts_in_bbox.size(); ++jpt_i) {
-          if(false_cnt!=0 || is_updated[jpt_i]) { continue; }
-          const JudgePoint *jpt=jpts_in_bbox[jpt_i];
-          Eigen::Matrix<zsw::Scalar,4,1> b; b.block<3,1>(0,0)=jpt->pt_; b[3]=1;
-          Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
-          if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps
-             || x[2]<-zsw::const_val::eps || x[3]<-zsw::const_val::eps) { continue; }
-          is_updated[jpt_i]=true;
-          zsw::Scalar tmp_val = val.dot(x);
-          //#pragma omp atomic
-                     false_cnt += (fabs(tmp_val-jpt->val_exp_)>1-alpha_);
-                     if(jup!=nullptr) {
-                       (*jup)[jpt_i].jpt=const_cast<JudgePoint*>(jpt);
-                       (*jup)[jpt_i].val_cur_=tmp_val;
-                     }
+      std::vector<zsw::Scalar> n_vals(jpts_in_bbox.size(), -100);
+#pragma omp parallel for
+      for(size_t jpt_i=0; jpt_i<jpts_in_bbox.size(); ++jpt_i) {
+        if(false_cnt!=0 || is_updated[jpt_i]) { continue; }
+        const JudgePoint *jpt=jpts_in_bbox[jpt_i];
+        Eigen::Matrix<zsw::Scalar,4,1> b; b.block<3,1>(0,0)=jpt->pt_; b[3]=1;
+        Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
+        if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps
+           || x[2]<-zsw::const_val::eps || x[3]<-zsw::const_val::eps) { continue; }
+        is_updated[jpt_i]=true;
+        zsw::Scalar tmp_val = val.dot(x);
+#pragma omp atomic
+        false_cnt += (fabs(tmp_val-jpt->val_exp_)>1-alpha_);
+        if(jup!=nullptr) { n_vals[jpt_i]=tmp_val; }
+      }
+      if(false_cnt!=0) { break; }
+      if(jup!=nullptr) {
+        for(size_t i=0; i<jpts_in_bbox.size(); ++i) {
+          if(n_vals[i]<-10.0) { continue; }
+          jup->push_back({const_cast<JudgePoint*>(jpts_in_bbox[i]), n_vals[i]});
         }
-        if(false_cnt!=0) { break; }
+      }
     }
     return false_cnt==0;
-#endif
   }
 
   void Approximation::sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const
