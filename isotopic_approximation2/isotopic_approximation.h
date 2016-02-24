@@ -112,6 +112,7 @@ namespace zsw {
     void updateAllZeroVerticesMaxDis();
     void calcBoundaryOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const;
     void calcZeroSurfaceOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const;
+    size_t countZeroPoints() const;
   public:
     bool checkNormalCondition() const;
     void testTdsValid();

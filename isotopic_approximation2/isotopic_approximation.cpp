@@ -59,6 +59,17 @@ namespace zsw{
     simpBZEdges();
     NZSWLOG("zsw_info") << "simp_bz time cost:" << clock_.time() << std::endl;
     NZSWLOG("zsw_info") << "total time cost:" << clock_.totalTime() << std::endl;
+    NZSWLOG("zsw_info") << "final point count:" << countZeroPoints() << std::endl;
+  }
+
+  size_t Approximation::countZeroPoints() const
+  {
+    size_t cnt=0;
+    const TTds &tds=tw_->getTds();
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      if(vit->info().pt_type_==zsw::ZERO_POINT) { ++cnt; }
+    }
+    return cnt;
   }
 
   zsw::Scalar Approximation::updateJptsInCell(Chd chd, /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
