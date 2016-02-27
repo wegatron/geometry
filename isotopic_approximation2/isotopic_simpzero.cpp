@@ -50,15 +50,25 @@ namespace zsw{
     calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> sample_points;
     sampleAdjCells(e, sample_points);
+
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
     const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt=nullptr;
     std::vector<VertexUpdateData> vup;
+    bz_krj_need_judge_cnt_+=sample_points.size();
     for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : sample_points) {
       vup.clear(); // can't parallel
-      if(krj.judge(pt) &&
-         isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)
-         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
+      // if(krj.judge(pt) &&
+      //    isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)
+      //    && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
+      if(krj.judge(pt)) {
+        ++bz_normal_cond_judge_cnt_;
+        if(isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)) {
+          ++bz_error_bound_judge_cnt_;
+          bz_judge_pt_cnt_+=jpts_in_bbox.size();
+          if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
+        }
+      }
     }
     if(merge_pt==nullptr) { return false; }
     //Vhd vhd=e.first->vertex(e.second);

@@ -11,6 +11,17 @@ namespace zsw
   void sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &tri_points, const zsw::Scalar r,
                       std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);
 
+
+  /// \brief uniform sample a ref triangle with r dense, and mapping it into another triangle.
+  ///
+  /// uniform sample a ref triangle with r dense, maping it into sample_tri_pts.
+  ///
+  /// \param
+  ///
+  void sampleTriangleRefTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &sample_tri_pts,
+                                 const Eigen::Matrix<zsw::Scalar, 3, 3> &ref_tri_pts, const zsw::Scalar r,
+                                 std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);
+
   template< template<typename, typename...> class Container>
     void sampleTet(const Eigen::Matrix<zsw::Scalar,3,1> &v0,
                    const Eigen::Matrix<zsw::Scalar,3,1> &v1,

@@ -35,7 +35,14 @@ namespace zsw {
   class Approximation final
   {
   public:
-    Approximation() { alpha_=0.2; normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; }
+    Approximation() {
+      alpha_=0.2; normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; version_=0;
+      bz_judge_pt_cnt_=0;
+
+      bz_krj_need_judge_cnt_=0;
+      bz_normal_cond_judge_cnt_=0;
+      bz_error_bound_judge_cnt_=0;
+    }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     void setNeedSmooth(bool need_smooth) { need_smooth_=need_smooth; }
     void init(const zsw::Scalar err_epsilon,
@@ -55,7 +62,7 @@ namespace zsw {
     void writeAdjcentCells(const std::string &filepath, const std::vector<Chd> &chds) const;
     void writeJudgePoints(const std::string &filepath) const;
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
-
+    void setVersion(const size_t version) { version_=version; }
     void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
 
     // refine using our idea
@@ -82,7 +89,7 @@ namespace zsw {
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
                              const zsw::Scalar v_pt,
                              std::vector<VertexUpdateData> &vup,
-                             std::vector<JudgePointUpdateData> * jup=nullptr) const;
+                             std::vector<JudgePointUpdateData> * jup=nullptr);
     bool isTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
                                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                       const PointType point_type) const;
@@ -133,6 +140,12 @@ namespace zsw {
     std::string tmp_outdir_;
     bool need_smooth_;
     zsw::common::ClockC11 clock_;
+    size_t bz_judge_pt_cnt_;
+
+    size_t bz_krj_need_judge_cnt_;
+    size_t bz_normal_cond_judge_cnt_;
+    size_t bz_error_bound_judge_cnt_;
+    size_t version_;
   };
 
   zsw::Scalar calcZeroTetHeight(Chd chd);

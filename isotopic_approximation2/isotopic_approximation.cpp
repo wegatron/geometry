@@ -28,11 +28,15 @@ namespace zsw{
     NZSWLOG("zsw_info") << "outer judge point size:" << outer_jpts_.size() << std::endl;
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
     clock_.clearCur();
-#if 1
+    if(version_ == 0) {
     refine(bs_jpts);
-#else
-    upgradeRefine(bs_jpts);
-#endif
+    } else if(version_ == 1) {
+      upgradeRefine(bs_jpts);
+    } else {
+      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+      abort();
+    //   upgradeRefine2(bs_jpts);
+     }
     NZSWLOG("zsw_info") << "refine time cost" << clock_.time() << std::endl;
     NZSWLOG("zsw_info") << "refine complete, init finished!" << std::endl;
     NZSWLOG("zsw_info") << "vertex size:" << tw_->getTds().number_of_vertices() << std::endl;
@@ -54,9 +58,21 @@ namespace zsw{
     NZSWLOG("zsw_info") << "mutuall tessellation time cost:" << clock_.time() << std::endl;
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpZeroSurface();
+
+    NZSWLOG("bz_info") << "bz_krj_need_judge_cnt:" << bz_krj_need_judge_cnt_ << std::endl;
+    NZSWLOG("bz_info") << "bz_normal_cond_judge_cnt:" << bz_normal_cond_judge_cnt_ << std::endl;
+    NZSWLOG("bz_info") << "bz_error_bound_judge_cnt:" << bz_error_bound_judge_cnt_ << std::endl;
+    NZSWLOG("bz_info") << "bz_judge_pt_cnt:" << bz_judge_pt_cnt_ << std::endl;
+
     NZSWLOG("zsw_info") << "simp_zero surf time cost:" << clock_.time() << std::endl;
     writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpBZEdges();
+
+    NZSWLOG("bz_info") << "bz_krj_need_judge_cnt:" << bz_krj_need_judge_cnt_ << std::endl;
+    NZSWLOG("bz_info") << "bz_normal_cond_judge_cnt:" << bz_normal_cond_judge_cnt_ << std::endl;
+    NZSWLOG("bz_info") << "bz_error_bound_judge_cnt:" << bz_error_bound_judge_cnt_ << std::endl;
+    NZSWLOG("bz_info") << "bz_judge_pt_cnt:" << bz_judge_pt_cnt_ << std::endl;
+
     NZSWLOG("zsw_info") << "simp_bz time cost:" << clock_.time() << std::endl;
     NZSWLOG("zsw_info") << "total time cost:" << clock_.totalTime() << std::endl;
     NZSWLOG("zsw_info") << "final point count:" << countZeroPoints() << std::endl;
@@ -146,8 +162,9 @@ namespace zsw{
                                           const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
                                           const zsw::Scalar v_pt,
                                           std::vector<VertexUpdateData> &vup,
-                                          std::vector<JudgePointUpdateData> * jup) const
+                                          std::vector<JudgePointUpdateData> * jup)
   {
+    ++bz_judge_pt_cnt_;
     std::vector<bool> is_updated(jpts_in_bbox.size(), false);
     size_t false_cnt=0;
     for(const VertexTriple &vt : bound_tris) {
@@ -266,7 +283,7 @@ namespace zsw{
     bbox.block<3,1>(0,0) = bbox.block<3,1>(0,0)-eps_mat;
     bbox.block<3,1>(0,1) = bbox.block<3,1>(0,1)+eps_mat;
   }
-  
+
   void Approximation::testTdsValid()
   {
     const TTds &tds=tw_->getTds();

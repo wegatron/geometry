@@ -22,6 +22,11 @@ simp_cylinder_noised: export
 simp_fertility: export
 	${APP_EXEC} ${FERTILITY} ${FERTILITY_OUTPUT_DIR} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R} ${FERTILITY_SAMPLE_R}
 
+
+.PHONY :clear_ellipsoid
+clear_ellipsoid:
+	rm -rf ${ELLIPSOID_OUTPUT_DIR}/*
+
 .PHONY : simp_ellipsoid
-simp_ellipsoid: export
+simp_ellipsoid: export clear_ellipsoid
 	${APP_EXEC} ${ELLIPSOID} ${ELLIPSOID_OUTPUT_DIR} ${ELLIPSOID_THICK} ${ELLIPSOID_SAMPLE_R} ${ELLIPSOID_SAMPLE_R}
