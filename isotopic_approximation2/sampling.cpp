@@ -27,7 +27,7 @@ void zsw::sampleTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &tri_points, con
   }
 }
 
-void sampleTriangleRefTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &sample_tri_pts,
+void zsw::sampleTriangleRefTriangle(const Eigen::Matrix<zsw::Scalar, 3, 3> &sample_tri_pts,
                                const Eigen::Matrix<zsw::Scalar, 3, 3> &ref_tri_pts, const zsw::Scalar r,
                                std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples)
 {

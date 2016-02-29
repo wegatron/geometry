@@ -68,6 +68,7 @@ namespace zsw{
 #if 0
     checkNormalcondition();
 #endif
+    NZSWLOG("zsw_info") << "refined add pt cnt:" << tw_->getTds().number_of_vertices()-bs_jpts.size()-1 << std::endl;
   }
 
   void Approximation::upgradeRefine(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
