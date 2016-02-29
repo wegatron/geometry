@@ -26,9 +26,10 @@ void test0(const std::string &ori_file_path,
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> outer_jpts;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bs_jpts;
   zsw::Scalar global_scale=1.0;
-#if 1
+#if 0
   zsw::genAndSampleShell(input_mesh, err_epsilon, tri_sample_r, inner_jpts, outer_jpts, bs_jpts);
-#else
+#endif
+#if 0
   zsw::mesh::TriMesh deformed_mesh;
   if(!OpenMesh::IO::read_mesh(deformed_mesh, deformed_file_path)) {
     std::cerr << "can't open file " << deformed_file_path << std::endl;
@@ -36,13 +37,31 @@ void test0(const std::string &ori_file_path,
   }
   global_scale=zsw::genAndSampleDeformedShell(input_mesh, deformed_mesh, err_epsilon, tri_sample_r, inner_jpts, outer_jpts, bs_jpts);
 #endif
+#if 1
+  zsw::mesh::TriMesh deformed_mesh;
+  if(!OpenMesh::IO::read_mesh(deformed_mesh, deformed_file_path)) {
+    std::cerr << "can't open file " << deformed_file_path << std::endl;
+    abort();
+  }
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_inner_jpts;
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_outer_jpts;
+  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_bs_jpts;
+  zsw::genAndSampleAllShell(input_mesh, deformed_mesh, err_epsilon, tri_sample_r, inner_jpts, outer_jpts, bs_jpts,
+                            deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
+#endif
   zsw::writePoints(output_dir+"inner_jpts.vtk", inner_jpts);
   zsw::writePoints(output_dir+"outer_jpts.vtk", outer_jpts);
   zsw::writePoints(output_dir+"bs_jpts.vtk", bs_jpts);
   zsw::Approximation appro;
   appro.setTmpOutDir(output_dir);
   //appro.setNeedSmooth(true);
+#if 0
   appro.init(err_epsilon, tri_sample_r, global_scale*tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
+#else
+  appro.init2(err_epsilon, tri_sample_r, tet_sample_r, inner_jpts, outer_jpts, bs_jpts,
+              deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
+#endif
+
   appro.writeTetMesh(output_dir+"refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   // appro.simpTolerance();
   // appro.writeTetMesh("/home/wegatron/tmp/after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
