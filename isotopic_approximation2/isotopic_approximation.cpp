@@ -43,6 +43,19 @@ namespace zsw{
     NZSWLOG("zsw_info") << "cell size:" << tw_->getTds().number_of_cells() << std::endl;
   }
 
+  void Approximation::init2(const zsw::Scalar err_epsilon,
+                            const zsw::Scalar tri_sample_r,
+                            const zsw::Scalar tet_sample_r,
+                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts,
+                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
+                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
+                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
   void  Approximation::simp(const std::string &tmp_output_dir)
   {
     writeTetMesh(tmp_output_dir+"before_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});

@@ -22,10 +22,10 @@ namespace zsw
                                  const Eigen::Matrix<zsw::Scalar, 3, 3> &ref_tri_pts, const zsw::Scalar r,
                                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples);
 
-  void sampleTriangleAndRefTriangle(const Eigen::Matrix<zsw::Scalar,3,3> &sample_tri_pts,
-                                    const Eigen::Matrix<zsw::Scalar,3,3> &ref_tri_pts, const zsw::Scalar ref_r,
-                                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &samples,
-                                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ref_samples);
+  void sampleTriangleAndDeformedTriangle(const Eigen::Matrix<zsw::Scalar,3,3> &deformed_tri_pts,
+                                    const Eigen::Matrix<zsw::Scalar,3,3> &ori_tri_pts, const zsw::Scalar ori_r,
+                                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_samples,
+                                    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_samples);
 
   template< template<typename, typename...> class Container>
     void sampleTet(const Eigen::Matrix<zsw::Scalar,3,1> &v0,

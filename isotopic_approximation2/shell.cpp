@@ -159,9 +159,9 @@ namespace zsw{
     zsw::Scalar ori_radius;
     Eigen::Matrix<zsw::Scalar,3,1> deformed_center;
     zsw::Scalar deformed_radius;
-    zsw::Scalar deformed_err_epsilon = err_epsilon * deformed_radius / ori_radius;
     calcBoundSphere(ori_mesh, ori_center, ori_radius);
     calcBoundSphere(deformed_mesh, deformed_center, deformed_radius);
+    zsw::Scalar deformed_err_epsilon = err_epsilon * deformed_radius / ori_radius;
     boundSphere("bound_sphere.obj", ori_radius+err_epsilon, ori_center, bs_jpts);
     boundSphere("bound_sphere.obj", deformed_radius+deformed_err_epsilon, deformed_center, deformed_bs_jpts);
 
@@ -184,8 +184,8 @@ namespace zsw{
         deformed_out_tri.block<3,1>(0,vi)=deformed_mesh.point(*fv_it)+deformed_offset;
         ++vi;
       }
-      sampleTriangleAndRefTriangle(deformed_in_tri, ori_in_tri, tri_sample_r, inner_jpts, deformed_inner_jpts);
-      sampleTriangleAndRefTriangle(deformed_out_tri, ori_out_tri, tri_sample_r, outer_jpts, deformed_outer_jpts);
+      sampleTriangleAndDeformedTriangle(deformed_in_tri, ori_in_tri, tri_sample_r,deformed_inner_jpts, inner_jpts);
+      sampleTriangleAndDeformedTriangle(deformed_out_tri, ori_out_tri, tri_sample_r, deformed_outer_jpts, outer_jpts);
     }
   }
 

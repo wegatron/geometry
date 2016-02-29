@@ -46,12 +46,16 @@ void test0(const std::string &ori_file_path,
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_inner_jpts;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_outer_jpts;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_bs_jpts;
+
   zsw::genAndSampleAllShell(input_mesh, deformed_mesh, err_epsilon, tri_sample_r, inner_jpts, outer_jpts, bs_jpts,
                             deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
 #endif
-  zsw::writePoints(output_dir+"inner_jpts.vtk", inner_jpts);
-  zsw::writePoints(output_dir+"outer_jpts.vtk", outer_jpts);
-  zsw::writePoints(output_dir+"bs_jpts.vtk", bs_jpts);
+  zsw::writePoints(output_dir+"ori_inner_jpts.vtk", inner_jpts);
+  zsw::writePoints(output_dir+"ori_outer_jpts.vtk", outer_jpts);
+  zsw::writePoints(output_dir+"ori_bs_jpts.vtk", bs_jpts);
+  zsw::writePoints(output_dir+"deformed_inner_jpts.vtk", deformed_inner_jpts);
+  zsw::writePoints(output_dir+"deformed_outer_jpts.vtk", deformed_outer_jpts);
+  zsw::writePoints(output_dir+"deformed_bs_jpts.vtk", deformed_bs_jpts);
   zsw::Approximation appro;
   appro.setTmpOutDir(output_dir);
   //appro.setNeedSmooth(true);
