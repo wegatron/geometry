@@ -435,6 +435,10 @@ namespace zsw{
   {
     if(!tds_.is_valid()) { return false; }
     for(Chd cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
+      if(cit->vertex(0)->info().pt_type_==zsw::INVALID_POINT ||
+         cit->vertex(1)->info().pt_type_==zsw::INVALID_POINT ||
+         cit->vertex(2)->info().pt_type_==zsw::INVALID_POINT ||
+         cit->vertex(3)->info().pt_type_==zsw::INVALID_POINT) { continue; }
       CGAL::Orientation o=orientation(cit->vertex(0)->point(), cit->vertex(1)->point(),
                                       cit->vertex(2)->point(), cit->vertex(3)->point());
       if(o == CGAL::NEGATIVE) {

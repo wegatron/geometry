@@ -33,7 +33,7 @@ clear_ellipsoid2:
 
 .PHONY : simp_ellipsoid
 simp_ellipsoid: export clear_ellipsoid
-	${APP_EXEC} ${ELLIPSOID} ${ELLIPSOID_OUTPUT_DIR} ${ELLIPSOID_THICK} ${ELLIPSOID_SAMPLE_R} ${ELLIPSOID_SAMPLE_R}
+	${APP_EXEC} ${ELLIPSOID} ${ELLIPSOID} ${ELLIPSOID_OUTPUT_DIR} ${ELLIPSOID_THICK} ${ELLIPSOID_SAMPLE_R} ${ELLIPSOID_SAMPLE_R}
 
 .PHONY : simp_ellipsoid2
 simp_ellipsoid2: export clear_ellipsoid2

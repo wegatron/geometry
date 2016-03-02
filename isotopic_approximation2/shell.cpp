@@ -6,7 +6,7 @@
 
 #include "sampling.h"
 
-#define TEST_OUR_IDEA
+//#define TEST_OUR_IDEA
 
 namespace zsw{
   void boundSphere(const std::string &filepath,
