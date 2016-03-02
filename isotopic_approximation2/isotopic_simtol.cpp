@@ -14,6 +14,7 @@ using namespace std;
 namespace zsw{
   void Approximation::simpTolerance()
   {
+    tw_->isValid();
     const TTds &tds=tw_->getTds();
     std::unordered_map<std::string, TTds::Edge> edge_map;
     for(TTds::Edge_iterator eit=tds.edges_begin();
@@ -29,13 +30,19 @@ namespace zsw{
       TTds::Edge e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
       if(!tw_->isBoundaryEdge(e)) { continue; }
       if(tryCollapseBoundaryEdge(e, edge_map)) {
-        if(++b_c_step%50==0) {
-          std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;
-          writeTetMesh(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step/50)
-                       +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-        }
+        // if(++b_c_step%50==0) {
+        ++b_c_step;
+        std::cout << tmp_outdir_ << std::endl;
+        std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;
+        writeTetMesh(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step)
+                     +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+        if(!tw_->isValid()) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+        // }
       }
-      if(++try_b_c_step%100==0) { std::cout << "[INFO] try boundary collapsed:" << try_b_c_step << std::endl; }
+      ++try_b_c_step;
+      // if(++try_b_c_step%100==0) {
+      std::cout << "[INFO] try boundary collapsed:" << try_b_c_step << std::endl;
+      // }
     }
     NZSWLOG("zsw_info") << "boundary tried collapse:" << try_b_c_step << std::endl;
     NZSWLOG("zsw_info") << "boundary collapsed total:" << b_c_step << std::endl;
@@ -75,7 +82,9 @@ namespace zsw{
                                               std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
     const TTds &tds = tw_->getTds();
-    if(!tw_->isSatisfyLinkCondition(e)) {      return false;    }
+    if(!tw_->isSatisfyLinkCondition(e)) {
+      return false;
+    }
     std::vector<VertexTriple> bound_tris;
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
@@ -111,9 +120,9 @@ namespace zsw{
 #if 0
     // test adj info and jpts selection is right
     writeAdjcentCells("/home/wegatron/tmp/adj_cell.vtk", e);
-    writeJudgePoints("/home/wegatron/tmp/jpts_in_bbox.vtk", jpts_in_bbox);
-    writeJudgePoints("/home/wegatron/tmp/candicate_points.vtk", candicate_points);
-    abort();
+    // writeJudgePoints("/home/wegatron/tmp/jpts_in_bbox.vtk", jpts_in_bbox);
+    // writeJudgePoints("/home/wegatron/tmp/candicate_points.vtk", candicate_points);
+    //abort();
 #endif
 
     // sort jpt by error
@@ -134,6 +143,8 @@ namespace zsw{
     }
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=e.first->vertex(e.second);
+    // std::cout << "collapse " << e.first->vertex(e.second)->point() << " " << e.first->vertex(e.third)->point()
+    //           << " to " << merge_pt->pt_.transpose() << std::endl;
     tw_->collapseEdge(e, vhd, merge_pt->pt_);
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});
     //updateVertex(vup);

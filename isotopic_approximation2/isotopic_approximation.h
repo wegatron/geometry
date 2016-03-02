@@ -76,6 +76,10 @@ namespace zsw {
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
     void setVersion(const size_t version) { version_=version; }
     void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
+    void refine2(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
+                 std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
+                 std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
+                 std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts);
 
     // refine using our idea
     void upgradeRefine(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
@@ -86,10 +90,11 @@ namespace zsw {
     void simpZeroSurface();
     void simpBZEdges();
 
-    zsw::Scalar updateJptsInCell(Chd chd,
-                                 /*std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
-                                   ErrorMaxComparison> *err_queue*/
-                                 std::vector<JudgePoint*> * updated_jpts);
+    zsw::Scalar updateJptsInCell(Chd chd, std::vector<JudgePoint*> * updated_jpts);
+
+    void updateJptsInCells2(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+                            std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+                            ErrorMaxComparison> &err_queue);
 
     void updateJptsInCells(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                            std::vector<std::pair<zsw::Scalar,JudgePoint*>>,

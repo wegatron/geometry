@@ -27,7 +27,9 @@ namespace zsw{
         tds.incident_edges(tmp_vhd, std::back_inserter(edges));
         auto it=find_if(edges.begin(), edges.end(), [](const TTds::Edge &e){
             return e.first->vertex(e.second)->info().pt_type_==zsw::OUTER_POINT ||
-            e.first->vertex(e.third)->info().pt_type_==zsw::OUTER_POINT;});
+            e.first->vertex(e.second)->info().pt_type_==zsw::BBOX_POINT ||
+            e.first->vertex(e.third)->info().pt_type_==zsw::OUTER_POINT ||
+            e.first->vertex(e.third)->info().pt_type_==zsw::BBOX_POINT;});
         if(it==edges.end()) { break; }
         TTds::Edge &e = *it;
         Point &pa = e.first->vertex(e.second)->point();

@@ -103,6 +103,7 @@ namespace zsw{
     bool isValidCell(Chd chd) const;
     bool isTolCell(Chd chd) const;
     bool isBBoxInnerCell(Chd chd) const;
+    bool isValid() const;
 
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     void calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;

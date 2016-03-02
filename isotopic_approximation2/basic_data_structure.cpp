@@ -178,7 +178,6 @@ namespace zsw{
         edge_key_set[evi].insert(std::to_string(key[1])+" "+std::to_string(key[2]));
       }
     }
-
     size_t lk_a_b_cnt=0;
     for(const std::string &key_str : edge_key_set[0]) {
       if(edge_key_set[1].find(key_str)!=edge_key_set[1].end()) { ++lk_a_b_cnt; }
@@ -356,6 +355,7 @@ namespace zsw{
 
   void TriangulationWapper::collapseEdge(TTds::Edge &edge, Vhd merge_vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt)
   {
+    //if(!tds_.is_valid()) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
     assert(tds_.is_valid());
     assert(tds_.is_edge(edge.first, edge.second, edge.third));
     merge_vhd->set_point(Point(pt[0],pt[1],pt[2]));
@@ -372,6 +372,7 @@ namespace zsw{
     for(auto oit=outer_map.begin(); oit!=outer_map.end(); ++oit) {
       if(oit->first.first==merge_vhd || oit->first.second==merge_vhd || oit->first.third==merge_vhd) { continue; }
       Chd nw_chd = tds_.create_cell();
+#if 1
       CGAL::Orientation o = orientation(oit->first.first->point(), oit->first.second->point(),
                                         oit->first.third->point(), merge_vhd->point());
       if(o==CGAL::NEGATIVE) {
@@ -379,6 +380,15 @@ namespace zsw{
       } else {
         nw_chd->set_vertices(oit->first.first, oit->first.second, oit->first.third, merge_vhd);
       }
+#else
+      CGAL::Orientation o = orientation(merge_vhd->point(), oit->first.first->point(), oit->first.second->point(),
+                                        oit->first.third->point());
+      if(o==CGAL::NEGATIVE) {
+        nw_chd->set_vertices(merge_vhd, oit->first.second, oit->first.first, oit->first.third);
+      } else {
+        nw_chd->set_vertices(merge_vhd, oit->first.first, oit->first.second, oit->first.third);
+      }
+#endif
       // for vertex triples
       for(size_t ai=0; ai<4; ++ai) {
         VertexTriple tmp_vt;
@@ -418,6 +428,21 @@ namespace zsw{
     tds_.delete_cells(hole.begin(), hole.end());
     tds_.delete_vertex(remove_v);
     assert(tds_.is_valid());
+    //if(!tds_.is_valid(true)) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+  }
+
+  bool TriangulationWapper::isValid() const
+  {
+    if(!tds_.is_valid()) { return false; }
+    for(Chd cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
+      CGAL::Orientation o=orientation(cit->vertex(0)->point(), cit->vertex(1)->point(),
+                                      cit->vertex(2)->point(), cit->vertex(3)->point());
+      if(o == CGAL::NEGATIVE) {
+        std::cout << __FILE__ << __LINE__ << std::endl;
+        abort();
+      }
+    }
+    return true;
   }
 
   void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, Facet> &outer_map,
@@ -599,7 +624,7 @@ namespace zsw{
     size_t o_cnt=0;
     for(size_t i=0; i<4; ++i) {
       if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT) { ++i_cnt; }
-      else if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT) { ++o_cnt; }
+      else if(chd->vertex(i)->info().pt_type_==zsw::OUTER_POINT || chd->vertex(i)->info().pt_type_==zsw::BBOX_POINT) { ++o_cnt; }
     }
     if(i_cnt>0 && o_cnt>0 && i_cnt+o_cnt==4) { return true; }
   }
@@ -646,10 +671,10 @@ namespace zsw{
 
   bool ignore_invalid(const TTds::Cell_handle cell)
   {
-    return cell->vertex(0)->info().pt_type_==zsw::BBOX_POINT ||
-      cell->vertex(1)->info().pt_type_==zsw::BBOX_POINT ||
-      cell->vertex(2)->info().pt_type_==zsw::BBOX_POINT ||
-      cell->vertex(3)->info().pt_type_==zsw::BBOX_POINT;
+    return cell->vertex(0)->info().pt_type_==zsw::INVALID_POINT ||
+      cell->vertex(1)->info().pt_type_==zsw::INVALID_POINT ||
+      cell->vertex(2)->info().pt_type_==zsw::INVALID_POINT ||
+      cell->vertex(3)->info().pt_type_==zsw::INVALID_POINT;
   }
 
   bool ignore_bbox(const TTds::Cell_handle cell) {

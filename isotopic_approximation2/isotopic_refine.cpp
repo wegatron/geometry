@@ -91,6 +91,66 @@ namespace zsw{
     }
   }
 
+  void Approximation::refine2(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
+                              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
+                              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
+                              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts)
+  {
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, -1, 1}); }
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }
+    inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
+    outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
+    std::vector<std::pair<Point, VertexInfo>> init_vertices;
+    init_vertices.reserve(ori_bs_jpts.size());
+    for(size_t ind=0; ind<ori_bs_jpts.size(); ++ind) {
+      const Eigen::Matrix<zsw::Scalar,3,1> &pt=deformed_bs_jpts[ind];
+      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, ori_bs_jpts[ind], 0)));
+    }
+    tw_.reset(new TriangulationWapper(init_vertices));
+    std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+                        ErrorMaxComparison> err_queue;
+    for(size_t i=0; i<jpts_.size();++i) {
+      zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
+      if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
+    }
+    TTds &tds=tw_->getTds();
+    size_t add_pt_for_err=0;
+    while(!err_queue.empty()) {
+      std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
+      zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
+      if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
+      PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
+      size_t deformed_jpt_index = std::distance(&jpts_[0], jpt_info.second);
+      Eigen::Matrix<zsw::Scalar,3,1> deformed_pt = (deformed_jpt_index<inner_jpts_.size()) ? deformed_inner_jpts[deformed_jpt_index] : deformed_outer_jpts[deformed_jpt_index-inner_jpts_.size()];
+      VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
+      std::vector<Chd> chds;
+      tw_->addPointInDelaunaySafe(deformed_pt, vertex_info, chds);
+      if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl; }
+      updateJptsInCells2(chds, err_queue);
+    }
+    //std::cout << __FILE__ << __LINE__ << std::endl;
+    // // find a tet viloate the normal condition
+    // bool viloate_normal_cond=false;
+    // std::vector<Chd> tmp_chds;
+    // for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+    //   if(!cit->info().satisfy_normal_cond_ && !checkUpNormalCondition(cit, tmp_chds)) {
+    //     if(++add_pt_for_normal%50==0) { NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl; }
+    //     viloate_normal_cond=true;
+    //     break;
+    //   }
+    // }
+    // if(viloate_normal_cond) { updateJptsInCells(tmp_chds, err_queue); }
+    // else { break; }
+    // } while(true);
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      if(vit->info().pt_type_ != zsw::INVALID_POINT) {
+        vit->set_point(Point(vit->info().pos_ori_[0], vit->info().pos_ori_[1], vit->info().pos_ori_[2]));
+      }
+    }
+    NZSWLOG("zsw_info") << "refined add pt cnt:" << tw_->getTds().number_of_vertices()-ori_bs_jpts.size()-1 << std::endl;
+  }
+
   bool Approximation::checkUpNormalCondition(Chd chd, std::vector<Chd> &chds)
   {
     if(!tw_->isTolCell(chd)) { return true; }

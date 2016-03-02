@@ -27,6 +27,14 @@ simp_fertility: export
 clear_ellipsoid:
 	rm -rf ${ELLIPSOID_OUTPUT_DIR}/*
 
+.PHONY :clear_ellipsoid2
+clear_ellipsoid2:
+	rm -rf ${ELLIPSOID2_OUTPUT_DIR}/*
+
 .PHONY : simp_ellipsoid
 simp_ellipsoid: export clear_ellipsoid
-	${APP_EXEC} ${ELLIPSOID} ${ELLIPSOID_DEFORMED} ${ELLIPSOID_OUTPUT_DIR} ${ELLIPSOID_THICK} ${ELLIPSOID_SAMPLE_R} ${ELLIPSOID_SAMPLE_R}
+	${APP_EXEC} ${ELLIPSOID} ${ELLIPSOID_OUTPUT_DIR} ${ELLIPSOID_THICK} ${ELLIPSOID_SAMPLE_R} ${ELLIPSOID_SAMPLE_R}
+
+.PHONY : simp_ellipsoid2
+simp_ellipsoid2: export clear_ellipsoid2
+	${APP_EXEC} ${ELLIPSOID} ${ELLIPSOID} ${ELLIPSOID2_OUTPUT_DIR} ${ELLIPSOID_THICK} ${ELLIPSOID_SAMPLE_R} ${ELLIPSOID_SAMPLE_R}
