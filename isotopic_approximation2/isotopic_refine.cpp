@@ -92,14 +92,8 @@ namespace zsw{
   }
 
   void Approximation::refine2(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
-                              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
-                              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
                               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts)
   {
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, -1, 1}); }
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }
-    inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
-    outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
     std::vector<std::pair<Point, VertexInfo>> init_vertices;
     init_vertices.reserve(ori_bs_jpts.size());
     for(size_t ind=0; ind<ori_bs_jpts.size(); ++ind) {
@@ -121,11 +115,9 @@ namespace zsw{
       zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
       if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
       PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
-      size_t deformed_jpt_index = std::distance(&jpts_[0], jpt_info.second);
-      Eigen::Matrix<zsw::Scalar,3,1> deformed_pt = (deformed_jpt_index<inner_jpts_.size()) ? deformed_inner_jpts[deformed_jpt_index] : deformed_outer_jpts[deformed_jpt_index-inner_jpts_.size()];
-      VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
+      VertexInfo vertex_info(-1, pt_type, jpt_info.second->pto_, 0.0);
       std::vector<Chd> chds;
-      tw_->addPointInDelaunaySafe(deformed_pt, vertex_info, chds);
+      tw_->addPointInDelaunaySafe(jpt_info.second->ptd_, vertex_info, chds);
       if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl; }
       updateJptsInCells2(chds, err_queue);
     }
@@ -143,11 +135,6 @@ namespace zsw{
     // if(viloate_normal_cond) { updateJptsInCells(tmp_chds, err_queue); }
     // else { break; }
     // } while(true);
-    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-      if(vit->info().pt_type_ != zsw::INVALID_POINT) {
-        vit->set_point(Point(vit->info().pos_ori_[0], vit->info().pos_ori_[1], vit->info().pos_ori_[2]));
-      }
-    }
     NZSWLOG("zsw_info") << "refined add pt cnt:" << tw_->getTds().number_of_vertices()-ori_bs_jpts.size()-1 << std::endl;
   }
 

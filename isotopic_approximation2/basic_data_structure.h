@@ -32,7 +32,6 @@ namespace zsw{
   {
     size_t index_;
     PointType pt_type_;
-    // data for smooth
     Eigen::Matrix<zsw::Scalar,3,1> pos_ori_;
     zsw::Scalar max_dis_; // max distance travel
     VertexInfo() {
@@ -63,7 +62,8 @@ namespace zsw{
 
   struct JudgePoint
   {
-    Eigen::Matrix<zsw::Scalar,3,1> pt_;
+    Eigen::Matrix<zsw::Scalar,3,1> ptd_; // point position in deformed space
+    Eigen::Matrix<zsw::Scalar,3,1> pto_; // point position in origional space
     const zsw::Scalar val_exp_;
     zsw::Scalar val_cur_;
   };

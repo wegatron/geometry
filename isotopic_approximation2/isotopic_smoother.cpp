@@ -27,28 +27,28 @@ namespace zsw {
     return fabs(vn.dot(pt2-pt0));
   }
 
-  void Approximation::updateAllBoundaryVerticesMaxDis()
-  {
-    TTds &tds=tw_->getTds();
-    // set each vertex's max dis to -1
-    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-      vit->info().pos_ori_<<vit->point()[0], vit->point()[1],vit->point()[2];
-      vit->info().max_dis_=-1;
-    }
-    // for each tet in tds, calc tet's height h
-    // calc the max jpt val in tet
-    // max dis = 2*val/h
-    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-      if(!tw_->isTolCell(cit)) { continue; }
-      zsw::Scalar val = updateJptsInCell(cit, nullptr);
-      zsw::Scalar h = calcBoundaryTetHeight(cit);
-      zsw::Scalar max_dis=val*h;
-      for(size_t i=0; i<4; ++i) {
-        if(cit->vertex(i)->info().max_dis_<-zsw::const_val::eps ||
-           cit->vertex(i)->info().max_dis_>max_dis) { cit->vertex(i)->info().max_dis_=max_dis; }
-      }
-    }
-  }
+  // void Approximation::updateAllBoundaryVerticesMaxDis()
+  // {
+  //   TTds &tds=tw_->getTds();
+  //   // set each vertex's max dis to -1
+  //   for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+  //     vit->info().pos_ori_<<vit->point()[0], vit->point()[1],vit->point()[2];
+  //     vit->info().max_dis_=-1;
+  //   }
+  //   // for each tet in tds, calc tet's height h
+  //   // calc the max jpt val in tet
+  //   // max dis = 2*val/h
+  //   for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+  //     if(!tw_->isTolCell(cit)) { continue; }
+  //     zsw::Scalar val = updateJptsInCell(cit, nullptr);
+  //     zsw::Scalar h = calcBoundaryTetHeight(cit);
+  //     zsw::Scalar max_dis=val*h;
+  //     for(size_t i=0; i<4; ++i) {
+  //       if(cit->vertex(i)->info().max_dis_<-zsw::const_val::eps ||
+  //          cit->vertex(i)->info().max_dis_>max_dis) { cit->vertex(i)->info().max_dis_=max_dis; }
+  //     }
+  //   }
+  // }
 
   zsw::Scalar calcBoundaryTetHeight(Chd chd)
   {
@@ -116,36 +116,36 @@ namespace zsw {
     }
   }
 
-  void Approximation::updateAllZeroVerticesMaxDis()
-  {
-    TTds &tds=tw_->getTds();
-    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-      if(vit->info().pt_type_!=zsw::ZERO_POINT) { continue; }
-      vit->info().pos_ori_<< vit->point()[0], vit->point()[1], vit->point()[2];
-      vit->info().max_dis_=-1;
-    }
-    // calc incident cell of zero point
-    // calc tet's height
-    // ids = val*height
-    for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-      if(cit->vertex(0)->info().pt_type_!=zsw::ZERO_POINT && cit->vertex(1)->info().pt_type_!=zsw::ZERO_POINT &&
-         cit->vertex(2)->info().pt_type_!=zsw::ZERO_POINT && cit->vertex(3)->info().pt_type_!=zsw::ZERO_POINT) { continue; }
-      zsw::Scalar h=calcZeroTetHeight(cit);
-      zsw::Scalar val=updateJptsInCell(cit, nullptr);
-      zsw::Scalar max_dis=val*h;
-      // std::cerr << "h:" << h << std::endl;
-      // std::cerr << "val:" << val << std::endl;
-      // std::cerr << "max_dis:" << max_dis << std::endl;
-      for(size_t i=0; i<4; ++i) {
-        if(cit->vertex(i)->info().pt_type_==zsw::ZERO_POINT &&
-           (cit->vertex(i)->info().max_dis_<-zsw::const_val::eps ||
-            cit->vertex(i)->info().max_dis_>max_dis)) {
-          cit->vertex(i)->info().max_dis_=max_dis;
-          // std::cerr << "updated max_dis:" << max_dis << std::endl;
-        }
-      }
-    }
-  }
+  // void Approximation::updateAllZeroVerticesMaxDis()
+  // {
+  //   TTds &tds=tw_->getTds();
+  //   for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+  //     if(vit->info().pt_type_!=zsw::ZERO_POINT) { continue; }
+  //     vit->info().pos_ori_<< vit->point()[0], vit->point()[1], vit->point()[2];
+  //     vit->info().max_dis_=-1;
+  //   }
+  //   // calc incident cell of zero point
+  //   // calc tet's height
+  //   // ids = val*height
+  //   for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+  //     if(cit->vertex(0)->info().pt_type_!=zsw::ZERO_POINT && cit->vertex(1)->info().pt_type_!=zsw::ZERO_POINT &&
+  //        cit->vertex(2)->info().pt_type_!=zsw::ZERO_POINT && cit->vertex(3)->info().pt_type_!=zsw::ZERO_POINT) { continue; }
+  //     zsw::Scalar h=calcZeroTetHeight(cit);
+  //     zsw::Scalar val=updateJptsInCell(cit, nullptr);
+  //     zsw::Scalar max_dis=val*h;
+  //     // std::cerr << "h:" << h << std::endl;
+  //     // std::cerr << "val:" << val << std::endl;
+  //     // std::cerr << "max_dis:" << max_dis << std::endl;
+  //     for(size_t i=0; i<4; ++i) {
+  //       if(cit->vertex(i)->info().pt_type_==zsw::ZERO_POINT &&
+  //          (cit->vertex(i)->info().max_dis_<-zsw::const_val::eps ||
+  //           cit->vertex(i)->info().max_dis_>max_dis)) {
+  //         cit->vertex(i)->info().max_dis_=max_dis;
+  //         // std::cerr << "updated max_dis:" << max_dis << std::endl;
+  //       }
+  //     }
+  //   }
+  // }
 
   zsw::Scalar calcZeroTetHeight(Chd chd)
   {
@@ -169,30 +169,30 @@ namespace zsw {
     return ret;
   }
 
-  void Approximation::laplaceSmoothZeroSurface()
-  {
-    updateAllZeroVerticesMaxDis();
-    TTds &tds=tw_->getTds();
-    const size_t N=20;
-    std::vector<std::pair<Vhd, Eigen::Matrix<zsw::Scalar,3,1>>> vpts;
-    for(size_t times=0; times<N; ++times) {
-      for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-        if(vit->info().pt_type_!=zsw::ZERO_POINT) { continue; }
-        std::vector<Eigen::Matrix<zsw::Scalar,3,1>> ring_pts;
-        calcZeroSurfaceOneRing(vit, ring_pts);
-        Eigen::Matrix<zsw::Scalar,3,1> pos;
-        pos<<vit->point()[0], vit->point()[1], vit->point()[2];
-        // laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, N, vit->info().max_dis_);
-        laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, N, 0.1);
-        vpts.push_back(std::make_pair(vit, pos));
-      }
-      for(std::pair<Vhd, Eigen::Matrix<zsw::Scalar,3,1>> &vpt : vpts) {
-        Point pt(vpt.second[0], vpt.second[1], vpt.second[2]);
-        vpt.first->set_point(pt);
-      }
-      vpts.clear();
-    }
-  }
+  // void Approximation::laplaceSmoothZeroSurface()
+  // {
+  //   updateAllZeroVerticesMaxDis();
+  //   TTds &tds=tw_->getTds();
+  //   const size_t N=20;
+  //   std::vector<std::pair<Vhd, Eigen::Matrix<zsw::Scalar,3,1>>> vpts;
+  //   for(size_t times=0; times<N; ++times) {
+  //     for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+  //       if(vit->info().pt_type_!=zsw::ZERO_POINT) { continue; }
+  //       std::vector<Eigen::Matrix<zsw::Scalar,3,1>> ring_pts;
+  //       calcZeroSurfaceOneRing(vit, ring_pts);
+  //       Eigen::Matrix<zsw::Scalar,3,1> pos;
+  //       pos<<vit->point()[0], vit->point()[1], vit->point()[2];
+  //       // laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, N, vit->info().max_dis_);
+  //       laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, N, 0.1);
+  //       vpts.push_back(std::make_pair(vit, pos));
+  //     }
+  //     for(std::pair<Vhd, Eigen::Matrix<zsw::Scalar,3,1>> &vpt : vpts) {
+  //       Point pt(vpt.second[0], vpt.second[1], vpt.second[2]);
+  //       vpt.first->set_point(pt);
+  //     }
+  //     vpts.clear();
+  //   }
+  // }
 
   void Approximation::bilateralSmoothZeroSurface()
   {

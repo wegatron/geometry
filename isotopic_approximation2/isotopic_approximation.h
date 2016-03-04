@@ -77,8 +77,6 @@ namespace zsw {
     void setVersion(const size_t version) { version_=version; }
     void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
     void refine2(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
-                 std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
-                 std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts);
 
     // refine using our idea
@@ -90,6 +88,7 @@ namespace zsw {
     void simpZeroSurface();
     void simpBZEdges();
 
+    void updateJptsInCell2(Chd chd, std::vector<JudgePoint*> *updated_jpts);
     zsw::Scalar updateJptsInCell(Chd chd, std::vector<JudgePoint*> * updated_jpts);
 
     void updateJptsInCells2(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
