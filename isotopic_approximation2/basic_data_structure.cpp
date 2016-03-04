@@ -472,13 +472,14 @@ namespace zsw{
   }
 
   Vhd TriangulationWapper::insertInEdge(TTds::Edge &edge, const Point &pt,
+                                        const Eigen::Matrix<zsw::Scalar,3,1> &pto,
                                         const PointType pt_type, TTds &tds)
   {
     Vhd vhd = tds.insert_in_edge(edge);
     vhd->set_point(pt);
-    vhd->info().index_=next_v_id_++;
-    vhd->info().pt_type_=pt_type;
-    vhd->info().pos_ori_<< pt[0], pt[1], pt[2];
+    vhd->info().index_ = next_v_id_++;
+    vhd->info().pt_type_ = pt_type;
+    vhd->info().pos_ori_ = pto;
     vhd->info().max_dis_=0.0;
     return vhd;
   }

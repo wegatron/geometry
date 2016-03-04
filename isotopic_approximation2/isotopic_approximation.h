@@ -45,12 +45,12 @@ namespace zsw {
     }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     void setNeedSmooth(bool need_smooth) { need_smooth_=need_smooth; }
-    void init(const zsw::Scalar err_epsilon,
-              const zsw::Scalar tri_sample_r,
-              const zsw::Scalar tet_sample_r,
-              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
-              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
+    /* void init(const zsw::Scalar err_epsilon, */
+    /*           const zsw::Scalar tri_sample_r, */
+    /*           const zsw::Scalar tet_sample_r, */
+    /*           std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts, */
+    /*           std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts, */
+    /*           std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts); */
 
     void init2(const zsw::Scalar err_epsilon,
                const zsw::Scalar tri_sample_r,
@@ -66,7 +66,10 @@ namespace zsw {
     void simp(const std::string &tmp_output_dir);
 
     void writeZeroSurface(const std::string &filepath) const;
-    void writeTetMesh(const std::string &filepath,
+    void writeTetMeshDeformed(const std::string &filepath,
+                      std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs,
+                      const TTds *tds_ptr=nullptr) const;
+    void writeTetMeshOri(const std::string &filepath,
                       std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs,
                       const TTds *tds_ptr=nullptr) const;
 
@@ -75,7 +78,7 @@ namespace zsw {
     void writeJudgePoints(const std::string &filepath) const;
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
     void setVersion(const size_t version) { version_=version; }
-    void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
+    //void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
     void refine2(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts);
 
@@ -89,15 +92,15 @@ namespace zsw {
     void simpBZEdges();
 
     void updateJptsInCell2(Chd chd, std::vector<JudgePoint*> *updated_jpts);
-    zsw::Scalar updateJptsInCell(Chd chd, std::vector<JudgePoint*> * updated_jpts);
+    //zsw::Scalar updateJptsInCell(Chd chd, std::vector<JudgePoint*> * updated_jpts);
 
     void updateJptsInCells2(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                             std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                             ErrorMaxComparison> &err_queue);
 
-    void updateJptsInCells(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
-                           std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
-                           ErrorMaxComparison> &err_queue);
+    /* void updateJptsInCells(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>, */
+    /*                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>, */
+    /*                        ErrorMaxComparison> &err_queue); */
 
     bool checkUpNormalCondition(Chd chd, std::vector<Chd> &chds_queue);
     bool isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
@@ -125,7 +128,8 @@ namespace zsw {
     void boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
     void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map) const;
     void bzEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
-    void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
+    /* void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const; */
+    void calcJptsInBbox2(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
     void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
 
     void smoothBoundary();
@@ -170,7 +174,8 @@ namespace zsw {
                                  const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
   zsw::Scalar calcTetHeightType1(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
                                  const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
-  void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
+  /* void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox); */
+  void calcVerticesBbox2(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
   void writePoints(const std::string &filepath, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
   void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center);
 }

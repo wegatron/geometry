@@ -75,24 +75,25 @@ namespace zsw {
 
   void Approximation::smoothBoundary()
   {
-    TTds &tds=tw_->getTds();
-    PointType pt_type[2] = {zsw::INNER_POINT, zsw::OUTER_POINT};
-    for(size_t up_i=0; up_i<2; ++up_i) {
-      updateAllBoundaryVerticesMaxDis();
-      // boundary smooth
-      for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-        if(vit->info().pt_type_!=pt_type[up_i]) { continue; }
-        // find one ring pts
-        std::vector<Eigen::Matrix<zsw::Scalar,3,1>> ring_pts;
-        calcBoundaryOneRing(vit, ring_pts);
-        Eigen::Matrix<zsw::Scalar,3,1> pos;
-        pos<<vit->point()[0], vit->point()[1], vit->point()[2];
-        // calc smooth n limit it in the sphere r of pos_ori
-        laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, 1, vit->info().max_dis_);
-        Point npt(pos[0],pos[1],pos[2]);
-        vit->set_point(npt);
-      }
-    }
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    // TTds &tds=tw_->getTds();
+    // PointType pt_type[2] = {zsw::INNER_POINT, zsw::OUTER_POINT};
+    // for(size_t up_i=0; up_i<2; ++up_i) {
+    //   updateAllBoundaryVerticesMaxDis();
+    //   // boundary smooth
+    //   for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+    //     if(vit->info().pt_type_!=pt_type[up_i]) { continue; }
+    //     // find one ring pts
+    //     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> ring_pts;
+    //     calcBoundaryOneRing(vit, ring_pts);
+    //     Eigen::Matrix<zsw::Scalar,3,1> pos;
+    //     pos<<vit->point()[0], vit->point()[1], vit->point()[2];
+    //     // calc smooth n limit it in the sphere r of pos_ori
+    //     laplaceSmooth(pos, ring_pts, vit->info().pos_ori_, 1, vit->info().max_dis_);
+    //     Point npt(pos[0],pos[1],pos[2]);
+    //     vit->set_point(npt);
+    //   }
+    // }
   }
 
   void Approximation::calcBoundaryOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const

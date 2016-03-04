@@ -14,62 +14,62 @@
 using namespace std;
 
 namespace zsw{
-  void Approximation::refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
-  {
-#if 0
-    testKdtree();
-#endif
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, -1, 1}); }
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }
-    inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
-    outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
-    std::vector<std::pair<Point, VertexInfo>> init_vertices;
-    init_vertices.reserve(bs_jpts.size());
-    for(size_t ind=0; ind<bs_jpts.size(); ++ind) {
-      const Eigen::Matrix<zsw::Scalar,3,1> &pt=bs_jpts[ind];
-      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, pt, 0)));
-    }
-    tw_.reset(new TriangulationWapper(init_vertices));
-    std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
-                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
-                        ErrorMaxComparison> err_queue;
-    for(size_t i=0; i<jpts_.size();++i) {
-      zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
-      if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
-    }
-    TTds &tds=tw_->getTds();
-    size_t add_pt_for_err=0;
-    size_t add_pt_for_normal=0;
-    do{
-      while(!err_queue.empty()) {
-        std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
-        zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
-        if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
-        PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
-        VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
-        std::vector<Chd> chds;
-        tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds);
-        if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;  }
-        updateJptsInCells(chds, err_queue);
-      }
-      // find a tet viloate the normal condition
-      bool viloate_normal_cond=false;
-      std::vector<Chd> tmp_chds;
-      for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-        if(!cit->info().satisfy_normal_cond_ && !checkUpNormalCondition(cit, tmp_chds)) {
-          if(++add_pt_for_normal%50==0) { NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl; }
-          viloate_normal_cond=true;
-          break;
-        }
-      }
-      if(viloate_normal_cond) { updateJptsInCells(tmp_chds, err_queue); }
-      else { break; }
-    } while(true);
-#if 0
-    checkNormalcondition();
-#endif
-    NZSWLOG("zsw_info") << "refined add pt cnt:" << tw_->getTds().number_of_vertices()-bs_jpts.size()-1 << std::endl;
-  }
+//   void Approximation::refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
+//   {
+// #if 0
+//     testKdtree();
+// #endif
+//     for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, in_jpt, -1, 1}); }
+//     for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, out_jpt, 1, 1}); }
+//     inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
+//     outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
+//     std::vector<std::pair<Point, VertexInfo>> init_vertices;
+//     init_vertices.reserve(bs_jpts.size());
+//     for(size_t ind=0; ind<bs_jpts.size(); ++ind) {
+//       const Eigen::Matrix<zsw::Scalar,3,1> &pt=bs_jpts[ind];
+//       init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, pt, 0)));
+//     }
+//     tw_.reset(new TriangulationWapper(init_vertices));
+//     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+//                         std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+//                         ErrorMaxComparison> err_queue;
+//     for(size_t i=0; i<jpts_.size();++i) {
+//       zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
+//       if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
+//     }
+//     TTds &tds=tw_->getTds();
+//     size_t add_pt_for_err=0;
+//     size_t add_pt_for_normal=0;
+//     do{
+//       while(!err_queue.empty()) {
+//         std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
+//         zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
+//         if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
+//         PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
+//         VertexInfo vertex_info(-1, pt_type, jpt_info.second->pto_, 0.0);
+//         std::vector<Chd> chds;
+//         tw_->addPointInDelaunaySafe(jpt_info.second->pto_, vertex_info, chds);
+//         if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;  }
+//         updateJptsInCells(chds, err_queue);
+//       }
+//       // find a tet viloate the normal condition
+//       bool viloate_normal_cond=false;
+//       std::vector<Chd> tmp_chds;
+//       for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+//         if(!cit->info().satisfy_normal_cond_ && !checkUpNormalCondition(cit, tmp_chds)) {
+//           if(++add_pt_for_normal%50==0) { NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl; }
+//           viloate_normal_cond=true;
+//           break;
+//         }
+//       }
+//       if(viloate_normal_cond) { updateJptsInCells(tmp_chds, err_queue); }
+//       else { break; }
+//     } while(true);
+// #if 0
+//     checkNormalcondition();
+// #endif
+//     NZSWLOG("zsw_info") << "refined add pt cnt:" << tw_->getTds().number_of_vertices()-bs_jpts.size()-1 << std::endl;
+//   }
 
   void Approximation::upgradeRefine(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
   {
@@ -78,7 +78,7 @@ namespace zsw{
     for(size_t i=0; i<outer_jpts_.size(); ++i) { outer_jpts_[i][0]*=0.25; }
     for(size_t i=0; i<bs_jpts.size(); ++i) { bs_jpts[i][0]*=0.25; }
     // deformed refine
-    refine(bs_jpts);
+    //refine(bs_jpts);
     //writeTetMesh("/home/wegatron/tmp/deformed_refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     // scale back jpts_, inner_jpts_, outer_jpts_ in x direction
     for(size_t i=0; i<inner_jpts_.size(); ++i) { inner_jpts_[i][0]=inner_jpts_[i][0]*4; }
@@ -187,9 +187,9 @@ namespace zsw{
     // if(ind-1!=25) {    return true; }
     // add and update
     PointType pt_type=(jpts_[jpt_ind].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
-    VertexInfo vertex_info(-1, pt_type, jpts_[jpt_ind].pt_, 0.0);
+    VertexInfo vertex_info(-1, pt_type, jpts_[jpt_ind].pto_, 0.0);
     //writeTetMesh("/home/wegatron/tmp/before_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    tw_->addPointInDelaunaySafe(jpts_[jpt_ind].pt_, vertex_info, chds);
+    tw_->addPointInDelaunaySafe(jpts_[jpt_ind].pto_, vertex_info, chds);
     //writeTetMesh("/home/wegatron/tmp/after_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     return false;
   }

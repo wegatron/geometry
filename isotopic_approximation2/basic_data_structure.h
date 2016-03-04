@@ -113,7 +113,7 @@ namespace zsw{
     // void initCellKeySet(std::unordered_set<std::string> &cell_key_set) const;
 
     void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
-    Vhd insertInEdge(TTds::Edge &edge, const Point &pt, const PointType pt_type,
+    Vhd insertInEdge(TTds::Edge &edge, const Point &pt, const Eigen::Matrix<zsw::Scalar,3,1> &pto, const PointType pt_type,
                      TTds &tds);
 
     const DelaunayTriangulation &getDelaunay() { return delaunay_triangulation_; }

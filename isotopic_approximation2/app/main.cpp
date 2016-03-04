@@ -66,7 +66,8 @@ void test0(const std::string &ori_file_path,
               deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
 // #endif
 
-  appro.writeTetMesh(output_dir+"refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+  appro.writeTetMeshDeformed(output_dir+"refine_res_deformed.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+  appro.writeTetMeshOri(output_dir+"refine_res_ori.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   // appro.simpTolerance();
   // appro.writeTetMesh("/home/wegatron/tmp/after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   // appro.mutuallTessellation();
@@ -74,7 +75,7 @@ void test0(const std::string &ori_file_path,
   // appro.simpZeroSurface();
   // appro.writeTetMesh(output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
   appro.simp(output_dir);
-  appro.writeTetMesh(output_dir+"simped_final.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+  appro.writeTetMeshOri(output_dir+"simped_final.vtk", {zsw::ignore_bbox, zsw::ignore_out});
 }
 
 int main(int argc, char *argv[])

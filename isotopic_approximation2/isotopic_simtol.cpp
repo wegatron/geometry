@@ -32,7 +32,7 @@ namespace zsw{
       if(tryCollapseBoundaryEdge(e, edge_map)) {
         if(++b_c_step%50==0) {
           std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;
-          writeTetMesh(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step)
+          writeTetMeshOri(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step)
                        +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
           //if(!tw_->isValid()) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
         }
@@ -86,7 +86,7 @@ namespace zsw{
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
     std::vector<const JudgePoint*> jpts_in_bbox;
-    calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
+    calcJptsInBbox2(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
     // candicate merge points in kernel region
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
@@ -103,11 +103,11 @@ namespace zsw{
       tmp_points[i].first=jpts_in_bbox[i];
       tmp_points[i].second=0.0;
       if(!judge_func(jpts_in_bbox[i]->val_exp_)) { continue; }
-      if(krj.judge(jpts_in_bbox[i]->pt_)) {
+      if(krj.judge(jpts_in_bbox[i]->pto_)) {
         is_candicate[i]=true;
         for(const Plane &plane : adj_zero_support_planes) {
-          if(plane.normal_.dot(jpts_in_bbox[i]->pt_ - plane.v0_) <0) { is_candicate[i]=false; break; }
-          zsw::Scalar tmp=plane.normal_.dot(jpts_in_bbox[i]->pt_ - plane.v0_);
+          if(plane.normal_.dot(jpts_in_bbox[i]->pto_ - plane.v0_) <0) { is_candicate[i]=false; break; }
+          zsw::Scalar tmp=plane.normal_.dot(jpts_in_bbox[i]->pto_ - plane.v0_);
           tmp_points[i].second+=tmp*tmp;
         }
       }
@@ -134,15 +134,15 @@ namespace zsw{
     for(std::pair<const JudgePoint*, zsw::Scalar> &cd_pt : candicate_points) {
       const JudgePoint *jpt_ptr=cd_pt.first;
       vup.clear(); jup.clear();
-      if(isTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pt_, e.first->vertex(e.second)->info().pt_type_)
-         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, vup, &jup))
+      if(isTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pto_, e.first->vertex(e.second)->info().pt_type_)
+         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pto_, v_pt, vup, &jup))
         { merge_pt=jpt_ptr; break; }
     }
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=e.first->vertex(e.second);
     // std::cout << "collapse " << e.first->vertex(e.second)->point() << " " << e.first->vertex(e.third)->point()
     //           << " to " << merge_pt->pt_.transpose() << std::endl;
-    tw_->collapseEdge(e, vhd, merge_pt->pt_);
+    tw_->collapseEdge(e, vhd, merge_pt->pto_);
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});
     //updateVertex(vup);
     boundaryEdgeBack(vhd, edge_map);

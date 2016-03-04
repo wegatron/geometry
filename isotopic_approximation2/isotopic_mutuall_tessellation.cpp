@@ -34,8 +34,10 @@ namespace zsw{
         TTds::Edge &e = *it;
         Point &pa = e.first->vertex(e.second)->point();
         Point &pb = e.first->vertex(e.third)->point();
-        Point pt((pa[0]+pb[0])/2.0, (pa[1]+pb[1])/2.0, (pa[2]+pb[2])/2.0);
-        tw_->insertInEdge(e, pt, zsw::ZERO_POINT, tds);
+        Point ptd((pa[0]+pb[0])/2.0, (pa[1]+pb[1])/2.0, (pa[2]+pb[2])/2.0);
+        Eigen::Matrix<zsw::Scalar,3,1> pto = (e.first->vertex(e.second)->info().pos_ori_ +
+                                            e.first->vertex(e.third)->info().pos_ori_) / 2.0;
+        tw_->insertInEdge(e, ptd, pto, zsw::ZERO_POINT, tds);
       } while(1);
     }
   }
