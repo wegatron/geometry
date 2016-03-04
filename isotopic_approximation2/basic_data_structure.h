@@ -113,6 +113,7 @@ namespace zsw{
     // void initCellKeySet(std::unordered_set<std::string> &cell_key_set) const;
 
     void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
+
     Vhd insertInEdge(TTds::Edge &edge, const Point &pt, const Eigen::Matrix<zsw::Scalar,3,1> &pto, const PointType pt_type,
                      TTds &tds);
 
@@ -144,8 +145,8 @@ namespace zsw{
 
   // can construct a tolerance cell or a cell with zero point
   bool isConstructTZCell(const PointType pt_type0, const PointType pt_type1,
-                          const PointType pt_type2, const PointType pt_type3,
-                          Eigen::Matrix<zsw::Scalar,4,1> &val);
+                         const PointType pt_type2, const PointType pt_type3,
+                         Eigen::Matrix<zsw::Scalar,4,1> &val);
 
   std::string cell2str(const Chd cell);
 

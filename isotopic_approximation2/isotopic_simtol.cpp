@@ -33,8 +33,7 @@ namespace zsw{
         if(++b_c_step%50==0) {
           std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;
           writeTetMeshOri(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step)
-                       +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-          //if(!tw_->isValid()) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+                          +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
         }
       }
       if(++try_b_c_step%100==0) {
@@ -45,43 +44,43 @@ namespace zsw{
     NZSWLOG("zsw_info") << "boundary collapsed total:" << b_c_step << std::endl;
     NZSWLOG("zsw_info") << "boundary collapsed suc:" << b_c_step*1.0/try_b_c_step << std::endl;
 #if 0
-    size_t normal_cond_debug_i=0;
-    for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
+    {
+      size_t normal_cond_debug_i=0;
+      for(auto chd=tds.cells_begin(); chd!=tds.cells_end(); ++chd) {
       if(tw_->isTolCell(chd)) {
-        Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
-        tri_pts<<
-          chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
-          chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
-          chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
-        Eigen::Matrix<zsw::Scalar,4,1> val;
-        for(size_t i=0; i<4; ++i) {
-          if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
-          else { val[i]=1; }
-        }
-        Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
-                                                tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
-                                                tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
-        const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
-        Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
-        std::string filepath(tmp_outdir_+"normal_cond/nbc_"+std::to_string(normal_cond_debug_i++)+".vtk");
-        if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
-                            inner_kdtree_, outer_kdtree_,
-                            true, &filepath)) {
-          std::cerr << "SimpTolerance result normal cond failed!!!" << std::endl;
-          abort();
-        }
-      }
+      Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
+      tri_pts<<
+        chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+        chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+        chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
+      Eigen::Matrix<zsw::Scalar,4,1> val;
+      for(size_t i=0; i<4; ++i) {
+      if(chd->vertex(i)->info().pt_type_==zsw::INNER_POINT){ val[i]=-1; }
+      else { val[i]=1; }
+    }
+      Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
+      tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
+        tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));
+      const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
+      Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
+      std::string filepath(tmp_outdir_+"normal_cond/nbc_"+std::to_string(normal_cond_debug_i++)+".vtk");
+      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_,
+        inner_kdtree_, outer_kdtree_,
+        true, &filepath)) {
+      std::cerr << "SimpTolerance result normal cond failed!!!" << std::endl;
+      abort();
+    }
+    }
+    }
     }
 #endif
-  }
+    }
 
   bool Approximation::tryCollapseBoundaryEdge(TTds::Edge &e,
                                               std::unordered_map<std::string,TTds::Edge> &edge_map)
   {
     const TTds &tds = tw_->getTds();
-    if(!tw_->isSatisfyLinkCondition(e)) {
-      return false;
-    }
+    if(!tw_->isSatisfyLinkCondition(e)) { return false; }
     std::vector<VertexTriple> bound_tris;
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
@@ -106,7 +105,6 @@ namespace zsw{
       if(krj.judge(jpts_in_bbox[i]->pto_)) {
         is_candicate[i]=true;
         for(const Plane &plane : adj_zero_support_planes) {
-          if(plane.normal_.dot(jpts_in_bbox[i]->pto_ - plane.v0_) <0) { is_candicate[i]=false; break; }
           zsw::Scalar tmp=plane.normal_.dot(jpts_in_bbox[i]->pto_ - plane.v0_);
           tmp_points[i].second+=tmp*tmp;
         }
@@ -133,7 +131,7 @@ namespace zsw{
     std::vector<JudgePointUpdateData> jup;
     for(std::pair<const JudgePoint*, zsw::Scalar> &cd_pt : candicate_points) {
       const JudgePoint *jpt_ptr=cd_pt.first;
-      vup.clear(); jup.clear();
+      jup.clear();
       if(isTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pto_, e.first->vertex(e.second)->info().pt_type_)
          && isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pto_, v_pt, vup, &jup))
         { merge_pt=jpt_ptr; break; }
@@ -142,7 +140,8 @@ namespace zsw{
     Vhd vhd=e.first->vertex(e.second);
     // std::cout << "collapse " << e.first->vertex(e.second)->point() << " " << e.first->vertex(e.third)->point()
     //           << " to " << merge_pt->pt_.transpose() << std::endl;
-    tw_->collapseEdge(e, vhd, merge_pt->pto_);
+    tw_->collapseEdge(e, vhd, merge_pt->ptd_);
+    vhd->info().pos_ori_=merge_pt->pto_;
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});
     //updateVertex(vup);
     boundaryEdgeBack(vhd, edge_map);
@@ -185,9 +184,9 @@ namespace zsw{
     for(VertexTriple vt : bound_tris) {
       if(!isConstructTZCell(point_type, vt.first->info().pt_type_, vt.second->info().pt_type_, vt.third->info().pt_type_, val))
         { continue; }
-      tri_pts(0,1)=vt.first->point()[0]; tri_pts(1,1)=vt.first->point()[1]; tri_pts(2,1)=vt.first->point()[2];
-      tri_pts(0,2)=vt.second->point()[0]; tri_pts(1,2)=vt.second->point()[1]; tri_pts(2,2)=vt.second->point()[2];
-      tri_pts(0,3)=vt.third->point()[0]; tri_pts(1,3)=vt.third->point()[1]; tri_pts(2,3)=vt.third->point()[2];
+      tri_pts.block<3,1>(0,1)=vt.first->info().pos_ori_;
+      tri_pts.block<3,1>(0,2)=vt.second->info().pos_ori_;
+      tri_pts.block<3,1>(0,3)=vt.third->info().pos_ori_;
       Eigen::Matrix<zsw::Scalar,3,1> bc=0.25*(
                                               tri_pts.block<3,1>(0,0)+tri_pts.block<3,1>(0,1)+
                                               tri_pts.block<3,1>(0,2)+tri_pts.block<3,1>(0,3));

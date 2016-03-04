@@ -303,7 +303,8 @@ namespace zsw{
     // }
   }
 
-  void TriangulationWapper::calcAdjZeroSupportPlanes(const TTds::Edge &edge, std::vector<Plane> &adj_zero_support_planes) const
+  void TriangulationWapper::calcAdjZeroSupportPlanes(const TTds::Edge &edge,
+                                                     std::vector<Plane> &adj_zero_support_planes) const
   {
     std::list<TTds::Cell_handle> tmp_cells[2];
     tds_.incident_cells(edge.first->vertex(edge.second), std::back_inserter(tmp_cells[0]));
@@ -326,14 +327,11 @@ namespace zsw{
       size_t out_j=0;
       for(size_t i=0; i<4; ++i) {
         if(cit->vertex(i)->info().pt_type_==zsw::INNER_POINT) {
-          in_pts[in_j][0]=cit->vertex(i)->point()[0];
-          in_pts[in_j][1]=cit->vertex(i)->point()[1];
-          in_pts[in_j][2]=cit->vertex(i)->point()[2];
+          in_pts[in_j]=cit->vertex(i)->info().pos_ori_;
           ++in_j;
-        } else {
-          out_pts[out_j][0]=cit->vertex(i)->point()[0];
-          out_pts[out_j][1]=cit->vertex(i)->point()[1];
-          out_pts[out_j][2]=cit->vertex(i)->point()[2];
+        } else if(cit->vertex(i)->info().pt_type_==zsw::OUTER_POINT
+                  || cit->vertex(i)->info().pt_type_==zsw::BBOX_POINT) {
+          out_pts[out_j]=cit->vertex(i)->info().pos_ori_;
           ++out_j;
         }
       }

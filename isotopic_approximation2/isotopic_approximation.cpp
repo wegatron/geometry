@@ -84,7 +84,9 @@ namespace zsw{
     clock_.clearCur();
     simpTolerance();
     NZSWLOG("zsw_info") << "simp_tol time cost:" << clock_.time() << std::endl;
-    writeTetMeshOri(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    writeTetMeshDeformed(tmp_output_dir+"after_simp_tol_deformed.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    writeTetMeshOri(tmp_output_dir+"after_simp_tol_ori.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    abort();
     mutuallTessellation();
     NZSWLOG("zsw_info") << "mutuall tessellation time cost:" << clock_.time() << std::endl;
     writeTetMeshOri(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
@@ -259,10 +261,11 @@ namespace zsw{
       assert(vt.third->info().pt_type_!=zsw::INVALID_POINT);
 
       Eigen::Matrix<zsw::Scalar,4,4> A;
-      A(0,0)=vt.first->point()[0]; A(1,0)=vt.first->point()[1];  A(2,0)=vt.first->point()[2]; A(3,0)=1;
-      A(0,1)=vt.second->point()[0]; A(1,1)=vt.second->point()[1];  A(2,1)=vt.second->point()[2]; A(3,1)=1;
-      A(0,2)=vt.third->point()[0]; A(1,2)=vt.third->point()[1];  A(2,2)=vt.third->point()[2]; A(3,2)=1;
-      A.block<3,1>(0,3)=merge_pt; A(3,3)=1;
+      A.block<3,1>(0,0)=vt.first->info().pos_ori_;
+      A.block<3,1>(0,1)=vt.second->info().pos_ori_;
+      A.block<3,1>(0,2)=vt.third->info().pos_ori_;
+      A.block<3,1>(0,3)=merge_pt;
+      A(3,0)=A(3,1)=A(3,2)=A(3,3)=1.0;
       Eigen::Matrix<zsw::Scalar,4,1> val;
       if(vt.first->info().pt_type_==zsw::INNER_POINT) { val[0]=-1; }
       else if(vt.first->info().pt_type_==zsw::ZERO_POINT) { val[0]=0; }
@@ -354,13 +357,10 @@ namespace zsw{
                                                   std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const
   {
     for(size_t fi=0; fi<bound_tris.size(); ++fi) {
-      Eigen::Matrix<zsw::Scalar,3,1> v0;
-      Eigen::Matrix<zsw::Scalar,3,1> v[3];
-      v0[0]=opposite_vs[fi]->point()[0]; v0[1]=opposite_vs[fi]->point()[1]; v0[2]=opposite_vs[fi]->point()[2];
-      v[0]<< bound_tris[fi].first->point()[0], bound_tris[fi].first->point()[1], bound_tris[fi].first->point()[2];
-      v[1]<< bound_tris[fi].second->point()[0], bound_tris[fi].second->point()[1], bound_tris[fi].second->point()[2];
-      v[2]<< bound_tris[fi].third->point()[0], bound_tris[fi].third->point()[1], bound_tris[fi].third->point()[2];
-      krj.addConstraint(v[0],v[1],v[2],v0);
+      krj.addConstraint(bound_tris[fi].first->info().pos_ori_,
+                        bound_tris[fi].second->info().pos_ori_,
+                        bound_tris[fi].third->info().pos_ori_,
+                        opposite_vs[fi]->info().pos_ori_);
     }
   }
 
