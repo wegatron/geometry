@@ -142,8 +142,7 @@ namespace zsw{
                             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
                             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts,
                             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts)
+                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts)
   {
     if(!ori_mesh.has_vertex_normals()) {
       ori_mesh.request_face_normals();
@@ -163,7 +162,6 @@ namespace zsw{
     calcBoundSphere(deformed_mesh, deformed_center, deformed_radius);
     zsw::Scalar deformed_err_epsilon = err_epsilon * deformed_radius / ori_radius;
     boundSphere("bound_sphere.obj", ori_radius+err_epsilon, ori_center, bs_jpts);
-    boundSphere("bound_sphere.obj", deformed_radius+deformed_err_epsilon, deformed_center, deformed_bs_jpts);
 
     Eigen::Matrix<zsw::Scalar,3,3> ori_in_tri, ori_out_tri;
     Eigen::Matrix<zsw::Scalar,3,3> deformed_in_tri, deformed_out_tri;

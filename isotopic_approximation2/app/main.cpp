@@ -9,8 +9,24 @@
 
 using namespace std;
 
-void test0(const std::string &ori_file_path,
-           const std::string &deformed_file_path,
+void readPts(const std::string &deformed_bs_file,
+             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts)
+{
+  ifstream ifs(deformed_bs_file);
+  if(!ifs) { std::cerr << "can't open file " << deformed_bs_file << std::endl; abort(); }
+  size_t n=0; ifs>>n;
+  deformed_bs_jpts.reserve(n);
+  Eigen::Matrix<zsw::Scalar,3,1> tmp_pt;
+  for(size_t i=0; i<n; ++i) {
+    ifs >> tmp_pt[0] >> tmp_pt[1] >> tmp_pt[2];
+    deformed_bs_jpts.push_back(tmp_pt);
+  }
+  ifs.close();
+}
+
+void test0(const std::string &ori_file,
+           const std::string &deformed_file,
+           const std::string &deformed_bs_file,
            const std::string &output_dir,
            const zsw::Scalar err_epsilon,
            const zsw::Scalar tri_sample_r,
@@ -18,8 +34,8 @@ void test0(const std::string &ori_file_path,
 {
   RESETLOG_FILE(output_dir+"log");
   zsw::mesh::TriMesh input_mesh;
-  if(!OpenMesh::IO::read_mesh(input_mesh, ori_file_path)) {
-    std::cerr << "can't open file " << ori_file_path << std::endl;
+  if(!OpenMesh::IO::read_mesh(input_mesh, ori_file)) {
+    std::cerr << "can't open file " << ori_file << std::endl;
     abort();
   }
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> inner_jpts;
@@ -39,22 +55,22 @@ void test0(const std::string &ori_file_path,
 // #endif
 //#if 1
   zsw::mesh::TriMesh deformed_mesh;
-  if(!OpenMesh::IO::read_mesh(deformed_mesh, deformed_file_path)) {
-    std::cerr << "can't open file " << deformed_file_path << std::endl;
+  if(!OpenMesh::IO::read_mesh(deformed_mesh, deformed_file)) {
+    std::cerr << "can't open file " << deformed_file << std::endl;
     abort();
   }
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_inner_jpts;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_outer_jpts;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_bs_jpts;
-
   zsw::genAndSampleAllShell(input_mesh, deformed_mesh, err_epsilon, tri_sample_r, inner_jpts, outer_jpts, bs_jpts,
-                            deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
+                            deformed_inner_jpts, deformed_outer_jpts);
   //#endif
   zsw::writePoints(output_dir+"ori_inner_jpts.vtk", inner_jpts);
   zsw::writePoints(output_dir+"ori_outer_jpts.vtk", outer_jpts);
   zsw::writePoints(output_dir+"ori_bs_jpts.vtk", bs_jpts);
   zsw::writePoints(output_dir+"deformed_inner_jpts.vtk", deformed_inner_jpts);
   zsw::writePoints(output_dir+"deformed_outer_jpts.vtk", deformed_outer_jpts);
+  readPts(deformed_bs_file, deformed_bs_jpts);
   zsw::writePoints(output_dir+"deformed_bs_jpts.vtk", deformed_bs_jpts);
   zsw::Approximation appro;
   appro.setTmpOutDir(output_dir);
@@ -80,7 +96,7 @@ void test0(const std::string &ori_file_path,
 
 int main(int argc, char *argv[])
 {
-  test0(std::string(argv[1]), std::string(argv[2]), std::string(argv[3]), atof(argv[4]), atof(argv[5]), atof(argv[6]));
+  test0(std::string(argv[1]), std::string(argv[2]), std::string(argv[3]), std::string(argv[4]), atof(argv[5]), atof(argv[6]), atof(argv[7]));
   //test0("/home/wegatron/workspace/geometry/data/sphere.obj", "/home/wegatron/tmp/", 0.1, 0.03, 0.03);
   // test0("/home/wegatron/workspace/geometry/data/cylinder_smoothed.obj", "/home/wegatron/tmp/", 0.3, 0.1, 0.1);
   //test0("/home/wegatron/workspace/geometry/data/bunny.obj",1.5, 0.5, 0.5);

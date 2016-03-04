@@ -28,8 +28,10 @@ namespace zsw{
     size_t try_b_c_step=0;
     while(!edge_map.empty()) {
       TTds::Edge e = edge_map.begin()->second; edge_map.erase(edge_map.begin());
+      std::cout << __FILE__ << __LINE__ << std::endl;
       if(!tw_->isBoundaryEdge(e)) { continue; }
       if(tryCollapseBoundaryEdge(e, edge_map)) {
+        tw_->isValid();
         if(++b_c_step%50==0) {
           std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;
           writeTetMeshOri(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step)
@@ -85,11 +87,13 @@ namespace zsw{
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
     std::vector<const JudgePoint*> jpts_in_bbox;
+    std::cout << __FILE__ << __LINE__ << std::endl;
     calcJptsInBbox2(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
     // candicate merge points in kernel region
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
     std::function<bool(zsw::Scalar v)> judge_func;
+    std::cout << __FILE__ << __LINE__ << std::endl;
     if(e.first->vertex(e.second)->info().pt_type_==zsw::INNER_POINT) {
       judge_func=[](zsw::Scalar v){ return v<0; };
     } else { judge_func=[](zsw::Scalar v){ return v>0; }; }
@@ -97,7 +101,8 @@ namespace zsw{
     tw_->calcAdjZeroSupportPlanes(e, adj_zero_support_planes);
     std::vector<bool> is_candicate(jpts_in_bbox.size(), false);
     std::vector<std::pair<const JudgePoint*, zsw::Scalar>> tmp_points(jpts_in_bbox.size(), std::make_pair(nullptr,0.0));
-#pragma omp parallel for
+    std::cout << __FILE__ << __LINE__ << std::endl;
+    //#pragma omp parallel for
     for(size_t i=0; i<jpts_in_bbox.size(); ++i) {
       tmp_points[i].first=jpts_in_bbox[i];
       tmp_points[i].second=0.0;
@@ -110,6 +115,7 @@ namespace zsw{
         }
       }
     }
+    std::cout << __FILE__ << __LINE__ << std::endl;
     std::vector<std::pair<const JudgePoint*, zsw::Scalar>> candicate_points;
     for(size_t i=0; i<is_candicate.size(); ++i) { if(is_candicate[i]) { candicate_points.push_back(tmp_points[i]); } }
 #if 0
@@ -141,6 +147,7 @@ namespace zsw{
     // std::cout << "collapse " << e.first->vertex(e.second)->point() << " " << e.first->vertex(e.third)->point()
     //           << " to " << merge_pt->pt_.transpose() << std::endl;
     tw_->collapseEdge(e, vhd, merge_pt->ptd_);
+    tw_->isValid();
     vhd->info().pos_ori_=merge_pt->pto_;
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});
     //updateVertex(vup);

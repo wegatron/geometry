@@ -28,8 +28,7 @@ namespace zsw{
                             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
                             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts,
                             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts);
+                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts);
 
   void calcBoundSphere(const zsw::mesh::TriMesh &mesh,
                        Eigen::Matrix<zsw::Scalar,3,1> &center,

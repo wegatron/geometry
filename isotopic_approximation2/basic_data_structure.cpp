@@ -437,14 +437,33 @@ namespace zsw{
          cit->vertex(1)->info().pt_type_==zsw::INVALID_POINT ||
          cit->vertex(2)->info().pt_type_==zsw::INVALID_POINT ||
          cit->vertex(3)->info().pt_type_==zsw::INVALID_POINT) { continue; }
-      if(cit->vertex(0)->info().pt_type_==zsw::BBOX_POINT ||
-         cit->vertex(1)->info().pt_type_==zsw::BBOX_POINT ||
-         cit->vertex(2)->info().pt_type_==zsw::BBOX_POINT ||
-         cit->vertex(3)->info().pt_type_==zsw::BBOX_POINT) { continue; }
       CGAL::Orientation o=orientation(cit->vertex(0)->point(), cit->vertex(1)->point(),
                                       cit->vertex(2)->point(), cit->vertex(3)->point());
       if(o == CGAL::NEGATIVE) {
         std::cout << __FILE__ << __LINE__ << std::endl;
+        std::cout << cit->vertex(0)->info().pt_type_ << cit->vertex(1)->info().pt_type_
+                  << cit->vertex(2)->info().pt_type_ << cit->vertex(3)->info().pt_type_ << std::endl;
+        std::cout << cit->vertex(0)->point() << std::endl;
+        std::cout << cit->vertex(1)->point() << std::endl;
+        std::cout << cit->vertex(2)->point() << std::endl;
+        std::cout << cit->vertex(3)->point() << std::endl;
+        Eigen::Matrix<zsw::Scalar,3,1> v[4];
+        for(size_t i=0; i<4; ++i) {
+          for(size_t j=0; j<3; ++j) { v[i][j] = cit->vertex(i)->point()[j]; }
+        }
+        Eigen::Matrix<zsw::Scalar,3,3> A;
+        A.block<3,1>(0,0)=v[1]-v[0]; A.block<3,1>(0,1)=v[2]-v[0]; A.block<3,1>(0,2)=v[3]-v[0];
+        std::cout << A.determinant() << std::endl;
+        std::cout << __FILE__ << __LINE__ << std::endl;
+        std::cout << cit->vertex(0)->info().pos_ori_.transpose() << std::endl;
+        std::cout << cit->vertex(1)->info().pos_ori_.transpose() << std::endl;
+        std::cout << cit->vertex(2)->info().pos_ori_.transpose() << std::endl;
+        std::cout << cit->vertex(3)->info().pos_ori_.transpose() << std::endl;
+        for(size_t i=0; i<4; ++i) {
+          v[i]=cit->vertex(i)->info().pos_ori_;
+        }
+        A.block<3,1>(0,0)=v[1]-v[0]; A.block<3,1>(0,1)=v[2]-v[0]; A.block<3,1>(0,2)=v[3]-v[0];
+        std::cout << A.determinant() << std::endl;
         abort();
       }
     }
