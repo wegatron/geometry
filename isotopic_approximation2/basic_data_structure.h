@@ -121,11 +121,13 @@ namespace zsw{
     TTds &getTds()  { return tds_; }
     void setTds(TTds &tds) { tds_=tds; }
 
-    void makeHole(Vhd vhd, std::map<VertexTriple, Facet> &outer_map,
+    void makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Facet, CGAL::Orientation>> &outer_map,
                   std::vector<Chd> &hole);
 
     void test() const;
     void writeVertex(const std::string &filepath, const std::vector<Vhd> &vs) const;
+
+    void removeBBoxPts();
   private:
     DelaunayTriangulation delaunay_triangulation_;
     TTds &tds_;
@@ -144,8 +146,8 @@ namespace zsw{
 
   // can construct a tolerance cell or a cell with zero point
   bool isConstructTZCell(const PointType pt_type0, const PointType pt_type1,
-                          const PointType pt_type2, const PointType pt_type3,
-                          Eigen::Matrix<zsw::Scalar,4,1> &val);
+                         const PointType pt_type2, const PointType pt_type3,
+                         Eigen::Matrix<zsw::Scalar,4,1> &val);
 
   std::string cell2str(const Chd cell);
 

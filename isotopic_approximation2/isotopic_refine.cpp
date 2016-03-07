@@ -143,6 +143,9 @@ namespace zsw{
     // if(viloate_normal_cond) { updateJptsInCells(tmp_chds, err_queue); }
     // else { break; }
     // } while(true);
+    writeTetMesh(tmp_outdir_ +"before_remove_bbox_vertex.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    //tw_->removeBBoxPts();
+    writeTetMesh(tmp_outdir_ +"before_swap_vertex.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
       if(vit->info().pt_type_ != zsw::INVALID_POINT) {
         vit->set_point(Point(vit->info().pos_ori_[0], vit->info().pos_ori_[1], vit->info().pos_ori_[2]));

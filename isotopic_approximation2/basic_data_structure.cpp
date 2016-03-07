@@ -355,40 +355,31 @@ namespace zsw{
 
   void TriangulationWapper::collapseEdge(TTds::Edge &edge, Vhd merge_vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt)
   {
-    //if(!tds_.is_valid()) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+    // std::cout << __FILE__ << __LINE__ << std::endl;
+    // if(!tds_.is_valid()) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+    // std::cout << __FILE__ << __LINE__ << std::endl;
     assert(tds_.is_valid());
     assert(tds_.is_edge(edge.first, edge.second, edge.third));
     merge_vhd->set_point(Point(pt[0],pt[1],pt[2]));
     Vhd remove_v = (edge.first->vertex(edge.second)==merge_vhd) ? edge.first->vertex(edge.third) : edge.first->vertex(edge.second);
     std::vector<TTds::Cell_handle> hole;
-    std::map<VertexTriple, Facet> outer_map;
+    std::map<VertexTriple, std::pair<Facet, CGAL::Orientation>> outer_map;
     makeHole(remove_v, outer_map, hole);
-    std::map<VertexTriple, Facet> vt_map(outer_map);
+    std::map<VertexTriple, std::pair<Facet, CGAL::Orientation>> vt_map(outer_map);
 
     // std::cerr << "edge : " << edge.first->vertex(edge.second)->info().index_ << " "
     //           << edge.first->vertex(edge.third)->info().index_  << std::endl;
     // std::cerr << "outer_map size:" << outer_map.size() << std::endl;
-
     for(auto oit=outer_map.begin(); oit!=outer_map.end(); ++oit) {
       if(oit->first.first==merge_vhd || oit->first.second==merge_vhd || oit->first.third==merge_vhd) { continue; }
       Chd nw_chd = tds_.create_cell();
-#if 1
       CGAL::Orientation o = orientation(oit->first.first->point(), oit->first.second->point(),
                                         oit->first.third->point(), merge_vhd->point());
-      if(o==CGAL::NEGATIVE) {
-        nw_chd->set_vertices(oit->first.second, oit->first.first, oit->first.third, merge_vhd);
-      } else {
+      if(o == oit->second.second) {
         nw_chd->set_vertices(oit->first.first, oit->first.second, oit->first.third, merge_vhd);
-      }
-#else
-      CGAL::Orientation o = orientation(merge_vhd->point(), oit->first.first->point(), oit->first.second->point(),
-                                        oit->first.third->point());
-      if(o==CGAL::NEGATIVE) {
-        nw_chd->set_vertices(merge_vhd, oit->first.second, oit->first.first, oit->first.third);
       } else {
-        nw_chd->set_vertices(merge_vhd, oit->first.first, oit->first.second, oit->first.third);
+        nw_chd->set_vertices(oit->first.second, oit->first.first, oit->first.third, merge_vhd);
       }
-#endif
       // for vertex triples
       for(size_t ai=0; ai<4; ++ai) {
         VertexTriple tmp_vt;
@@ -400,76 +391,65 @@ namespace zsw{
         makeCanonical(tmp_vt);
         auto tmp_it = vt_map.find(tmp_vt);
         if(tmp_it!=vt_map.end()) {
-          // static size_t i_cnt=0;
-          // ++i_cnt;
-          // std::cerr << "out size:" << i_cnt << std::endl;
-          // std::cerr << "out:" << tmp_it->first.first->info().index_ << " "
-          //           << tmp_it->first.second->info().index_ << " "
-          //           << tmp_it->first.third->info().index_ << std::endl;
-
           // glue two faces
-          nw_chd->set_neighbor(ai, tmp_it->second.first);
-          tmp_it->second.first->set_neighbor(tmp_it->second.second,nw_chd);
+          Facet tmp_face = tmp_it->second.first;
+          nw_chd->set_neighbor(ai, tmp_face.first);
+          tmp_face.first->set_neighbor(tmp_face.second,nw_chd);
         } else {
-          vt_map[tmp_vt]=std::make_pair(nw_chd, ai);
-
-          // std::cerr << "in:" << tmp_vt.first->info().index_ << " "
-          //           << tmp_vt.second->info().index_ << " "
-          //           << tmp_vt.third->info().index_ << std::endl;
-          // std::cerr << "in size:" << vt_map.size() << std::endl;
+          vt_map[tmp_vt]=std::make_pair(std::make_pair(nw_chd, ai), CGAL::POSITIVE); // positive is invalid infomation
         }
       }
     }
-    // for(auto it =vt_map.begin(); it!=vt_map.end(); ++it) {
-    //   std::cerr << it->first.first->info().index_ << " "
-    //             << it->first.second->info().index_ << " "
-    //             << it->first.third->info().index_ << std::endl;
-    // }
     tds_.delete_cells(hole.begin(), hole.end());
     tds_.delete_vertex(remove_v);
     assert(tds_.is_valid());
-    //if(!tds_.is_valid(true)) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+    // std::cout << __FILE__ << __LINE__ << std::endl;
+    // if(!tds_.is_valid(true)) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
   }
 
   bool TriangulationWapper::isValid() const
   {
-    if(!tds_.is_valid()) { return false; }
-    for(Chd cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
-      if(cit->vertex(0)->info().pt_type_==zsw::INVALID_POINT ||
-         cit->vertex(1)->info().pt_type_==zsw::INVALID_POINT ||
-         cit->vertex(2)->info().pt_type_==zsw::INVALID_POINT ||
-         cit->vertex(3)->info().pt_type_==zsw::INVALID_POINT) { continue; }
-      if(cit->vertex(0)->info().pt_type_==zsw::BBOX_POINT ||
-         cit->vertex(1)->info().pt_type_==zsw::BBOX_POINT ||
-         cit->vertex(2)->info().pt_type_==zsw::BBOX_POINT ||
-         cit->vertex(3)->info().pt_type_==zsw::BBOX_POINT) { continue; }
-      CGAL::Orientation o=orientation(cit->vertex(0)->point(), cit->vertex(1)->point(),
-                                      cit->vertex(2)->point(), cit->vertex(3)->point());
-      if(o == CGAL::NEGATIVE) {
-        std::cout << __FILE__ << __LINE__ << std::endl;
-        abort();
-      }
-    }
-    return true;
+    // if(!tds_.is_valid()) { return false; }
+    // bool flag=false;
+    // for(Chd cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
+    //   if(cit->vertex(0)->info().pt_type_==zsw::INVALID_POINT ||
+    //      cit->vertex(1)->info().pt_type_==zsw::INVALID_POINT ||
+    //      cit->vertex(2)->info().pt_type_==zsw::INVALID_POINT ||
+    //      cit->vertex(3)->info().pt_type_==zsw::INVALID_POINT) { continue; }
+    //   CGAL::Orientation o=orientation(cit->vertex(0)->point(), cit->vertex(1)->point(),
+    //                                   cit->vertex(2)->point(), cit->vertex(3)->point());
+    //   if(o == CGAL::NEGATIVE) {
+    //     std::cout << __FILE__ << __LINE__ << std::endl;
+    //     std::cout << cit->vertex(0)->point() << std::endl;
+    //     std::cout << cit->vertex(1)->point() << std::endl;
+    //     std::cout << cit->vertex(2)->point() << std::endl;
+    //     std::cout << cit->vertex(3)->point() << std::endl;
+    //     flag = true;
+    //   }
+    // }
+    // if(flag) { abort(); }
+    return tds_.is_valid();
   }
 
-  void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, Facet> &outer_map,
-                                     std::vector<Chd> &hole)
-  {
-    tds_.incident_cells(vhd, std::back_inserter(hole));
-    for(Chd &chd : hole) {
-      // find neighbor
-      int indv=chd->index(vhd);
-      Chd oppo_chd=chd->neighbor(indv);
-      VertexTriple tmp_vt;
-      Vhd *ptr=&tmp_vt.first;
-      for(int vi=0; vi<4; ++vi) { if(vi!=indv) { chd->vertex(vi)->set_cell(oppo_chd); *ptr=chd->vertex(vi); ++ptr; } }
-      makeCanonical(tmp_vt);
-      // find outer face
-      Facet f(oppo_chd, oppo_chd->index(chd));
-      outer_map.insert(std::make_pair(tmp_vt,f));
-    }
+void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Facet, CGAL::Orientation>> &outer_map,
+                                   std::vector<Chd> &hole)
+{
+  tds_.incident_cells(vhd, std::back_inserter(hole));
+  for(Chd &chd : hole) {
+    // find neighbor
+    int indv=chd->index(vhd);
+    Chd oppo_chd=chd->neighbor(indv);
+    VertexTriple tmp_vt;
+    Vhd *ptr=&tmp_vt.first;
+    for(int vi=0; vi<4; ++vi) { if(vi!=indv) { chd->vertex(vi)->set_cell(oppo_chd); *ptr=chd->vertex(vi); ++ptr; } }
+    makeCanonical(tmp_vt);
+    // find outer face
+    Facet f(oppo_chd, oppo_chd->index(chd));
+    CGAL::Orientation o = orientation(chd->vertex(0)->point(), chd->vertex(1)->point(),
+                                      chd->vertex(2)->point(), chd->vertex(3)->point());
+    outer_map.insert( std::make_pair(tmp_vt, std::make_pair(f,o)) );
   }
+}
 
   Vhd TriangulationWapper::insertInEdge(TTds::Edge &edge, const Point &pt,
                                         const PointType pt_type, TTds &tds)
@@ -569,6 +549,17 @@ namespace zsw{
   //     cell_key_set.insert(key);
   //   }
   // }
+
+  void TriangulationWapper::removeBBoxPts()
+  {
+    std::vector<Vhd> vhds;
+    for(auto vit = delaunay_triangulation_.vertices_begin(); vit != delaunay_triangulation_.vertices_end(); ++vit) {
+      if(vit->info().pt_type_  == zsw::BBOX_POINT) {
+        vhds.push_back(vit);
+      }
+    }
+    for(Vhd vhd : vhds) {      delaunay_triangulation_.remove(vhd);    }
+  }
 
   bool TriangulationWapper::isBoundaryEdge(const TTds::Edge &edge) const
   {

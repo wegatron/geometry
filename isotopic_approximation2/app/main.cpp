@@ -53,9 +53,9 @@ void test0(const std::string &ori_file_path,
   zsw::writePoints(output_dir+"ori_inner_jpts.vtk", inner_jpts);
   zsw::writePoints(output_dir+"ori_outer_jpts.vtk", outer_jpts);
   zsw::writePoints(output_dir+"ori_bs_jpts.vtk", bs_jpts);
-  // zsw::writePoints(output_dir+"deformed_inner_jpts.vtk", deformed_inner_jpts);
-  // zsw::writePoints(output_dir+"deformed_outer_jpts.vtk", deformed_outer_jpts);
-  // zsw::writePoints(output_dir+"deformed_bs_jpts.vtk", deformed_bs_jpts);
+  zsw::writePoints(output_dir+"deformed_inner_jpts.vtk", deformed_inner_jpts);
+  zsw::writePoints(output_dir+"deformed_outer_jpts.vtk", deformed_outer_jpts);
+  zsw::writePoints(output_dir+"deformed_bs_jpts.vtk", deformed_bs_jpts);
   zsw::Approximation appro;
   appro.setTmpOutDir(output_dir);
   //appro.setNeedSmooth(true);
