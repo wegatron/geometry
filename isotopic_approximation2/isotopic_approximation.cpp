@@ -28,15 +28,7 @@ namespace zsw{
     NZSWLOG("zsw_info") << "outer judge point size:" << outer_jpts_.size() << std::endl;
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
     clock_.clearCur();
-    if(version_ == 0) {
     refine(bs_jpts);
-    } else if(version_ == 1) {
-      upgradeRefine(bs_jpts);
-    } else {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-      abort();
-    //   upgradeRefine2(bs_jpts);
-     }
     NZSWLOG("zsw_info") << "refine time cost" << clock_.time() << std::endl;
     NZSWLOG("zsw_info") << "refine complete, init finished!" << std::endl;
     NZSWLOG("zsw_info") << "vertex size:" << tw_->getTds().number_of_vertices() << std::endl;
@@ -215,7 +207,6 @@ namespace zsw{
                                           const std::vector<const JudgePoint*> &jpts_in_bbox,
                                           const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
                                           const zsw::Scalar v_pt,
-                                          std::vector<VertexUpdateData> &vup,
                                           std::vector<JudgePointUpdateData> * jup)
   {
     ++bz_judge_pt_cnt_;

@@ -131,13 +131,12 @@ namespace zsw{
          });
     const zsw::Scalar v_pt=(e.first->vertex(e.second)->info().pt_type_==zsw::INNER_POINT) ? -1 : 1;
     const JudgePoint *merge_pt=nullptr;
-    std::vector<VertexUpdateData> vup;
     std::vector<JudgePointUpdateData> jup;
     for(std::pair<const JudgePoint*, zsw::Scalar> &cd_pt : candicate_points) {
       const JudgePoint *jpt_ptr=cd_pt.first;
-      vup.clear(); jup.clear();
+      jup.clear();
       if(isTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pt_, e.first->vertex(e.second)->info().pt_type_)
-         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, vup, &jup))
+         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, &jup))
         { merge_pt=jpt_ptr; break; }
     }
     if(merge_pt==nullptr) { return false; }
@@ -146,7 +145,6 @@ namespace zsw{
     //           << " to " << merge_pt->pt_.transpose() << std::endl;
     tw_->collapseEdge(e, vhd, merge_pt->pt_);
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});
-    //updateVertex(vup);
     boundaryEdgeBack(vhd, edge_map);
 #if 0
     if(!checkNormalCondition()) {

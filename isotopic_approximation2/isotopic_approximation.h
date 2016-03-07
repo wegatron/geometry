@@ -16,13 +16,6 @@ namespace zsw {
     zsw::Scalar val_cur_;
   };
 
-  struct VertexUpdateData
-  {
-    Vhd vhd_;
-    zsw::Scalar max_ids_;
-    Eigen::Matrix<zsw::Scalar,3,1> pos_ori_;
-  };
-
   class ErrorMaxComparison
   {
   public:
@@ -36,7 +29,7 @@ namespace zsw {
   {
   public:
     Approximation() {
-      alpha_=0.2; normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/"; need_smooth_=false; version_=0;
+      alpha_=0.2; normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/";
       bz_judge_pt_cnt_=0;
 
       bz_krj_need_judge_cnt_=0;
@@ -44,7 +37,6 @@ namespace zsw {
       bz_error_bound_judge_cnt_=0;
     }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
-    void setNeedSmooth(bool need_smooth) { need_smooth_=need_smooth; }
     void init(const zsw::Scalar err_epsilon,
               const zsw::Scalar tri_sample_r,
               const zsw::Scalar tet_sample_r,
@@ -74,16 +66,11 @@ namespace zsw {
     void writeAdjcentCells(const std::string &filepath, const std::vector<Chd> &chds) const;
     void writeJudgePoints(const std::string &filepath) const;
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
-    void setVersion(const size_t version) { version_=version; }
     void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
     void refine2(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts);
-
-    // refine using our idea
-    void upgradeRefine(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
-
     void simpTolerance();
     void mutuallTessellation(TTds *tds_ptr=nullptr);
   private:
@@ -105,7 +92,6 @@ namespace zsw {
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
                              const zsw::Scalar v_pt,
-                             std::vector<VertexUpdateData> &vup,
                              std::vector<JudgePointUpdateData> * jup=nullptr);
     bool isTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
                                       const Eigen::Matrix<zsw::Scalar,3,1> &pt,
@@ -119,23 +105,11 @@ namespace zsw {
     bool tryCollapseBZEdge(TTds::Edge &e,
                            std::unordered_map<std::string, TTds::Edge> &bz_map,
                            bool is_bz_back=false);
-    void updateVertex(const std::vector<VertexUpdateData> &vup)
-    {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    }
     void boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
     void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map) const;
     void bzEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
     void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
     void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
-
-    void smoothBoundary();
-    void updateAllBoundaryVerticesMaxDis();
-    void laplaceSmoothZeroSurface();
-    void bilateralSmoothZeroSurface();
-    void updateAllZeroVerticesMaxDis();
-    void calcBoundaryOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const;
-    void calcZeroSurfaceOneRing(Vhd vhd, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ring_pts) const;
     size_t countZeroPoints() const;
   public:
     bool checkNormalCondition() const;
@@ -155,14 +129,12 @@ namespace zsw {
     zsw::Scalar normal_cond_scale_;
     zsw::Scalar alpha_;
     std::string tmp_outdir_;
-    bool need_smooth_;
     zsw::common::ClockC11 clock_;
     size_t bz_judge_pt_cnt_;
 
     size_t bz_krj_need_judge_cnt_;
     size_t bz_normal_cond_judge_cnt_;
     size_t bz_error_bound_judge_cnt_;
-    size_t version_;
   };
 
   zsw::Scalar calcZeroTetHeight(Chd chd);

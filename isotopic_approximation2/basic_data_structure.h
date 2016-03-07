@@ -34,20 +34,16 @@ namespace zsw{
     PointType pt_type_;
     // data for smooth
     Eigen::Matrix<zsw::Scalar,3,1> pos_ori_;
-    zsw::Scalar max_dis_; // max distance travel
     VertexInfo() {
       index_=-1;
       pt_type_=INVALID_POINT;
       pos_ori_=Eigen::Matrix<zsw::Scalar,3,1>::Zero();
-      max_dis_=0.0;
     }
     VertexInfo(size_t index, PointType pt_type,
-               Eigen::Matrix<zsw::Scalar,3,1> pos_ori,
-               zsw::Scalar max_dis) {
+               Eigen::Matrix<zsw::Scalar,3,1> pos_ori) {
       index_=index;
       pt_type_=pt_type;
       pos_ori_=pos_ori;
-      max_dis_=max_dis;
     }
   };
 
@@ -89,13 +85,9 @@ namespace zsw{
   {
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
-    Vhd addPointInDelaunaySafe(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
+    Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                VertexInfo &vertex_info,
                                std::vector<Chd> &chds);
-
-    Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                           VertexInfo &vertex_info,
-                           std::vector<Chd> &chds);
 
     bool isBoundaryEdge(const TTds::Edge &edge) const;
     bool isZeroEdge(const TTds::Edge &e) const;

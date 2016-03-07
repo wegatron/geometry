@@ -27,7 +27,7 @@ namespace zsw{
     init_vertices.reserve(bs_jpts.size());
     for(size_t ind=0; ind<bs_jpts.size(); ++ind) {
       const Eigen::Matrix<zsw::Scalar,3,1> &pt=bs_jpts[ind];
-      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, pt, 0)));
+      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, pt)));
     }
     tw_.reset(new TriangulationWapper(init_vertices));
     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
@@ -46,9 +46,9 @@ namespace zsw{
         zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
         if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
         PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
-        VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
+        VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_);
         std::vector<Chd> chds;
-        tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds);
+        tw_->addPointInDelaunay(jpt_info.second->pt_, vertex_info, chds);
         if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;  }
         updateJptsInCells(chds, err_queue);
       }
@@ -71,26 +71,6 @@ namespace zsw{
     NZSWLOG("zsw_info") << "refined add pt cnt:" << tw_->getTds().number_of_vertices()-bs_jpts.size()-1 << std::endl;
   }
 
-  void Approximation::upgradeRefine(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
-  {
-    // scale inner_jpts_, outer_jpts_ bs_jpts in x direction by 0.25
-    for(size_t i=0; i<inner_jpts_.size(); ++i) { inner_jpts_[i][0]*=0.25; }
-    for(size_t i=0; i<outer_jpts_.size(); ++i) { outer_jpts_[i][0]*=0.25; }
-    for(size_t i=0; i<bs_jpts.size(); ++i) { bs_jpts[i][0]*=0.25; }
-    // deformed refine
-    refine(bs_jpts);
-    //writeTetMesh("/home/wegatron/tmp/deformed_refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    // scale back jpts_, inner_jpts_, outer_jpts_ in x direction
-    for(size_t i=0; i<inner_jpts_.size(); ++i) { inner_jpts_[i][0]=inner_jpts_[i][0]*4; }
-    for(size_t i=0; i<outer_jpts_.size(); ++i) { outer_jpts_[i][0]=outer_jpts_[i][0]*4; }
-    // get deform back the tetmesh
-    TTds &tds=tw_->getTds();
-    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-      if(vit->info().pt_type_==zsw::INVALID_POINT) { continue; }
-      vit->set_point(Point(vit->point()[0]*4, vit->point()[1], vit->point()[2]));
-    }
-  }
-
   void Approximation::refine2(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
                               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
                               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
@@ -104,7 +84,7 @@ namespace zsw{
     init_vertices.reserve(ori_bs_jpts.size());
     for(size_t ind=0; ind<ori_bs_jpts.size(); ++ind) {
       const Eigen::Matrix<zsw::Scalar,3,1> &pt=deformed_bs_jpts[ind];
-      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, ori_bs_jpts[ind], 0)));
+      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::BBOX_POINT, ori_bs_jpts[ind])));
     }
     tw_.reset(new TriangulationWapper(init_vertices));
     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
@@ -123,9 +103,9 @@ namespace zsw{
       PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
       size_t deformed_jpt_index = std::distance(&jpts_[0], jpt_info.second);
       Eigen::Matrix<zsw::Scalar,3,1> deformed_pt = (deformed_jpt_index<inner_jpts_.size()) ? deformed_inner_jpts[deformed_jpt_index] : deformed_outer_jpts[deformed_jpt_index-inner_jpts_.size()];
-      VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
+      VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_);
       std::vector<Chd> chds;
-      tw_->addPointInDelaunaySafe(deformed_pt, vertex_info, chds);
+      tw_->addPointInDelaunay(deformed_pt, vertex_info, chds);
       if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl; }
       updateJptsInCells2(chds, err_queue);
     }
@@ -203,9 +183,9 @@ namespace zsw{
     // if(ind-1!=25) {    return true; }
     // add and update
     PointType pt_type=(jpts_[jpt_ind].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
-    VertexInfo vertex_info(-1, pt_type, jpts_[jpt_ind].pt_, 0.0);
+    VertexInfo vertex_info(-1, pt_type, jpts_[jpt_ind].pt_);
     //writeTetMesh("/home/wegatron/tmp/before_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    tw_->addPointInDelaunaySafe(jpts_[jpt_ind].pt_, vertex_info, chds);
+    tw_->addPointInDelaunay(jpts_[jpt_ind].pt_, vertex_info, chds);
     //writeTetMesh("/home/wegatron/tmp/after_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     return false;
   }

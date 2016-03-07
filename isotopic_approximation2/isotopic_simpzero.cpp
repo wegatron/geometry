@@ -54,10 +54,8 @@ namespace zsw{
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
     const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt=nullptr;
-    std::vector<VertexUpdateData> vup;
     bz_krj_need_judge_cnt_+=sample_points.size();
     for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : sample_points) {
-      vup.clear(); // can't parallel
       // if(krj.judge(pt) &&
       //    isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)
       //    && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
@@ -66,7 +64,7 @@ namespace zsw{
         if(isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)) {
           ++bz_error_bound_judge_cnt_;
           bz_judge_pt_cnt_+=jpts_in_bbox.size();
-          if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
+          if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, nullptr)) { merge_pt=&pt; break; }
         }
       }
     }

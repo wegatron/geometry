@@ -459,7 +459,6 @@ void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Fac
     vhd->info().index_=next_v_id_++;
     vhd->info().pt_type_=pt_type;
     vhd->info().pos_ori_<< pt[0], pt[1], pt[2];
-    vhd->info().max_dis_=0.0;
     return vhd;
   }
 
@@ -502,7 +501,7 @@ void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Fac
     std::cerr << "test passed!!!!!" << std::endl;
   }
 
-  Vhd TriangulationWapper::addPointInDelaunaySafe(
+  Vhd TriangulationWapper::addPointInDelaunay(
                                                   const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                                   VertexInfo &vertex_info,
                                                   std::vector<Chd> &chds)
@@ -526,18 +525,6 @@ void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Fac
       }
       if(flag) { chds.push_back(cit); }
     }
-    return vhd;
-  }
-
-  Vhd TriangulationWapper::addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                                              VertexInfo &vertex_info,
-                                              std::vector<Chd> &chds)
-  {
-    Point point(pt[0],pt[1], pt[2]);
-    Vhd vhd=delaunay_triangulation_.insert(point);
-    vertex_info.index_=next_v_id_++;
-    vhd->info()=vertex_info;
-    tds_.incident_cells(vhd, std::back_inserter(chds));
     return vhd;
   }
 
