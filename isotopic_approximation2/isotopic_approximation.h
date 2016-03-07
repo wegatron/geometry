@@ -60,7 +60,8 @@ namespace zsw {
     void writeZeroSurface(const std::string &filepath) const;
     void writeTetMesh(const std::string &filepath,
                       std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs,
-                      const TTds *tds_ptr=nullptr) const;
+                      const TTds *tds_ptr = nullptr,
+                      bool cur_pts = true) const;
 
     void writeAdjcentCells(const std::string &filepath, const TTds::Edge &e) const;
     void writeAdjcentCells(const std::string &filepath, const std::vector<Chd> &chds) const;
@@ -82,8 +83,8 @@ namespace zsw {
                            std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                            ErrorMaxComparison> &err_queue);
     void updateJptsInCellsD(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
-                           std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
-                           ErrorMaxComparison> &err_queue);
+                            std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+                            ErrorMaxComparison> &err_queue);
 
     bool checkUpNormalCondition(Chd chd, std::vector<Chd> &chds_queue, bool using_cur_pts);
     bool isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
@@ -104,7 +105,7 @@ namespace zsw {
     void boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
     void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map) const;
     void bzEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
-    void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
+    void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox, bool using_cur_pts) const;
     void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
     size_t countZeroPoints() const;
   public:
@@ -140,6 +141,7 @@ namespace zsw {
   zsw::Scalar calcTetHeightType1(const Eigen::Matrix<zsw::Scalar,3,1> &pt0, const Eigen::Matrix<zsw::Scalar,3,1> &pt1,
                                  const Eigen::Matrix<zsw::Scalar,3,1> &pt2, const Eigen::Matrix<zsw::Scalar,3,1> &pt3);
   void calcVerticesBbox(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
+  void calcVerticesBboxD(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox);
   void writePoints(const std::string &filepath, const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &pts);
   void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center);
 }

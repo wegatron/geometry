@@ -47,7 +47,7 @@ namespace zsw{
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
     std::vector<const JudgePoint*> jpts_in_bbox;
-    calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
+    calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox, true);
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> sample_points;
     sampleAdjCells(e, sample_points);
 

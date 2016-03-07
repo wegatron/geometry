@@ -111,9 +111,14 @@ namespace zsw{
         VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_cur_);
         std::vector<Chd> chds;
         tw_->addPointInDelaunay(jpt_info.second->pt_c_, vertex_info, chds);
-        if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl; }
+        if(++add_pt_for_err%100==0) {
+          NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;
+          writeTetMesh(tmp_outdir_+"simp_tol_ori_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, false);
+          writeTetMesh(tmp_outdir_+"simp_tol_deformed_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, true);
+        }
         updateJptsInCellsD(chds, err_queue);
       }
+      std::cout << __FILE__ << __LINE__ << std::endl;
       // find a tet viloate the normal condition
       bool viloate_normal_cond=false;
       std::vector<Chd> tmp_chds;

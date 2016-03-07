@@ -57,8 +57,8 @@ namespace zsw{
 
   struct JudgePoint
   {
-    Eigen::Matrix<zsw::Scalar,3,1> pt_cur_; // curent
     Eigen::Matrix<zsw::Scalar,3,1> pt_c_; // corrospoinding
+    Eigen::Matrix<zsw::Scalar,3,1> pt_cur_; // curent
     const zsw::Scalar val_exp_;
     zsw::Scalar val_cur_;
   };

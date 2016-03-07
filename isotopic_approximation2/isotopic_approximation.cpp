@@ -113,7 +113,7 @@ namespace zsw{
     // calc jpts in bbox
     std::vector<const JudgePoint*> jpts_in_bbox;
     Vhd vhds[4] = {chd->vertex(0), chd->vertex(1), chd->vertex(2), chd->vertex(3)};
-    calcJptsInBbox(vhds,4,jpts_in_bbox);
+    calcJptsInBbox(vhds,4,jpts_in_bbox, using_cur_pts);
     Eigen::Matrix<zsw::Scalar,4,4> A;
     if(using_cur_pts) {
       A <<
@@ -181,7 +181,7 @@ namespace zsw{
                                          ErrorMaxComparison> &err_queue)
   {
     std::vector<std::vector<JudgePoint*>> updated_jpts(chds.size());
-#pragma omp parallel for
+    //#pragma omp parallel for
     for(size_t i=0; i<chds.size(); ++i) {
       if(tw_->isValidCell(chds[i])) {
         updateJptsInCell(chds[i], &updated_jpts[i], false);
@@ -282,13 +282,23 @@ namespace zsw{
     }
   }
 
-  void Approximation::calcJptsInBbox(Vhd *vhd_ptr, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const
+  void Approximation::calcJptsInBbox(Vhd *vhd_ptr, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox,
+                                     bool using_cur_pts) const
   {
     Eigen::Matrix<zsw::Scalar,3,2> bbox;
-    calcVerticesBbox(vhd_ptr, n, bbox);
+    if(using_cur_pts) {
+      calcVerticesBbox(vhd_ptr, n, bbox);
+    } else {
+      calcVerticesBboxD(vhd_ptr, n, bbox);
+    }
     for(const JudgePoint &jpt : jpts_) {
-      if(jpt.pt_cur_[0]<bbox(0,0) || jpt.pt_cur_[1]<bbox(1,0) || jpt.pt_cur_[2]<bbox(2,0) ||
-         jpt.pt_cur_[0]>bbox(0,1) || jpt.pt_cur_[1]>bbox(1,1) || jpt.pt_cur_[2]>bbox(2,1)) { continue; }
+      if(using_cur_pts) {
+        if(jpt.pt_cur_[0]<bbox(0,0) || jpt.pt_cur_[1]<bbox(1,0) || jpt.pt_cur_[2]<bbox(2,0) ||
+           jpt.pt_cur_[0]>bbox(0,1) || jpt.pt_cur_[1]>bbox(1,1) || jpt.pt_cur_[2]>bbox(2,1)) { continue; }
+      } else {
+        if(jpt.pt_c_[0]<bbox(0,0) || jpt.pt_c_[1]<bbox(1,0) || jpt.pt_c_[2]<bbox(2,0) ||
+           jpt.pt_c_[0]>bbox(0,1) || jpt.pt_c_[1]>bbox(1,1) || jpt.pt_c_[2]>bbox(2,1)) { continue; }
+      }
       jpts_in_bbox.push_back(&jpt);
     }
   }
@@ -317,6 +327,22 @@ namespace zsw{
       for(size_t di=0; di<3; ++di) {
         if((*vhd_ptr)->point()[di] < bbox(di,0)) { bbox(di,0)=(*vhd_ptr)->point()[di]; }
         else if((*vhd_ptr)->point()[di] > bbox(di,1)) { bbox(di,1)=(*vhd_ptr)->point()[di]; }
+      }
+    }
+    Eigen::Matrix<zsw::Scalar,3,1> eps_mat; eps_mat<<zsw::const_val::eps, zsw::const_val::eps, zsw::const_val::eps;
+    bbox.block<3,1>(0,0) = bbox.block<3,1>(0,0)-eps_mat;
+    bbox.block<3,1>(0,1) = bbox.block<3,1>(0,1)+eps_mat;
+  }
+
+  void calcVerticesBboxD(Vhd *vhd_ptr, const size_t n, Eigen::Matrix<zsw::Scalar,3,2> &bbox)
+  {
+    bbox.block<3,1>(0,0) = (*vhd_ptr)->info().pos_c_;
+    bbox.block<3,1>(0,1) = (*vhd_ptr)->info().pos_c_;
+    for(size_t i=1; i<n; ++i) {
+      ++vhd_ptr;
+      for(size_t di=0; di<3; ++di) {
+        if((*vhd_ptr)->info().pos_c_[di] < bbox(di,0)) { bbox(di,0)=(*vhd_ptr)->info().pos_c_[di]; }
+        else if((*vhd_ptr)->info().pos_c_[di]> bbox(di,1)) { bbox(di,1)=(*vhd_ptr)->info().pos_c_[di]; }
       }
     }
     Eigen::Matrix<zsw::Scalar,3,1> eps_mat; eps_mat<<zsw::const_val::eps, zsw::const_val::eps, zsw::const_val::eps;

@@ -34,7 +34,7 @@ namespace zsw{
 
   void Approximation::writeTetMesh(const std::string &filepath,
                                    std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs,
-                                   const TTds *tds_ptr) const
+                                   const TTds *tds_ptr, bool cur_pts) const
   {
     std::ofstream ofs;
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
@@ -46,7 +46,8 @@ namespace zsw{
     size_t v_index=0;
     for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
       if(vit->info().pt_type_==zsw::INVALID_POINT) { continue; }
-      ofs << *vit << std::endl;
+      if(cur_pts) { ofs << *vit << std::endl; }
+      else { ofs << vit->info().pos_c_.transpose() << std::endl; }
       v_map[vit] = v_index++;
     }
 

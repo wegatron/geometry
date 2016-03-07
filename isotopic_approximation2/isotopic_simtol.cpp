@@ -88,7 +88,7 @@ namespace zsw{
     std::vector<Vhd> opposite_vs;
     tw_->calcBoundTris(e, bound_tris, opposite_vs);
     std::vector<const JudgePoint*> jpts_in_bbox;
-    calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox);
+    calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox, true);
     // candicate merge points in kernel region
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
