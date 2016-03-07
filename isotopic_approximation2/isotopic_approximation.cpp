@@ -35,7 +35,7 @@ namespace zsw{
     NZSWLOG("zsw_info") << "cell size:" << tw_->getTds().number_of_cells() << std::endl;
   }
 
-  void Approximation::init2(const zsw::Scalar err_epsilon,
+  void Approximation::initD(const zsw::Scalar err_epsilon,
                             const zsw::Scalar tri_sample_r,
                             const zsw::Scalar tet_sample_r,
                             std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_inner_jpts,
@@ -51,7 +51,7 @@ namespace zsw{
     NZSWLOG("zsw_info") << "inner judge point size:" << inner_jpts_.size() << std::endl;
     NZSWLOG("zsw_info") << "outer judge point size:" << outer_jpts_.size() << std::endl;
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
-    refine2(ori_bs_jpts, deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
+    refineD(ori_bs_jpts, deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
     NZSWLOG("zsw_info") << "refine time cost" << clock_.time() << std::endl;
     NZSWLOG("zsw_info") << "refine complete, init finished!" << std::endl;
     NZSWLOG("zsw_info") << "vertex size:" << tw_->getTds().number_of_vertices() << std::endl;
@@ -103,29 +103,37 @@ namespace zsw{
     return cnt;
   }
 
-  zsw::Scalar Approximation::updateJptsInCell(Chd chd,
-                                              std::vector<JudgePoint*> *updated_jpts)
+  void Approximation::updateJptsInCell(Chd chd,
+                                       std::vector<JudgePoint*> *updated_jpts,
+                                       bool using_cur_pts)
   {
-    assert(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
-           && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT);
-    if(!(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT
-         && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT))
-      { return -1; }
+    if(!(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(1)->info().pt_type_!=zsw::INVALID_POINT
+         && chd->vertex(2)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(3)->info().pt_type_!=zsw::INVALID_POINT))
+      { return; }
     // calc jpts in bbox
     std::vector<const JudgePoint*> jpts_in_bbox;
     Vhd vhds[4] = {chd->vertex(0), chd->vertex(1), chd->vertex(2), chd->vertex(3)};
     calcJptsInBbox(vhds,4,jpts_in_bbox);
     Eigen::Matrix<zsw::Scalar,4,4> A;
-    A <<
-      chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
-      chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
-      chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2],
-      1,1,1,1;
+    if(using_cur_pts) {
+      A <<
+        chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+        chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+        chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2],
+        1,1,1,1;
+    } else {
+      A.block<3,1>(0,0) = chd->vertex(0)->info().pos_c_;
+      A.block<3,1>(0,1) = chd->vertex(1)->info().pos_c_;
+      A.block<3,1>(0,2) = chd->vertex(2)->info().pos_c_;
+      A.block<3,1>(0,3) = chd->vertex(3)->info().pos_c_;
+      A(3,0) = A(3,1) = A(3,2) = A(3,3) = 1.0;
+    }
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
-    zsw::Scalar min_fabs_val=1;
     for(const JudgePoint * jpt : jpts_in_bbox) {
       Eigen::Matrix<zsw::Scalar,4,1> x, b;
-      b<< jpt->pt_[0],jpt->pt_[1],jpt->pt_[2],1;
+      b[3] = 1.0;
+      if(using_cur_pts) { b.block<3,1>(0,0) = jpt->pt_cur_;}
+      else { b.block<3,1>(0,0) = jpt->pt_c_; }
       x=pplu.solve(b);
       if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps || x[2]<-zsw::const_val::eps
          || x[3]<-zsw::const_val::eps) { continue; } // jpt not in this cell
@@ -138,14 +146,12 @@ namespace zsw{
       }
       JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
       tmp_jpt->val_cur_=val.dot(x);
-      min_fabs_val=min(fabs(tmp_jpt->val_cur_), min_fabs_val);
       if(updated_jpts!=nullptr) {      updated_jpts->push_back(tmp_jpt); }
       // if(err_queue!=nullptr) {
       //   zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
       //   if(err>1) { err_queue->push(std::make_pair(err, tmp_jpt)); }
       // }
     }
-    return min_fabs_val;
   }
 
   void Approximation::updateJptsInCells(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
@@ -156,7 +162,7 @@ namespace zsw{
 #pragma omp parallel for
     for(size_t i=0; i<chds.size(); ++i) {
       if(tw_->isValidCell(chds[i])) {
-        updateJptsInCell(chds[i], &updated_jpts[i]);
+        updateJptsInCell(chds[i], &updated_jpts[i], true);
         chds[i]->info().satisfy_normal_cond_=false;
       }
     }
@@ -170,26 +176,15 @@ namespace zsw{
     }
   }
 
-  void Approximation::updateJptsInCells2(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+  void Approximation::updateJptsInCellsD(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                                          std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                                          ErrorMaxComparison> &err_queue)
   {
     std::vector<std::vector<JudgePoint*>> updated_jpts(chds.size());
-    //#pragma omp parallel for
+#pragma omp parallel for
     for(size_t i=0; i<chds.size(); ++i) {
       if(tw_->isValidCell(chds[i])) {
-        Eigen::Matrix<zsw::Scalar,3,1> tmp_pts[4];
-        for(size_t j=0; j<4; ++j) {
-          tmp_pts[j][0] = chds[i]->vertex(j)->point()[0];
-          tmp_pts[j][1] = chds[i]->vertex(j)->point()[1];
-          tmp_pts[j][2] = chds[i]->vertex(j)->point()[2];
-          Eigen::Matrix<zsw::Scalar,3,1> pos_ori = chds[i]->vertex(j)->info().pos_ori_;
-          chds[i]->vertex(j)->set_point(Point(pos_ori[0], pos_ori[1], pos_ori[2]));
-        }
-        updateJptsInCell(chds[i], &updated_jpts[i]);
-        for(size_t j=0; j<4; ++j) {
-          chds[i]->vertex(j)->set_point(Point(tmp_pts[j][0], tmp_pts[j][1], tmp_pts[j][2]));
-        }
+        updateJptsInCell(chds[i], &updated_jpts[i], false);
         chds[i]->info().satisfy_normal_cond_=false;
       }
     }
@@ -239,7 +234,7 @@ namespace zsw{
       for(size_t jpt_i=0; jpt_i<jpts_in_bbox.size(); ++jpt_i) {
         if(false_cnt!=0 || is_updated[jpt_i]) { continue; }
         const JudgePoint *jpt=jpts_in_bbox[jpt_i];
-        Eigen::Matrix<zsw::Scalar,4,1> b; b.block<3,1>(0,0)=jpt->pt_; b[3]=1;
+        Eigen::Matrix<zsw::Scalar,4,1> b; b.block<3,1>(0,0)=jpt->pt_cur_; b[3]=1;
         Eigen::Matrix<zsw::Scalar,4,1> x=pplu.solve(b);
         if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps
            || x[2]<-zsw::const_val::eps || x[3]<-zsw::const_val::eps) { continue; }
@@ -292,8 +287,8 @@ namespace zsw{
     Eigen::Matrix<zsw::Scalar,3,2> bbox;
     calcVerticesBbox(vhd_ptr, n, bbox);
     for(const JudgePoint &jpt : jpts_) {
-      if(jpt.pt_[0]<bbox(0,0) || jpt.pt_[1]<bbox(1,0) || jpt.pt_[2]<bbox(2,0) ||
-         jpt.pt_[0]>bbox(0,1) || jpt.pt_[1]>bbox(1,1) || jpt.pt_[2]>bbox(2,1)) { continue; }
+      if(jpt.pt_cur_[0]<bbox(0,0) || jpt.pt_cur_[1]<bbox(1,0) || jpt.pt_cur_[2]<bbox(2,0) ||
+         jpt.pt_cur_[0]>bbox(0,1) || jpt.pt_cur_[1]>bbox(1,1) || jpt.pt_cur_[2]>bbox(2,1)) { continue; }
       jpts_in_bbox.push_back(&jpt);
     }
   }

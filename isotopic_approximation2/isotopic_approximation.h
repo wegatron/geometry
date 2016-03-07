@@ -44,7 +44,7 @@ namespace zsw {
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
 
-    void init2(const zsw::Scalar err_epsilon,
+    void initD(const zsw::Scalar err_epsilon,
                const zsw::Scalar tri_sample_r,
                const zsw::Scalar tet_sample_r,
                std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
@@ -67,7 +67,7 @@ namespace zsw {
     void writeJudgePoints(const std::string &filepath) const;
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
     void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
-    void refine2(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
+    void refineD(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts);
@@ -77,17 +77,15 @@ namespace zsw {
     void simpZeroSurface();
     void simpBZEdges();
 
-    zsw::Scalar updateJptsInCell(Chd chd, std::vector<JudgePoint*> * updated_jpts);
-
-    void updateJptsInCells2(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
-                            std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
-                            ErrorMaxComparison> &err_queue);
-
+    void updateJptsInCell(Chd chd, std::vector<JudgePoint*> * updated_jpts, bool using_cur_pts);
     void updateJptsInCells(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                            std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                            ErrorMaxComparison> &err_queue);
+    void updateJptsInCellsD(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+                           std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+                           ErrorMaxComparison> &err_queue);
 
-    bool checkUpNormalCondition(Chd chd, std::vector<Chd> &chds_queue);
+    bool checkUpNormalCondition(Chd chd, std::vector<Chd> &chds_queue, bool using_cur_pts);
     bool isSatisfyErrorBound(const std::vector<VertexTriple> &bound_tris,
                              const std::vector<const JudgePoint*> &jpts_in_bbox,
                              const Eigen::Matrix<zsw::Scalar,3,1> &merge_pt,
@@ -100,8 +98,6 @@ namespace zsw {
                                      std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const;
     bool tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
-    /* bool tryCollapseZeroEdge(TTds::Edge &e, */
-    /*                          std::unordered_map<std::string,TTds::Edge> &z_map); */
     bool tryCollapseBZEdge(TTds::Edge &e,
                            std::unordered_map<std::string, TTds::Edge> &bz_map,
                            bool is_bz_back=false);

@@ -19,7 +19,7 @@ namespace zsw{
     ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
         << jpts_.size() << " float" << std::endl;
     for(const JudgePoint &jpt : jpts_) {
-      ofs << jpt.pt_.transpose() << std::endl;
+      ofs << jpt.pt_cur_.transpose() << std::endl;
     }
     ofs << "CELLS " << jpts_.size() << " " << jpts_.size()*2 << std::endl;
     for(size_t i=0; i<jpts_.size(); ++i) {      ofs << "1 " << i << std::endl;    }
@@ -125,7 +125,7 @@ namespace zsw{
       ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
           << jpts.size() << " float" << std::endl;
       for(const JudgePoint *jpt : jpts) {
-        ofs << jpt->pt_.transpose() << std::endl;
+        ofs << jpt->pt_cur_.transpose() << std::endl;
       }
       ofs << "CELLS " << jpts.size() << " " << jpts.size()*2 << std::endl;
       for(size_t i=0; i<jpts.size(); ++i) {      ofs << "1 " << i << std::endl;    }

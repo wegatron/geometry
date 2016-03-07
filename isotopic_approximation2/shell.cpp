@@ -69,72 +69,7 @@ namespace zsw{
     boundSphere("bound_sphere.obj", scale, transform, bs_jpts);
   }
 
-  zsw::Scalar genAndSampleDeformedShell(zsw::mesh::TriMesh &ori_mesh,
-                                        zsw::mesh::TriMesh &deformed_mesh,
-                                        const zsw::Scalar err_epsilon,
-                                        const zsw::Scalar tri_sample_r,
-                                        std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
-                                        std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-                                        std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
-  {
-    zsw::Scalar deform_scale=calcDeformScale(ori_mesh, deformed_mesh);
-    std::cout << "!!!!!!!!!!!!!!!!scale=" << deform_scale << std::endl;
-    if(!deformed_mesh.has_vertex_normals()) {
-      deformed_mesh.request_face_normals();
-      deformed_mesh.request_vertex_normals();
-      deformed_mesh.update_normals();
-    }
-    // if(!ori_mesh.has_vertex_normals()) {
-    //   ori_mesh.request_face_normals();
-    //   ori_mesh.request_vertex_normals();
-    //   ori_mesh.update_normals();
-    // }
-    // Eigen::Matrix<zsw::Scalar,3,2> ori_bbox;
-    // ori_bbox.block<3,1>(0,0) = ori_mesh.point(*ori_mesh.vertices_begin());
-    // ori_bbox.block<3,1>(0,1) = ori_bbox.block<3,1>(0,0);
-
-    Eigen::Matrix<zsw::Scalar,3,2> bbox;
-    bbox.block<3,1>(0,0) = deformed_mesh.point(*deformed_mesh.vertices_begin());
-    bbox.block<3,1>(0,1) = bbox.block<3,1>(0,0);
-    //Eigen::Matrix<zsw::Scalar,3,3> ori_in_tri, ori_out_tri;
-    Eigen::Matrix<zsw::Scalar,3,3> deformed_in_tri, deformed_out_tri;
-    const size_t nf=ori_mesh.n_faces();
-    for(size_t fi=0; fi<nf; ++fi) {
-      zsw::mesh::TriMesh::FaceHandle fh=zsw::mesh::TriMesh::FaceHandle(int(fi));
-      size_t vi=0;
-      // for(zsw::mesh::TriMesh::CFVIter fv_it=ori_mesh.cfv_iter(fh); fv_it.is_valid(); ++fv_it) {
-      //   Eigen::Matrix<zsw::Scalar,3,1> ori_offset=ori_mesh.normal(*fv_it)*err_epsilon;
-      //   ori_in_tri.block<3,1>(0,vi)=ori_mesh.point(*fv_it)-ori_offset;
-      //   ori_out_tri.block<3,1>(0,vi)=ori_mesh.point(*fv_it)+ori_offset;
-      //   ++vi;
-      //   for(size_t di=0; di<3; ++di) {
-      //     if(ori_out_tri(di,vi)<ori_bbox(di,0)) { ori_bbox(di,0)=ori_out_tri(di,vi); }
-      //     else if(ori_out_tri(di,vi)>ori_bbox(di,1)){ ori_bbox(di,1)=ori_out_tri(di,vi); }
-      //   }
-      // }
-      vi=0;
-      for(zsw::mesh::TriMesh::CFVIter fv_it=deformed_mesh.cfv_iter(fh); fv_it.is_valid(); ++fv_it) {
-        Eigen::Matrix<zsw::Scalar,3,1> deformed_offset=deformed_mesh.normal(*fv_it)*err_epsilon*deform_scale;
-        deformed_in_tri.block<3,1>(0,vi)=deformed_mesh.point(*fv_it)-deformed_offset;
-        deformed_out_tri.block<3,1>(0,vi)=deformed_mesh.point(*fv_it)+deformed_offset;
-        for(size_t di=0; di<3; ++di) {
-          if(deformed_out_tri(di,vi)<bbox(di,0)) { bbox(di,0)=deformed_out_tri(di,vi); }
-          else if(deformed_out_tri(di,vi)>bbox(di,1)){ bbox(di,1)=deformed_out_tri(di,vi); }
-        }
-        ++vi;
-      }
-      // sampleTriangleRefTriangle(deformed_in_tri, ori_in_tri, tri_sample_r, inner_jpts);
-      // sampleTriangleRefTriangle(deformed_out_tri, ori_out_tri, tri_sample_r, outer_jpts);
-      sampleTriangle(deformed_in_tri, tri_sample_r*deform_scale, inner_jpts);
-      sampleTriangle(deformed_out_tri, tri_sample_r*deform_scale, outer_jpts) ;
-    }
-    zsw::Scalar scale=0.5*(bbox.block<3,1>(0,1)-bbox.block<3,1>(0,0)).norm();
-    Eigen::Matrix<zsw::Scalar,3,1> transform =0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
-    boundSphere("bound_sphere.obj", scale, transform, bs_jpts);
-    return deform_scale;
-  }
-
-  void genAndSampleAllShell(zsw::mesh::TriMesh &ori_mesh,
+  void genAndSampleShellD(zsw::mesh::TriMesh &ori_mesh,
                             zsw::mesh::TriMesh &deformed_mesh,
                             const zsw::Scalar err_epsilon,
                             const zsw::Scalar tri_sample_r,

@@ -25,25 +25,23 @@ namespace zsw{
   {
     Eigen::Matrix<zsw::Scalar,3,1> normal_;
     Eigen::Matrix<zsw::Scalar,3,1> v0_;
-    zsw::Scalar d_;
   };
 
   struct VertexInfo
   {
     size_t index_;
     PointType pt_type_;
-    // data for smooth
-    Eigen::Matrix<zsw::Scalar,3,1> pos_ori_;
+    Eigen::Matrix<zsw::Scalar,3,1> pos_c_; // position in the another space(original space or deformed space)
     VertexInfo() {
       index_=-1;
       pt_type_=INVALID_POINT;
-      pos_ori_=Eigen::Matrix<zsw::Scalar,3,1>::Zero();
+      pos_c_=Eigen::Matrix<zsw::Scalar,3,1>::Zero();
     }
     VertexInfo(size_t index, PointType pt_type,
-               Eigen::Matrix<zsw::Scalar,3,1> pos_ori) {
+               Eigen::Matrix<zsw::Scalar,3,1> pos_c) {
       index_=index;
       pt_type_=pt_type;
-      pos_ori_=pos_ori;
+      pos_c_=pos_c;
     }
   };
 
@@ -59,7 +57,8 @@ namespace zsw{
 
   struct JudgePoint
   {
-    Eigen::Matrix<zsw::Scalar,3,1> pt_;
+    Eigen::Matrix<zsw::Scalar,3,1> pt_cur_; // curent
+    Eigen::Matrix<zsw::Scalar,3,1> pt_c_; // corrospoinding
     const zsw::Scalar val_exp_;
     zsw::Scalar val_cur_;
   };
@@ -86,8 +85,14 @@ namespace zsw{
   public:
     TriangulationWapper(const std::vector<std::pair<Point, VertexInfo>> &vertices);
     Vhd addPointInDelaunay(const Eigen::Matrix<zsw::Scalar,3,1> &pt,
-                               VertexInfo &vertex_info,
-                               std::vector<Chd> &chds);
+                           VertexInfo &vertex_info,
+                           std::vector<Chd> &chds);
+    void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
+    Vhd insertInEdge(TTds::Edge &edge, const Point &pt, const PointType pt_type,
+                     TTds &tds);
+    TTds &getTds()  { return tds_; }
+    void setTds(TTds &tds) { tds_=tds; }
+    void swapVertex();
 
     bool isBoundaryEdge(const TTds::Edge &edge) const;
     bool isZeroEdge(const TTds::Edge &e) const;
@@ -99,19 +104,10 @@ namespace zsw{
 
     bool isSatisfyLinkCondition(const TTds::Edge &edge) const;
     void calcBoundTris(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
-    void calcBoundTrisAdvance(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris, std::vector<Vhd> &opposite_vs) const;
     void calcAdjZeroSupportPlanes(const TTds::Edge &edge, std::vector<Plane> &adj_zero_support_planes) const;
-
-    // void initCellKeySet(std::unordered_set<std::string> &cell_key_set) const;
-
-    void collapseEdge(TTds::Edge &edge, Vhd vhd, const Eigen::Matrix<zsw::Scalar,3,1> &pt);
-    Vhd insertInEdge(TTds::Edge &edge, const Point &pt, const PointType pt_type,
-                     TTds &tds);
 
     const DelaunayTriangulation &getDelaunay() { return delaunay_triangulation_; }
     const TTds &getTds() const { return tds_; }
-    TTds &getTds()  { return tds_; }
-    void setTds(TTds &tds) { tds_=tds; }
 
     void makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Facet, CGAL::Orientation>> &outer_map,
                   std::vector<Chd> &hole);
@@ -119,7 +115,6 @@ namespace zsw{
     void test() const;
     void writeVertex(const std::string &filepath, const std::vector<Vhd> &vs) const;
 
-    void removeBBoxPts();
   private:
     DelaunayTriangulation delaunay_triangulation_;
     TTds &tds_;

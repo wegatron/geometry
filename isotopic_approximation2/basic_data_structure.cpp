@@ -285,24 +285,6 @@ namespace zsw{
     }
   }
 
-  void TriangulationWapper::calcBoundTrisAdvance(const TTds::Edge &edge, std::vector<VertexTriple> &bound_tris,
-                                                 std::vector<Vhd> &opposite_vs) const
-  {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-    // std::vector<Chd> chds;
-    // Vhd ev[2]={edge.first->vertex(edge.second), edge.first->vertex(edge.third)};
-    // tds_.incident_cells(ev[0], std::back_inserter(chds));
-    // tds_.incident_cells(ev[1], std::back_inserter(chds));
-    // std::unordered_set<Chd, CGAL::Handle_hash_function> incident_cell_set;
-    // for(Chd chd : chds) {
-    //   size_t cnt=0, vind=-1;
-    //   for(size_t i=0; i<4; ++i) { if(chd->vertex(i)==ev[0]) { ++cnt; vind=i; } }
-    //   assert(cnt!=0);
-    //   if(cnt==2) { continue; }
-    //   if(incident_cell_set.find(chd.neighbor(vind))!=incident_cell_set.end()) { continue; }
-    // }
-  }
-
   void TriangulationWapper::calcAdjZeroSupportPlanes(const TTds::Edge &edge, std::vector<Plane> &adj_zero_support_planes) const
   {
     std::list<TTds::Cell_handle> tmp_cells[2];
@@ -345,7 +327,6 @@ namespace zsw{
       pl.normal_.normalize();
       if(pl.normal_.dot(out_pts[0]-in_pts[0]) <0 ) { pl.normal_=-pl.normal_; }
       pl.v0_ = (in_pts[0]+out_pts[0])*0.5;
-      pl.d_=-pl.v0_.dot(pl.normal_);
 #if 0
       if(!checkZeroPlane(pl, cit)) { abort(); }
 #endif
@@ -458,7 +439,7 @@ void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Fac
     vhd->set_point(pt);
     vhd->info().index_=next_v_id_++;
     vhd->info().pt_type_=pt_type;
-    vhd->info().pos_ori_<< pt[0], pt[1], pt[2];
+    vhd->info().pos_c_<< pt[0], pt[1], pt[2];
     return vhd;
   }
 
@@ -526,26 +507,6 @@ void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Fac
       if(flag) { chds.push_back(cit); }
     }
     return vhd;
-  }
-
-  // void TriangulationWapper::initCellKeySet(std::unordered_set<std::string> &cell_key_set) const
-  // {
-  //   for(auto cit=tds_.cells_begin(); cit!=tds_.cells_end(); ++cit) {
-  //     if(!isValidCell(cit)) { continue; }
-  //     std::string key=cell2key(cit);
-  //     cell_key_set.insert(key);
-  //   }
-  // }
-
-  void TriangulationWapper::removeBBoxPts()
-  {
-    std::vector<Vhd> vhds;
-    for(auto vit = delaunay_triangulation_.vertices_begin(); vit != delaunay_triangulation_.vertices_end(); ++vit) {
-      if(vit->info().pt_type_  == zsw::BBOX_POINT) {
-        vhds.push_back(vit);
-      }
-    }
-    for(Vhd vhd : vhds) {      delaunay_triangulation_.remove(vhd);    }
   }
 
   bool TriangulationWapper::isBoundaryEdge(const TTds::Edge &edge) const
@@ -756,5 +717,17 @@ void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Fac
     for(size_t i=0; i<cells.size();++i) {      ofs << "10" << std::endl;    }
     for(size_t i=0; i<pts.size(); ++i) { ofs<<"1"<< std::endl; }
     ofs.close();
+  }
+
+  void TriangulationWapper::swapVertex()
+  {
+    for(auto vit = tds_.vertices_begin(); vit != tds_.vertices_end(); ++vit) {
+      if(vit->info().pt_type_ == INVALID_POINT) { continue; }
+      Point pos_c(vit->info().pos_c_[0], vit->info().pos_c_[1], vit->info().pos_c_[2]);
+      vit->info().pos_c_[0]=vit->point()[0];
+      vit->info().pos_c_[1]=vit->point()[1];
+      vit->info().pos_c_[2]=vit->point()[2];
+      vit->set_point(pos_c);
+    }
   }
 }

@@ -105,11 +105,11 @@ namespace zsw{
       tmp_points[i].first=jpts_in_bbox[i];
       tmp_points[i].second=0.0;
       if(!judge_func(jpts_in_bbox[i]->val_exp_)) { continue; }
-      if(krj.judge(jpts_in_bbox[i]->pt_)) {
+      if(krj.judge(jpts_in_bbox[i]->pt_cur_)) {
         is_candicate[i]=true;
         for(const Plane &plane : adj_zero_support_planes) {
-          if(plane.normal_.dot(jpts_in_bbox[i]->pt_ - plane.v0_) <0) { is_candicate[i]=false; break; }
-          zsw::Scalar tmp=plane.normal_.dot(jpts_in_bbox[i]->pt_ - plane.v0_);
+          if(plane.normal_.dot(jpts_in_bbox[i]->pt_cur_ - plane.v0_) <0) { is_candicate[i]=false; break; }
+          zsw::Scalar tmp=plane.normal_.dot(jpts_in_bbox[i]->pt_cur_ - plane.v0_);
           tmp_points[i].second+=tmp*tmp;
         }
       }
@@ -135,15 +135,15 @@ namespace zsw{
     for(std::pair<const JudgePoint*, zsw::Scalar> &cd_pt : candicate_points) {
       const JudgePoint *jpt_ptr=cd_pt.first;
       jup.clear();
-      if(isTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pt_, e.first->vertex(e.second)->info().pt_type_)
-         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_, v_pt, &jup))
+      if(isTetsSatisfyNormalCondition(bound_tris, jpt_ptr->pt_cur_, e.first->vertex(e.second)->info().pt_type_)
+         && isSatisfyErrorBound(bound_tris, jpts_in_bbox, jpt_ptr->pt_cur_, v_pt, &jup))
         { merge_pt=jpt_ptr; break; }
     }
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=e.first->vertex(e.second);
     // std::cout << "collapse " << e.first->vertex(e.second)->point() << " " << e.first->vertex(e.third)->point()
     //           << " to " << merge_pt->pt_.transpose() << std::endl;
-    tw_->collapseEdge(e, vhd, merge_pt->pt_);
+    tw_->collapseEdge(e, vhd, merge_pt->pt_cur_);
     std::for_each(jup.begin(), jup.end(), [](const JudgePointUpdateData &dt){dt.jpt->val_cur_=dt.val_cur_;});
     boundaryEdgeBack(vhd, edge_map);
 #if 0
