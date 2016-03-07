@@ -51,6 +51,12 @@ namespace zsw {
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
               std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
+    void init(const zsw::Scalar err_epsilon,
+              const zsw::Scalar tri_sample_r,
+              const zsw::Scalar tet_sample_r,
+              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+              std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+              Eigen::Matrix<zsw::Scalar,3,2> &bbox);
 
     void init2(const zsw::Scalar err_epsilon,
                const zsw::Scalar tri_sample_r,
@@ -76,6 +82,7 @@ namespace zsw {
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
     void setVersion(const size_t version) { version_=version; }
     void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
+    void refine(const Eigen::Matrix<zsw::Scalar,3,2> &bbox);
     void refine2(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,

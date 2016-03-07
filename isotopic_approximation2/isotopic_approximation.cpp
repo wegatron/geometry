@@ -43,6 +43,27 @@ namespace zsw{
     NZSWLOG("zsw_info") << "cell size:" << tw_->getTds().number_of_cells() << std::endl;
   }
 
+  void Approximation::init(const zsw::Scalar err_epsilon,
+                           const zsw::Scalar tri_sample_r,
+                           const zsw::Scalar tet_sample_r,
+                           std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+                           std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+                           Eigen::Matrix<zsw::Scalar,3,2> &bbox)
+  {
+    tri_sample_r_=tri_sample_r;
+    tet_sample_r_=tet_sample_r;
+    inner_jpts_=inner_jpts; outer_jpts_=outer_jpts;
+    NZSWLOG("zsw_info") << "inner judge point size:" << inner_jpts_.size() << std::endl;
+    NZSWLOG("zsw_info") << "outer judge point size:" << outer_jpts_.size() << std::endl;
+    jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
+    clock_.clearCur();
+    refine(bbox);
+    NZSWLOG("zsw_info") << "refine time cost" << clock_.time() << std::endl;
+    NZSWLOG("zsw_info") << "refine complete, init finished!" << std::endl;
+    NZSWLOG("zsw_info") << "vertex size:" << tw_->getTds().number_of_vertices() << std::endl;
+    NZSWLOG("zsw_info") << "cell size:" << tw_->getTds().number_of_cells() << std::endl;
+  }
+
   void Approximation::init2(const zsw::Scalar err_epsilon,
                             const zsw::Scalar tri_sample_r,
                             const zsw::Scalar tet_sample_r,
@@ -74,9 +95,11 @@ namespace zsw{
     writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     tw_->setTds(tmp_tds);
     clock_.clearCur();
+    writeTetMesh(tmp_output_dir+"before_simp_tol_inner.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpTolerance();
     NZSWLOG("zsw_info") << "simp_tol time cost:" << clock_.time() << std::endl;
     writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    writeTetMesh(tmp_output_dir+"after_simp_tol_inner.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     mutuallTessellation();
     NZSWLOG("zsw_info") << "mutuall tessellation time cost:" << clock_.time() << std::endl;
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});

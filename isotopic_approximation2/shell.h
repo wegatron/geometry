@@ -10,7 +10,15 @@ namespace zsw{
                          const zsw::Scalar tri_sample_r,
                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-                         std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
+                         std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &b_jpts);
+
+  void genAndSampleShell(zsw::mesh::TriMesh &input_mesh,
+                         const zsw::Scalar err_epsilon,
+                         const zsw::Scalar tri_sample_r,
+                         std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+                         std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+                         Eigen::Matrix<zsw::Scalar,3,2> &bbox);
+
 
   zsw::Scalar genAndSampleDeformedShell(zsw::mesh::TriMesh &input_mesh,
                                         zsw::mesh::TriMesh &deformed_mesh,

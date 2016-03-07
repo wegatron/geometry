@@ -106,7 +106,6 @@ namespace zsw{
       if(krj.judge(jpts_in_bbox[i]->pt_)) {
         is_candicate[i]=true;
         for(const Plane &plane : adj_zero_support_planes) {
-          if(plane.normal_.dot(jpts_in_bbox[i]->pt_ - plane.v0_) <0) { is_candicate[i]=false; break; }
           zsw::Scalar tmp=plane.normal_.dot(jpts_in_bbox[i]->pt_ - plane.v0_);
           tmp_points[i].second+=tmp*tmp;
         }

@@ -71,6 +71,80 @@ namespace zsw{
     NZSWLOG("zsw_info") << "refined add pt cnt:" << tw_->getTds().number_of_vertices()-bs_jpts.size()-1 << std::endl;
   }
 
+  void Approximation::refine(const Eigen::Matrix<zsw::Scalar,3,2> &bbox)
+  {
+    std::cerr << "bbox:" << bbox.transpose() << std::endl;
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, -1, 1}); }
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, 1, 1}); }
+    inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
+    outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
+    std::vector<std::pair<Point, VertexInfo>> init_vertices;
+    std::vector<size_t> indices;
+    std::vector<zsw::Scalar> dists;
+    Eigen::Matrix<zsw::Scalar,3,8> query_pts;
+    size_t q_ind = 0;
+    for(size_t i=0; i<2; ++i) {
+      for(size_t j=0; j<2; ++j) {
+        for(size_t k=0; k<2; ++k) {
+          query_pts(0, q_ind) = bbox(0, i);
+          query_pts(1, q_ind) = bbox(1, j);
+          query_pts(2, q_ind) = bbox(2, k);
+          ++q_ind;
+        }
+      }
+    }
+    std::cerr << "query pts:" << query_pts.transpose() << std::endl;
+    outer_kdtree_.queryNearest(query_pts, indices, dists);
+    for(size_t ind=0; ind<8; ++ind) {
+      const Eigen::Matrix<zsw::Scalar,3,1> &pt = outer_jpts_[indices[ind]];
+      std::cerr << "queryed jpt:" << outer_jpts_[indices[ind]].transpose() << std::endl;
+      init_vertices.push_back(std::make_pair(Point(pt[0],pt[1],pt[2]),VertexInfo(ind, zsw::OUTER_POINT, pt, 0)));
+    }
+    tw_.reset(new TriangulationWapper(init_vertices));
+    std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+                        std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
+                        ErrorMaxComparison> err_queue;
+    for(size_t i=0; i<jpts_.size();++i) {
+      zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
+      if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
+    }
+    TTds &tds=tw_->getTds();
+    size_t add_pt_for_err=0;
+    size_t add_pt_for_normal=0;
+    do{
+      while(!err_queue.empty()) {
+        std::pair<zsw::Scalar,JudgePoint*> jpt_info=err_queue.top(); err_queue.pop();
+        zsw::Scalar real_err=fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
+        if(fabs(real_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
+        PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
+        VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_, 0.0);
+        std::vector<Chd> chds;
+        tw_->addPointInDelaunaySafe(jpt_info.second->pt_, vertex_info, chds);
+        if(++add_pt_for_err%100==0) {
+          NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;
+          writeTetMesh(tmp_outdir_+"refine"+std::to_string(add_pt_for_err)+".vtk", {});
+        }
+        updateJptsInCells(chds, err_queue);
+      }
+      // find a tet viloate the normal condition
+      bool viloate_normal_cond=false;
+      std::vector<Chd> tmp_chds;
+      for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+        if(!cit->info().satisfy_normal_cond_ && !checkUpNormalCondition(cit, tmp_chds)) {
+          if(++add_pt_for_normal%50==0) { NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl; }
+          viloate_normal_cond=true;
+          break;
+        }
+      }
+      if(viloate_normal_cond) { updateJptsInCells(tmp_chds, err_queue); }
+      else { break; }
+    } while(true);
+#if 0
+    checkNormalcondition();
+#endif
+    NZSWLOG("zsw_info") << "refined add pt cnt:" << tw_->getTds().number_of_vertices()-1 << std::endl;
+  }
+
   void Approximation::upgradeRefine(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts)
   {
     // scale inner_jpts_, outer_jpts_ bs_jpts in x direction by 0.25
