@@ -30,6 +30,7 @@ clear_ellipsoid:
 .PHONY :clear_ellipsoid2
 clear_ellipsoid2:
 	rm -rf ${ELLIPSOID2_OUTPUT_DIR}/*
+	mkdir ${ELLIPSOID2_OUTPUT_DIR}/normal_cond_debug
 
 .PHONY : simp_ellipsoid
 simp_ellipsoid: export clear_ellipsoid

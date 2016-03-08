@@ -131,9 +131,7 @@ namespace zsw{
     Eigen::PartialPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu; pplu.compute(A);
     for(const JudgePoint * jpt : jpts_in_bbox) {
       Eigen::Matrix<zsw::Scalar,4,1> x, b;
-      b[3] = 1.0;
-      if(using_cur_pts) { b.block<3,1>(0,0) = jpt->pt_cur_;}
-      else { b.block<3,1>(0,0) = jpt->pt_c_; }
+      b.block<3,1>(0,0) = jpt->pt_cur_; b[3] = 1.0;
       x=pplu.solve(b);
       if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps || x[2]<-zsw::const_val::eps
          || x[3]<-zsw::const_val::eps) { continue; } // jpt not in this cell
@@ -181,13 +179,14 @@ namespace zsw{
                                          ErrorMaxComparison> &err_queue)
   {
     std::vector<std::vector<JudgePoint*>> updated_jpts(chds.size());
-    //#pragma omp parallel for
+#pragma omp parallel for
     for(size_t i=0; i<chds.size(); ++i) {
       if(tw_->isValidCell(chds[i])) {
         updateJptsInCell(chds[i], &updated_jpts[i], false);
         chds[i]->info().satisfy_normal_cond_=false;
       }
     }
+
     std::set<JudgePoint*> up_jpt_set;
     for(std::vector<JudgePoint*> up_jpt : updated_jpts) {
       for(JudgePoint * jpt : up_jpt) {            up_jpt_set.insert(jpt);          }
@@ -292,13 +291,8 @@ namespace zsw{
       calcVerticesBboxD(vhd_ptr, n, bbox);
     }
     for(const JudgePoint &jpt : jpts_) {
-      if(using_cur_pts) {
-        if(jpt.pt_cur_[0]<bbox(0,0) || jpt.pt_cur_[1]<bbox(1,0) || jpt.pt_cur_[2]<bbox(2,0) ||
-           jpt.pt_cur_[0]>bbox(0,1) || jpt.pt_cur_[1]>bbox(1,1) || jpt.pt_cur_[2]>bbox(2,1)) { continue; }
-      } else {
-        if(jpt.pt_c_[0]<bbox(0,0) || jpt.pt_c_[1]<bbox(1,0) || jpt.pt_c_[2]<bbox(2,0) ||
-           jpt.pt_c_[0]>bbox(0,1) || jpt.pt_c_[1]>bbox(1,1) || jpt.pt_c_[2]>bbox(2,1)) { continue; }
-      }
+      if(jpt.pt_cur_[0]<bbox(0,0) || jpt.pt_cur_[1]<bbox(1,0) || jpt.pt_cur_[2]<bbox(2,0) ||
+         jpt.pt_cur_[0]>bbox(0,1) || jpt.pt_cur_[1]>bbox(1,1) || jpt.pt_cur_[2]>bbox(2,1)) { continue; }
       jpts_in_bbox.push_back(&jpt);
     }
   }

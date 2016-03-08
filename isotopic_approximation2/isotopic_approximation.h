@@ -82,6 +82,7 @@ namespace zsw {
     void updateJptsInCells(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                            std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                            ErrorMaxComparison> &err_queue);
+
     void updateJptsInCellsD(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                             std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                             ErrorMaxComparison> &err_queue);

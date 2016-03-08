@@ -124,7 +124,11 @@ namespace zsw{
       std::vector<Chd> tmp_chds;
       for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
         if(!cit->info().satisfy_normal_cond_ && !checkUpNormalCondition(cit, tmp_chds, false)) {
-          if(++add_pt_for_normal%50==0) { NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl; }
+          if(++add_pt_for_normal%50==0) {
+            NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl;
+            writeTetMesh(tmp_outdir_+"simp_tol_ori_n_"+ std::to_string(add_pt_for_normal) +".vtk", {zsw::ignore_bbox}, nullptr, false);
+            writeTetMesh(tmp_outdir_+"simp_tol_deformed_n_"+ std::to_string(add_pt_for_normal) +".vtk", {zsw::ignore_bbox}, nullptr, true);
+          }
           viloate_normal_cond=true;
           break;
         }
@@ -173,7 +177,8 @@ namespace zsw{
                         true, &filepath)) {
       std::cerr << "Refine result normal condition failed on " << ind << std::endl;
     }
-    writeTetMesh(tmp_outdir_+"before_add_"+std::to_string(ind)+".vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    writeTetMesh(tmp_outdir_+"before_add_"+std::to_string(ind)+".vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out}, nullptr, false);
+    abort();
     ind++;
 #endif
     // insert point into delaunay triangulation
@@ -194,11 +199,12 @@ namespace zsw{
     // add and update
     PointType pt_type=(jpts_[jpt_ind].val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
     VertexInfo vertex_info(-1, pt_type, jpts_[jpt_ind].pt_cur_);
+    size_t nv = tw_->getTds().number_of_vertices();
     //writeTetMesh("/home/wegatron/tmp/before_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
     if(using_cur_pts) {  tw_->addPointInDelaunay(jpts_[jpt_ind].pt_cur_, vertex_info, chds);
     } else {  tw_->addPointInDelaunay(jpts_[jpt_ind].pt_c_, vertex_info, chds);  }
     //writeTetMesh("/home/wegatron/tmp/after_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    return false;
+    return tw_->getTds().number_of_vertices() == nv;
   }
 
   void calcCircumcenter(const Eigen::Matrix<zsw::Scalar,3,4> &tri_pts, Eigen::Matrix<zsw::Scalar,3,1> &center)
