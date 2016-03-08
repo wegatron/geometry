@@ -43,7 +43,7 @@ namespace zsw{
     std::vector<TTds::Edge> edges;
     tds.incident_edges(vhd, std::back_inserter(edges));
     for(const TTds::Edge &e : edges) {
-      if(!tw_->isBZEdge(e) || !tw_->isZeroEdge(e)) { continue; }
+      if(!tw_->isBZEdge(e) && !tw_->isZeroEdge(e)) { continue; }
       std::string key_str=edge2key(e);
       edge_map.insert(std::make_pair(key_str, e));
     }
