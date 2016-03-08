@@ -13,15 +13,16 @@ namespace zsw{
                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
 
   void genAndSampleShellD(zsw::mesh::TriMesh &input_mesh,
-                            zsw::mesh::TriMesh &deformed_mesh,
-                            const zsw::Scalar err_epsilon,
-                            const zsw::Scalar tri_sample_r,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts);
+                          zsw::mesh::TriMesh &deformed_mesh,
+                          const zsw::Scalar err_epsilon,
+                          const zsw::Scalar tri_sample_r,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts,
+                          zsw::Scalar &g_scale);
 
   void calcBoundSphere(const zsw::mesh::TriMesh &mesh,
                        Eigen::Matrix<zsw::Scalar,3,1> &center,

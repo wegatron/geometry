@@ -170,7 +170,7 @@ namespace zsw{
     }
     for(JudgePoint * jpt : up_jpt_set) {
       zsw::Scalar tmp_err=fabs(jpt->val_cur_-jpt->val_exp_);
-      if(tmp_err>1.0) { err_queue.push(std::make_pair(tmp_err, jpt)); }
+      if(tmp_err > 1.0 - alpha_) { err_queue.push(std::make_pair(tmp_err, jpt)); }
     }
   }
 
@@ -193,7 +193,7 @@ namespace zsw{
     }
     for(JudgePoint * jpt : up_jpt_set) {
       zsw::Scalar tmp_err=fabs(jpt->val_cur_-jpt->val_exp_);
-      if(tmp_err>1.0) { err_queue.push(std::make_pair(tmp_err, jpt)); }
+      if(tmp_err > 1.0 - alpha_) { err_queue.push(std::make_pair(tmp_err, jpt)); }
     }
   }
 
@@ -254,7 +254,8 @@ namespace zsw{
     return false_cnt==0;
   }
 
-  void Approximation::sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const
+  void Approximation::sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points,
+                                     bool accord_cpts) const
   {
     Vhd vhds[2]={e.first->vertex(e.second), e.first->vertex(e.third)};
     std::vector<Chd> cells;
@@ -277,7 +278,14 @@ namespace zsw{
       v1<< it->second->vertex(1)->point()[0],it->second->vertex(1)->point()[1],it->second->vertex(1)->point()[2];
       v2<< it->second->vertex(2)->point()[0],it->second->vertex(2)->point()[1],it->second->vertex(2)->point()[2];
       v3<< it->second->vertex(3)->point()[0],it->second->vertex(3)->point()[1],it->second->vertex(3)->point()[2];
-      sampleTet(v0,v1,v2,v3,tet_sample_r_, sample_points);
+      if(accord_cpts) {
+        Eigen::Matrix<zsw::Scalar,3,1> rv0 = it->second->vertex(0)->info().pos_c_;
+        Eigen::Matrix<zsw::Scalar,3,1> rv1 = it->second->vertex(1)->info().pos_c_;
+        Eigen::Matrix<zsw::Scalar,3,1> rv2 = it->second->vertex(2)->info().pos_c_;
+        Eigen::Matrix<zsw::Scalar,3,1> rv3 = it->second->vertex(3)->info().pos_c_;
+        zsw::Scalar ref_tet_sample_r = tet_sample_r_ * g_scale_;
+        sampleTetRefTet(v0, v1, v2, v3, rv0, rv1, rv2, rv3, ref_tet_sample_r, sample_points);
+      } else { sampleTet(v0,v1,v2,v3,tet_sample_r_, sample_points); }
     }
   }
 

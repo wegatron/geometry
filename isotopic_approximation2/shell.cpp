@@ -70,15 +70,16 @@ namespace zsw{
   }
 
   void genAndSampleShellD(zsw::mesh::TriMesh &ori_mesh,
-                            zsw::mesh::TriMesh &deformed_mesh,
-                            const zsw::Scalar err_epsilon,
-                            const zsw::Scalar tri_sample_r,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
-                            std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts)
+                          zsw::mesh::TriMesh &deformed_mesh,
+                          const zsw::Scalar err_epsilon,
+                          const zsw::Scalar tri_sample_r,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_outer_jpts,
+                          std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_bs_jpts,
+                          zsw::Scalar &g_scale)
   {
     if(!ori_mesh.has_vertex_normals()) {
       ori_mesh.request_face_normals();
@@ -96,7 +97,8 @@ namespace zsw{
     zsw::Scalar deformed_radius;
     calcBoundSphere(ori_mesh, ori_center, ori_radius);
     calcBoundSphere(deformed_mesh, deformed_center, deformed_radius);
-    zsw::Scalar deformed_err_epsilon = err_epsilon * deformed_radius / ori_radius;
+    g_scale = deformed_radius / ori_radius;
+    const zsw::Scalar deformed_err_epsilon = err_epsilon * g_scale;
     boundSphere("bound_sphere.obj", ori_radius+err_epsilon, ori_center, bs_jpts);
     boundSphere("bound_sphere.obj", deformed_radius+deformed_err_epsilon, deformed_center, deformed_bs_jpts);
 

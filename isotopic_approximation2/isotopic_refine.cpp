@@ -113,12 +113,12 @@ namespace zsw{
         tw_->addPointInDelaunay(jpt_info.second->pt_c_, vertex_info, chds);
         if(++add_pt_for_err%100==0) {
           NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;
-          writeTetMesh(tmp_outdir_+"simp_tol_ori_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, false);
-          writeTetMesh(tmp_outdir_+"simp_tol_deformed_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, true);
+          // writeTetMesh(tmp_outdir_+"simp_tol_ori_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, false);
+          // writeTetMesh(tmp_outdir_+"simp_tol_deformed_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, true);
         }
         updateJptsInCellsD(chds, err_queue);
       }
-      std::cout << __FILE__ << __LINE__ << std::endl;
+
       // find a tet viloate the normal condition
       bool viloate_normal_cond=false;
       std::vector<Chd> tmp_chds;
@@ -126,8 +126,8 @@ namespace zsw{
         if(!cit->info().satisfy_normal_cond_ && !checkUpNormalCondition(cit, tmp_chds, false)) {
           if(++add_pt_for_normal%50==0) {
             NZSWLOG("zsw_info") << "add_pt_for_normal:" << add_pt_for_normal << std::endl;
-            writeTetMesh(tmp_outdir_+"simp_tol_ori_n_"+ std::to_string(add_pt_for_normal) +".vtk", {zsw::ignore_bbox}, nullptr, false);
-            writeTetMesh(tmp_outdir_+"simp_tol_deformed_n_"+ std::to_string(add_pt_for_normal) +".vtk", {zsw::ignore_bbox}, nullptr, true);
+            // writeTetMesh(tmp_outdir_+"simp_tol_ori_n_"+ std::to_string(add_pt_for_normal) +".vtk", {zsw::ignore_bbox}, nullptr, false);
+            // writeTetMesh(tmp_outdir_+"simp_tol_deformed_n_"+ std::to_string(add_pt_for_normal) +".vtk", {zsw::ignore_bbox}, nullptr, true);
           }
           viloate_normal_cond=true;
           break;

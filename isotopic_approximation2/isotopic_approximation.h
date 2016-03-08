@@ -29,13 +29,17 @@ namespace zsw {
   {
   public:
     Approximation() {
-      alpha_=0.2; normal_cond_scale_=0.3; tmp_outdir_="/home/wegatron/tmp/";
+      alpha_=0.1;
+      normal_cond_scale_=0.3;
+      g_scale_ = 1.0;
+      sample_tet_by_ref_ = false;
+      tmp_outdir_="/home/wegatron/tmp/";
       bz_judge_pt_cnt_=0;
-
       bz_krj_need_judge_cnt_=0;
       bz_normal_cond_judge_cnt_=0;
       bz_error_bound_judge_cnt_=0;
     }
+    void seTetByRef(bool sample_tet_by_ref) { sample_tet_by_ref_ = sample_tet_by_ref; }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     void init(const zsw::Scalar err_epsilon,
               const zsw::Scalar tri_sample_r,
@@ -67,6 +71,7 @@ namespace zsw {
     void writeAdjcentCells(const std::string &filepath, const std::vector<Chd> &chds) const;
     void writeJudgePoints(const std::string &filepath) const;
     void writeJudgePoints(const std::string &filepath, const std::vector<const JudgePoint*> &jpts) const;
+    void setGscale(zsw::Scalar g_scale) { g_scale_ = g_scale; }
     void refine(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &bs_jpts);
     void refineD(std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &ori_bs_jpts,
                  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &deformed_inner_jpts,
@@ -107,7 +112,8 @@ namespace zsw {
     void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map) const;
     void bzEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
     void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox, bool using_cur_pts) const;
-    void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
+    void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points,
+                        bool accord_cpts=false) const;
     size_t countZeroPoints() const;
   public:
     bool checkNormalCondition() const;
@@ -126,10 +132,11 @@ namespace zsw {
     zsw::Scalar tet_sample_r_;
     zsw::Scalar normal_cond_scale_;
     zsw::Scalar alpha_;
+    zsw::Scalar g_scale_;
     std::string tmp_outdir_;
     zsw::common::ClockC11 clock_;
+    bool sample_tet_by_ref_;
     size_t bz_judge_pt_cnt_;
-
     size_t bz_krj_need_judge_cnt_;
     size_t bz_normal_cond_judge_cnt_;
     size_t bz_error_bound_judge_cnt_;

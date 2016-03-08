@@ -25,7 +25,7 @@ void test0(const std::string &ori_file_path,
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> inner_jpts;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> outer_jpts;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> bs_jpts;
-  zsw::Scalar global_scale=1.0;
+  zsw::Scalar g_scale=1.0;
 #if 0
   zsw::genAndSampleShell(input_mesh, err_epsilon, tri_sample_r, inner_jpts, outer_jpts, bs_jpts);
 #else
@@ -39,7 +39,7 @@ void test0(const std::string &ori_file_path,
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_bs_jpts;
 
   zsw::genAndSampleShellD(input_mesh, deformed_mesh, err_epsilon, tri_sample_r, inner_jpts, outer_jpts, bs_jpts,
-                            deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
+                          deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts, g_scale);
   zsw::writePoints(output_dir+"deformed_inner_jpts.vtk", deformed_inner_jpts);
   zsw::writePoints(output_dir+"deformed_outer_jpts.vtk", deformed_outer_jpts);
   zsw::writePoints(output_dir+"deformed_bs_jpts.vtk", deformed_bs_jpts);
@@ -48,6 +48,7 @@ void test0(const std::string &ori_file_path,
   zsw::writePoints(output_dir+"ori_outer_jpts.vtk", outer_jpts);
   zsw::writePoints(output_dir+"ori_bs_jpts.vtk", bs_jpts);
   zsw::Approximation appro;
+  appro.setGscale(g_scale);
   appro.setTmpOutDir(output_dir);
 #if 0
   appro.init(err_epsilon, tri_sample_r, global_scale*tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
