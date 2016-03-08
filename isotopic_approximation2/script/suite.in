@@ -1,10 +1,13 @@
-.PHONY: clear_ellipsoid
-clear_ellipsoid:
+.PHONY: clear_ellipsoid_gen
+clear_ellipsoid_gen:
 	echo "" > suite_tmp.in
 	for i in {0..2}; do echo -e ".PHONY: clear_ellipsoid_v$$i\nclear_ellipsoid_v$$i:\n	rm -rf \$${ELLIPSOID_OUTPUT_DIR_V$$i}*\n" >> suite_tmp.in; done
 
-.PHONY: simp_ellipsoid
-simp_ellipsoid: clear_ellipsoid
-	for i in {0..2}; do echo -e ".PHONY: simp_ellipsoid_v$$i\nsimp_ellipsoid_v$$i:export clear_ellipsoid_v$$i\n	\$${APP_EXEC} \$${ELLIPSOID} \$${ELLIPSOID_DEFORMED} \$${ELLIPSOID_OUTPUT_DIR_V$$i} \$${ELLIPSOID_THICK} \$${ELLIPSOID_SAMPLE_R} \$${ELLIPSOID_SAMPLE_R}\n" >> suite_tmp.in; done
+.PHONY: simp_ellipsoid_gen
+simp_ellipsoid_gen: clear_ellipsoid_gen
+	for i in {0..2}; do echo -e ".PHONY: simp_ellipsoid_v$$i\nsimp_ellipsoid_v$$i:export clear_ellipsoid_v$$i\n	\$${APP_EXEC} $$i \$${ELLIPSOID} \$${ELLIPSOID_DEFORMED} \$${ELLIPSOID_OUTPUT_DIR_V$$i} \$${ELLIPSOID_THICK} \$${ELLIPSOID_SAMPLE_R} \$${ELLIPSOID_SAMPLE_R}\n" >> suite_tmp.in; done
 
 include suite_tmp.in
+
+.PHONY: simp_ellipsoid_all_v
+simp_ellipsoid_all_v: simp_ellipsoid_v0 simp_ellipsoid_v1 simp_ellipsoid_v2

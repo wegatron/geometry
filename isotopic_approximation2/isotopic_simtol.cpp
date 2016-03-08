@@ -14,9 +14,6 @@ using namespace std;
 namespace zsw{
   void Approximation::simpTolerance()
   {
-    std::cout << __FILE__ << __LINE__ << std::endl;
-    tw_->isValid();
-    std::cout << __FILE__ << __LINE__ << std::endl;
     const TTds &tds=tw_->getTds();
     std::unordered_map<std::string, TTds::Edge> edge_map;
     for(TTds::Edge_iterator eit=tds.edges_begin();
