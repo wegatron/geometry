@@ -56,9 +56,6 @@ namespace zsw{
     const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt=nullptr;
     bz_krj_need_judge_cnt_+=sample_points.size();
     for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : sample_points) {
-      // if(krj.judge(pt) &&
-      //    isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)
-      //    && isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, vup, nullptr)) { merge_pt=&pt; break; }
       if(krj.judge(pt)) {
         ++bz_normal_cond_judge_cnt_;
         if(isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)) {
@@ -69,10 +66,8 @@ namespace zsw{
       }
     }
     if(merge_pt==nullptr) { return false; }
-    //Vhd vhd=e.first->vertex(e.second);
     Vhd vhd=(e.first->vertex(e.second)->info().pt_type_==zsw::ZERO_POINT) ? e.first->vertex(e.second) : e.first->vertex(e.third);
     tw_->collapseEdge(e, vhd, *merge_pt);
-    //updateVertex(vup);
     if(is_bz_back) { bzEdgeBack(vhd, z_map); }
     else { zeroEdgeBack(vhd, z_map); }
     return true;
