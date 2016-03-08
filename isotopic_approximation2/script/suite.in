@@ -1,45 +1,10 @@
-.PHONY : simp_sphere
-simp_sphere: export
-	${APP_EXEC} ${SPHERE} ${SPHERE_OUTPUT_DIR} ${SPHERE_THICK} ${SPHERE_SAMPLE_R} ${SPHERE_SAMPLE_R}
-
-.PHONY : simp_bunny
-simp_bunny: export
-	${APP_EXEC} ${BUNNY} ${BUNNY_OUTPUT_DIR} ${BUNNY_THICK} ${BUNNY_SAMPLE_R} ${BUNNY_SAMPLE_R}
-	
-.PHONY : simp_bunny_noised
-simp_bunny_noised: export
-	${APP_EXEC} ${BUNNY_NOISED} ${BUNNY_NOISED_OUTPUT_DIR} ${BUNNY_NOISED_THICK} ${BUNNY_NOISED_SAMPLE_R} ${BUNNY_NOISED_SAMPLE_R}
-
-.PHONY : simp_cylinder
-simp_cylinder: export
-	${APP_EXEC} ${CYLINDER} ${CYLINDER_OUTPUT_DIR} ${CYLINDER_THICK} ${CYLINDER_SAMPLE_R} ${CYLINDER_SAMPLE_R}
-	
-.PHONY : simp_cylinder_noised
-simp_cylinder_noised: export
-	${APP_EXEC} ${CYLINDER_NOISED} ${CYLINDER_NOISED_OUTPUT_DIR} ${CYLINDER_NOISED_THICK} ${CYLINDER_NOISED_SAMPLE_R} ${CYLINDER_NOISED_SAMPLE_R}
-	
-.PHONY : simp_fertility
-simp_fertility: export
-	${APP_EXEC} ${FERTILITY} ${FERTILITY_OUTPUT_DIR} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R} ${FERTILITY_SAMPLE_R}
-
-
-.PHONY :clear_ellipsoid
+.PHONY: clear_ellipsoid
 clear_ellipsoid:
-	rm -rf ${ELLIPSOID_OUTPUT_DIR}/*
+	echo "" > suite_tmp.in
+	for i in {0..2}; do echo -e ".PHONY: clear_ellipsoid_v$$i\nclear_ellipsoid_v$$i:\n	rm -rf \$${ELLIPSOID_OUTPUT_DIR_V$$i}*\n" >> suite_tmp.in; done
 
-.PHONY :clear_ellipsoid2
-clear_ellipsoid2:
-	rm -rf ${ELLIPSOID2_OUTPUT_DIR}/*
-	mkdir ${ELLIPSOID2_OUTPUT_DIR}/normal_cond_debug
+.PHONY: simp_ellipsoid
+simp_ellipsoid: clear_ellipsoid
+	for i in {0..2}; do echo -e ".PHONY: simp_ellipsoid_v$$i\nsimp_ellipsoid_v$$i:export clear_ellipsoid_v$$i\n	\$${APP_EXEC} \$${ELLIPSOID} \$${ELLIPSOID_DEFORMED} \$${ELLIPSOID_OUTPUT_DIR_V$$i} \$${ELLIPSOID_THICK} \$${ELLIPSOID_SAMPLE_R} \$${ELLIPSOID_SAMPLE_R}\n" >> suite_tmp.in; done
 
-.PHONY : simp_ellipsoid
-simp_ellipsoid: export clear_ellipsoid
-	${APP_EXEC} ${ELLIPSOID} ${ELLIPSOID} ${ELLIPSOID_OUTPUT_DIR} ${ELLIPSOID_THICK} ${ELLIPSOID_SAMPLE_R} ${ELLIPSOID_SAMPLE_R}
-
-.PHONY : simp_ellipsoid2
-simp_ellipsoid2: export clear_ellipsoid2
-	${APP_EXEC} ${ELLIPSOID} ${ELLIPSOID_DEFORMED1} ${ELLIPSOID2_OUTPUT_DIR} ${ELLIPSOID_THICK} ${ELLIPSOID_SAMPLE_R} ${ELLIPSOID_SAMPLE_R}
-
-.PHONY : simp_fertility2
-simp_fertility2: export
-	${APP_EXEC} ${FERTILITY} ${FERTILITY_DEFORM} ${FERTILITY_OUTPUT_DIR} ${FERTILITY_THICK} ${FERTILITY_SAMPLE_R} ${FERTILITY_SAMPLE_R}
+include suite_tmp.in

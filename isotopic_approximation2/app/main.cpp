@@ -37,7 +37,6 @@ void test0(const std::string &ori_file_path,
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_inner_jpts;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_outer_jpts;
   std::vector<Eigen::Matrix<zsw::Scalar,3,1>> deformed_bs_jpts;
-
   zsw::genAndSampleShellD(input_mesh, deformed_mesh, err_epsilon, tri_sample_r, inner_jpts, outer_jpts, bs_jpts,
                           deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts, g_scale);
   zsw::writePoints(output_dir+"deformed_inner_jpts.vtk", deformed_inner_jpts);
@@ -49,14 +48,14 @@ void test0(const std::string &ori_file_path,
   zsw::writePoints(output_dir+"ori_bs_jpts.vtk", bs_jpts);
   zsw::Approximation appro;
   appro.setGscale(g_scale);
+  //appro.setTetByRef(true);
   appro.setTmpOutDir(output_dir);
 #if 0
-  appro.init(err_epsilon, tri_sample_r, global_scale*tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
+  appro.init(err_epsilon, tri_sample_r, tet_sample_r, inner_jpts, outer_jpts, bs_jpts);
 #else
   appro.initD(err_epsilon, tri_sample_r, tet_sample_r, inner_jpts, outer_jpts, bs_jpts,
               deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
 #endif
-
   appro.writeTetMesh(output_dir+"refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   appro.simp(output_dir);
   appro.writeTetMesh(output_dir+"simped_final.vtk", {zsw::ignore_bbox, zsw::ignore_out});

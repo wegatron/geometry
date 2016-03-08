@@ -39,7 +39,7 @@ namespace zsw {
       bz_normal_cond_judge_cnt_=0;
       bz_error_bound_judge_cnt_=0;
     }
-    void seTetByRef(bool sample_tet_by_ref) { sample_tet_by_ref_ = sample_tet_by_ref; }
+    void setTetByRef(bool sample_tet_by_ref) { sample_tet_by_ref_ = sample_tet_by_ref; }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     void init(const zsw::Scalar err_epsilon,
               const zsw::Scalar tri_sample_r,

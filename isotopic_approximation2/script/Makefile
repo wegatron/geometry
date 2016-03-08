@@ -10,5 +10,4 @@ clean_log:
 	echo > /tmp/zswlog.log
 
 include data.in
-#include noised.in
 include suite.in

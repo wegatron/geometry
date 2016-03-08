@@ -34,8 +34,8 @@ namespace zsw{
       if(tryCollapseBoundaryEdge(e, edge_map)) {
         if(++b_c_step%50==0) {
           std::cout << "[INFO] boundary collapsed:" << b_c_step << std::endl;
-          writeTetMesh(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step)
-                       +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+          // writeTetMesh(tmp_outdir_+"sim_tol_"+std::to_string(b_c_step)
+          //              +".vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
           //if(!tw_->isValid()) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
         }
       }
