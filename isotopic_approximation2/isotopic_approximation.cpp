@@ -156,6 +156,7 @@ namespace zsw{
                                         std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                                         ErrorMaxComparison> &err_queue)
   {
+    FUNCTION_TIME_ANALYSIS();
     std::vector<std::vector<JudgePoint*>> updated_jpts(chds.size());
 #pragma omp parallel for
     for(size_t i=0; i<chds.size(); ++i) {
@@ -178,6 +179,7 @@ namespace zsw{
                                          std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                                          ErrorMaxComparison> &err_queue)
   {
+    FUNCTION_TIME_ANALYSIS();
     std::vector<std::vector<JudgePoint*>> updated_jpts(chds.size());
 #pragma omp parallel for
     for(size_t i=0; i<chds.size(); ++i) {

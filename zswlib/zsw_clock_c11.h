@@ -79,7 +79,7 @@ namespace zsw {
   }
 }
 
-#define FUNCTION_TIME_ANALYSIS() zsw::common::TimeAnalysis tm(__PRETTY_FUNCTION__)
+#define FUNCTION_TIME_ANALYSIS() zsw::common::TimeAnalysis tm(__FUNCTION__)
 #define PRINT_FUNCTION_COST() zsw::common::TimeAnalysis::getTCM().print();
 
 #endif /* ZSW_CLOCK_C11_H */
