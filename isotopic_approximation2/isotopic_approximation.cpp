@@ -260,6 +260,7 @@ namespace zsw{
   void Approximation::sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points,
                                      bool accord_cpts) const
   {
+    FUNCTION_TIME_ANALYSIS();
     Vhd vhds[2]={e.first->vertex(e.second), e.first->vertex(e.third)};
     std::vector<Chd> cells;
     const TTds &tds=tw_->getTds();
