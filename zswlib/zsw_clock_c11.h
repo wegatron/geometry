@@ -41,10 +41,10 @@ namespace zsw {
       TimePoint cur_time_;
     };
 
-    class TimeAnalysis
+    class TimeCostMap
     {
     public:
-      TimeAnalysis() {}
+      TimeCostMap() {}
       size_t getTime(const std::string &name) const {
         auto it = time_cost_map_.find(name);
         if(it == time_cost_map_.end()) { return 0; }
@@ -54,16 +54,32 @@ namespace zsw {
       void setTime(const std::string &name, size_t ms) {
         time_cost_map_[name] = ms;
       }
+
+      void print() const;
     private:
-      TimeAnalysis(const TimeAnalysis &ta) = delete;
+      TimeCostMap(const TimeCostMap &tcm) = delete;
       std::map<std::string, size_t> time_cost_map_; // cost function - millisecond
     };
 
-    TimeAnalysis &getTA();
+    class TimeAnalysis
+    {
+    public:
+      static const TimeCostMap &getTCM();
+      TimeAnalysis(const std::string &name);
+      ~TimeAnalysis();
+    private:
+      TimeAnalysis(const TimeAnalysis &ta) = delete;
+      static TimeCostMap tcm_;
+      std::string name_;
+      size_t ms_count_;
+      ClockC11 clock_;
+    };
+
+    TimeCostMap &getTCM();
   }
 }
 
-#define GET_TA(name) zsw::common::getTA().getTime(name)
-#define SET_TA(name, ms) zsw::common::getTA().setTime(name, ms)
+#define FUNCTION_TIME_ANALYSIS() zsw::common::TimeAnalysis tm(__PRETTY_FUNCTION__)
+#define PRINT_FUNCTION_COST() zsw::common::TimeAnalysis::getTCM().print();
 
 #endif /* ZSW_CLOCK_C11_H */

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <zswlib/error_ctrl.h>
+#include <zswlib/zsw_clock_c11.h>
 #include "isotopic_approximation.h"
 #include "basic_op.h"
 #include "bound_sphere.h"
@@ -178,6 +179,7 @@ namespace zsw{
                                                    const Eigen::Matrix<zsw::Scalar,3,1> &pt,
                                                    const PointType point_type) const
   {
+    FUNCTION_TIME_ANALYSIS();
     assert(point_type==zsw::INNER_POINT || point_type==zsw::OUTER_POINT || point_type==zsw::ZERO_POINT);
     Eigen::Matrix<zsw::Scalar,4,1> val;
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;

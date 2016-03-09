@@ -4,6 +4,7 @@
 #include <fstream>
 #include <zswlib/const_val.h>
 #include <zswlib/mesh/vtk.h>
+#include <zswlib/zsw_clock_c11.h>
 
 #include "basic_data_structure.h"
 
@@ -28,6 +29,7 @@ void zsw::KernelRegionJudger::addConstraint(const Eigen::Matrix<zsw::Scalar,3,1>
 
 bool zsw::KernelRegionJudger::judge(const Eigen::Matrix<zsw::Scalar,3,1> &pt)
 {
+  FUNCTION_TIME_ANALYSIS();
   if(!isgood_) { return false; }
   for(size_t i=0; i<vec_v0_.size(); ++i) {
     if(vec_vn_[i].dot(pt-vec_v0_[i]) < precision_) {      return false;    }
@@ -46,6 +48,7 @@ bool zsw::normalCondition(
                           bool debug_flag,
                           const std::string *filepath_ptr)
 {
+  FUNCTION_TIME_ANALYSIS();
   // find the four inner_jpts and four outer_jpts
   std::vector<size_t> in_indices; in_indices.reserve(4);
   std::vector<zsw::Scalar> in_dist; in_dist.reserve(4);

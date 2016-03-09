@@ -87,5 +87,6 @@ int main(int argc, char *argv[])
   size_t v = atoi(argv[1]);
   if(v == 0) {    appro_oriv(std::string(argv[2]), std::string(argv[4]), atof(argv[5]), atof(argv[6]), atof(argv[7]));  }
   else { appro_nowv(v, std::string(argv[2]), std::string(argv[3]), std::string(argv[4]), atof(argv[5]), atof(argv[6]), atof(argv[7])); }
+  PRINT_FUNCTION_COST();
   return 0;
 }

@@ -203,6 +203,7 @@ namespace zsw{
                                           const zsw::Scalar v_pt,
                                           std::vector<JudgePointUpdateData> * jup)
   {
+    FUNCTION_TIME_ANALYSIS();
     ++bz_judge_pt_cnt_;
     std::vector<bool> is_updated(jpts_in_bbox.size(), false);
     size_t false_cnt=0;
