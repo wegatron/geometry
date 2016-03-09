@@ -71,7 +71,6 @@ namespace zsw {
       TimeAnalysis(const TimeAnalysis &ta) = delete;
       static TimeCostMap tcm_;
       std::string name_;
-      size_t ms_count_;
       ClockC11 clock_;
     };
 

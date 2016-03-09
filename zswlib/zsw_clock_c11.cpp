@@ -10,14 +10,11 @@ void zsw::common::TimeCostMap::print() const
   }
 }
 
-zsw::common::TimeAnalysis::TimeAnalysis(const std::string &name) : name_(name)
-{
-  ms_count_ = tcm_.getTime(name);
-}
+zsw::common::TimeAnalysis::TimeAnalysis(const std::string &name) : name_(name) {}
 
 zsw::common::TimeAnalysis::~TimeAnalysis()
 {
-  tcm_.setTime(name_, ms_count_ + clock_.totalTimeCount());
+  tcm_.setTime(name_, tcm_.getTime(name) + clock_.totalTimeCount());
 }
 
 const zsw::common::TimeCostMap &zsw::common::TimeAnalysis::getTCM()
