@@ -3,10 +3,8 @@
 
 #include <iostream>
 #include <fstream>
-
+#include <zswlib/error_ctrl.h>
 #include "sampling.h"
-
-//#define TEST_OUR_IDEA
 
 namespace zsw{
   void boundSphere(const std::string &filepath,
@@ -97,6 +95,8 @@ namespace zsw{
     zsw::Scalar deformed_radius;
     calcBoundSphere(ori_mesh, ori_center, ori_radius);
     calcBoundSphere(deformed_mesh, deformed_center, deformed_radius);
+    NZSWLOG("zsw_info") << "ori bs radius:" << ori_radius << "\n"
+                        << "deform bs radius:" << deformed_radius << std::endl;
     g_scale = deformed_radius / ori_radius;
     const zsw::Scalar deformed_err_epsilon = err_epsilon * g_scale;
     boundSphere("bound_sphere.obj", ori_radius+err_epsilon, ori_center, bs_jpts);

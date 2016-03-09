@@ -161,6 +161,9 @@ namespace zsw{
   void Approximation::boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const
   {
     const TTds &tds=tw_->getTds();
+    // std::vector<Vhd> adj_vs;
+    // tds.adjacent_vertices(vhd, std::back_inserter(adj_vs));
+    // for(Vhd adj_vhd : adj_vs) {
     std::vector<TTds::Edge> edges;
     tds.incident_edges(vhd, std::back_inserter(edges));
     for(const TTds::Edge &e : edges) {
@@ -168,6 +171,7 @@ namespace zsw{
       std::string key_str=edge2key(e);
       edge_map.insert(std::make_pair(key_str, e));
     }
+    // }
   }
 
   bool Approximation::isTetsSatisfyNormalCondition(const std::vector<VertexTriple> &bound_tris,
