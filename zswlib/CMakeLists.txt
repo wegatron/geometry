@@ -43,7 +43,7 @@ file(GLOB common_headers *.h)
 file(GLOB mesh_headers mesh/*.h io/*.h)
 file(GLOB mesh_src mesh/*.cpp)
 
-add_library(zswlib SHARED ${mesh_src} log/zsw_log.cpp)
+add_library(zswlib SHARED ${mesh_src} log/zsw_log.cpp zsw_clock_c11.cpp)
 #target_link_libraries(zswlib ${OPENMESH_LIBRARIES})
 
 # aux_source_directory_with_headers(. sources headers)
