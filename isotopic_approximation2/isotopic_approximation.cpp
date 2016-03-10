@@ -298,6 +298,11 @@ namespace zsw{
 #endif
   }
 
+  // void sampleKrj(const zsw::KernelRegionJudger &krj, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const
+  // {
+  //   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  // }
+
   void Approximation::calcJptsInBbox(Vhd *vhd_ptr, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox,
                                      bool using_cur_pts) const
   {

@@ -589,6 +589,13 @@ void TriangulationWapper::makeHole(Vhd vhd, std::map<VertexTriple, std::pair<Fac
        chd->vertex(3)->info().pt_type_==zsw::BBOX_POINT);
   }
 
+  void TriangulationWapper::resetVertexLastUpdate()
+  {
+    for(auto it = tds_.vertices_begin(); it != tds_.vertices_end(); ++it) {
+      it->info().last_update_ = 0;
+    }
+  }
+
 
   bool isConstructTZCell(const PointType pt_type0, const PointType pt_type1,
                           const PointType pt_type2, const PointType pt_type3,

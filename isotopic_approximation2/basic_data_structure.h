@@ -29,6 +29,7 @@ namespace zsw{
 
   struct VertexInfo
   {
+    size_t last_update_;
     size_t index_;
     PointType pt_type_;
     Eigen::Matrix<zsw::Scalar,3,1> pos_c_; // position in the another space(original space or deformed space)
@@ -39,9 +40,10 @@ namespace zsw{
     }
     VertexInfo(size_t index, PointType pt_type,
                Eigen::Matrix<zsw::Scalar,3,1> pos_c) {
-      index_=index;
-      pt_type_=pt_type;
-      pos_c_=pos_c;
+      last_update_ = 0;
+      index_= index;
+      pt_type_= pt_type;
+      pos_c_= pos_c;
     }
   };
 
@@ -93,6 +95,7 @@ namespace zsw{
     TTds &getTds()  { return tds_; }
     void setTds(TTds &tds) { tds_=tds; }
     void swapVertex();
+    void resetVertexLastUpdate();
 
     bool isBoundaryEdge(const TTds::Edge &edge) const;
     bool isZeroEdge(const TTds::Edge &e) const;
@@ -114,7 +117,6 @@ namespace zsw{
 
     void test() const;
     void writeVertex(const std::string &filepath, const std::vector<Vhd> &vs) const;
-
   private:
     DelaunayTriangulation delaunay_triangulation_;
     TTds &tds_;
