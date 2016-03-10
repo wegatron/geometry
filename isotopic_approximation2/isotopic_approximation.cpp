@@ -257,8 +257,7 @@ namespace zsw{
     return false_cnt==0;
   }
 
-  void Approximation::sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points,
-                                     bool accord_cpts) const
+  void Approximation::sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const
   {
     FUNCTION_TIME_ANALYSIS();
     Vhd vhds[2]={e.first->vertex(e.second), e.first->vertex(e.third)};
@@ -282,7 +281,7 @@ namespace zsw{
       v1<< it->second->vertex(1)->point()[0],it->second->vertex(1)->point()[1],it->second->vertex(1)->point()[2];
       v2<< it->second->vertex(2)->point()[0],it->second->vertex(2)->point()[1],it->second->vertex(2)->point()[2];
       v3<< it->second->vertex(3)->point()[0],it->second->vertex(3)->point()[1],it->second->vertex(3)->point()[2];
-      if(accord_cpts) {
+      if(sample_tet_by_ref_) {
         Eigen::Matrix<zsw::Scalar,3,1> rv0 = it->second->vertex(0)->info().pos_c_;
         Eigen::Matrix<zsw::Scalar,3,1> rv1 = it->second->vertex(1)->info().pos_c_;
         Eigen::Matrix<zsw::Scalar,3,1> rv2 = it->second->vertex(2)->info().pos_c_;
@@ -291,6 +290,12 @@ namespace zsw{
         sampleTetRefTet(v0, v1, v2, v3, rv0, rv1, rv2, rv3, ref_tet_sample_r, sample_points);
       } else { sampleTet(v0,v1,v2,v3,tet_sample_r_, sample_points); }
     }
+#if 0
+    // cout adj cells
+    writeAdjcentCells(tmp_outdir_+"adj_cells.vtk", e);
+    writePoints(tmp_outdir_+"sp.vtk", sample_points);
+    abort();
+#endif
   }
 
   void Approximation::calcJptsInBbox(Vhd *vhd_ptr, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox,
