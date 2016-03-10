@@ -107,12 +107,15 @@ namespace zsw {
                                      std::vector<Vhd> &opposite_vs, KernelRegionJudger &krj) const;
     bool tryCollapseBoundaryEdge(TTds::Edge &e,
                                  std::unordered_map<std::string,TTds::Edge> &edge_map);
+
     bool tryCollapseBZEdge(TTds::Edge &e,
-                           std::unordered_map<std::string, TTds::Edge> &bz_map,
-                           bool is_bz_back=false);
+                           std::queue<std::pair<TTds::Edge, size_t>> &z_q,
+                           size_t cur_update,
+                           bool is_bz_back = false);
+
     void boundaryEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
-    void zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map) const;
-    void bzEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const;
+    void zeroEdgeBack(Vhd vhd, std::queue<std::pair<TTds::Edge, size_t>> &z_q, size_t cur_update) const;
+    void bzEdgeBack(Vhd vhd, std::queue<std::pair<TTds::Edge, size_t>> &zb_q, size_t cur_update) const;
     void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox, bool using_cur_pts) const;
     void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
     //void sampleKrj(const zsw::KernelRegionJudger &krj, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;

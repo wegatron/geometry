@@ -15,32 +15,36 @@ namespace zsw{
 
   void Approximation::simpZeroSurface()
   {
-    std::unordered_map<std::string, TTds::Edge> z_map;
+    std::queue<std::pair<TTds::Edge, size_t>> z_q;
     const TTds &tds = tw_->getTds();
     for(TTds::Edge_iterator eit=tds.edges_begin();
         eit!=tds.edges_end(); ++eit) {
-      if(!tw_->isZeroEdge(*eit)) { continue; }
-      std::string key_str=edge2key(*eit);
-      z_map.insert(std::make_pair(key_str, *eit));
+      if(tw_->isZeroEdge(*eit)) { z_q.push(std::make_pair(*eit, 0)); }
     }
-    size_t z_c_step=0;
-    size_t try_z_c_step=0;
+    tw_->resetVertexLastUpdate();
+    size_t z_step = 0;
+    size_t z_step_suc = 0;
     print_sp_size_= true;
-    while(!z_map.empty()) {
-      TTds::Edge e=z_map.begin()->second; z_map.erase(z_map.begin());
+    while(!z_q.empty()) {
+      TTds::Edge e = z_q.front().first;
+      size_t last_update = z_q.front().second;
+      z_q.pop();
       if(!tw_->isZeroEdge(e)) { continue; }
-      if(tryCollapseBZEdge(e, z_map)) {
-        if(++z_c_step%50==0) { std::cout << "[INFO] zero edge collapsed " << z_c_step << std::endl; }
+      if(e.first->vertex(e.second)->info().last_update_ > last_update ||
+         e.first->vertex(e.third)->info().last_update_ > last_update) { continue; }
+      if(++z_step % 100 == 0) { std::cout << "[INFO] try zero edge collapsed " << z_step << std::endl; print_sp_size_ = true; }
+      if(tryCollapseBZEdge(e, z_q, z_step_suc, false)) {
+        if(++z_step_suc %50 == 0) { std::cout << "[INFO] zero edge collapsed " << z_step_suc << std::endl; }
       }
-      if(++try_z_c_step%100==0) { std::cout << "[INFO] try zero edge collapsed " << try_z_c_step << std::endl; print_sp_size_ = true; }
     }
-    NZSWLOG("zsw_info") << "zero edge try collapse:" << try_z_c_step << std::endl;
-    NZSWLOG("zsw_info") << "zero edge collapsed total:" << z_c_step << std::endl;
-    NZSWLOG("zsw_info") << "zero edge collapse suc:" << z_c_step*1.0/try_z_c_step << std::endl;
+    NZSWLOG("zsw_info") << "zero edge try collapse:" << z_step << std::endl;
+    NZSWLOG("zsw_info") << "zero edge collapsed total:" << z_step_suc << std::endl;
+    NZSWLOG("zsw_info") << "zero edge collapse suc:" << z_step_suc*1.0/z_step << std::endl;
   }
 
   bool Approximation::tryCollapseBZEdge(TTds::Edge &e,
-                                        std::unordered_map<std::string,TTds::Edge> &z_map,
+                                        std::queue<std::pair<TTds::Edge, size_t>> &z_q,
+                                        size_t cur_update,
                                         bool is_bz_back)
   {
     if(!tw_->isSatisfyLinkCondition(e)) { return false; }
@@ -72,20 +76,18 @@ namespace zsw{
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=(e.first->vertex(e.second)->info().pt_type_==zsw::ZERO_POINT) ? e.first->vertex(e.second) : e.first->vertex(e.third);
     tw_->collapseEdge(e, vhd, *merge_pt);
-    if(is_bz_back) { bzEdgeBack(vhd, z_map); }
-    else { zeroEdgeBack(vhd, z_map); }
+    if(is_bz_back) { bzEdgeBack(vhd, z_q, cur_update); }
+    else { zeroEdgeBack(vhd, z_q, cur_update); }
     return true;
   }
 
-  void Approximation::zeroEdgeBack(Vhd vhd, std::unordered_map<std::string,TTds::Edge> &edge_map) const
+  void Approximation::zeroEdgeBack(Vhd vhd, std::queue<std::pair<TTds::Edge, size_t>> &z_q, size_t cur_update) const
   {
     const TTds &tds=tw_->getTds();
     std::vector<TTds::Edge> edges;
     tds.incident_edges(vhd, std::back_inserter(edges));
     for(const TTds::Edge &e : edges) {
-      if(!tw_->isZeroEdge(e)) { continue; }
-      std::string key_str=edge2key(e);
-      edge_map.insert(std::make_pair(key_str, e));
+      if(tw_->isZeroEdge(e)) { z_q.push(std::make_pair(e, cur_update)); }
     }
   }
 }

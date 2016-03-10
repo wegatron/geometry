@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include <unordered_set>
 #include <zswlib/error_ctrl.h>
 #include "isotopic_approximation.h"
 #include "basic_op.h"
@@ -15,38 +14,39 @@ namespace zsw{
 
   void Approximation::simpBZEdges()
   {
-    std::unordered_map<std::string, TTds::Edge> bz_map;
+    std::queue<std::pair<TTds::Edge,size_t>> bz_q;
     const TTds &tds=tw_->getTds();
     for(auto eit=tds.edges_begin(); eit!=tds.edges_end(); ++eit) {
-      if(!tw_->isBZEdge(*eit)) { continue; }
-      std::string key_str=edge2key(*eit);
-      bz_map.insert(std::make_pair(key_str, *eit));
+      if(tw_->isBZEdge(*eit)) { bz_q.push(std::make_pair(*eit, 0)); }
     }
-    size_t zb_c_step=0;
-    size_t zb_total=0;
+    tw_->resetVertexLastUpdate();
+    size_t zb_step = 0;
+    size_t zb_step_suc = 0;
     print_sp_size_= true;
-    while(!bz_map.empty()) {
-      TTds::Edge e=bz_map.begin()->second; bz_map.erase(bz_map.begin());
+    while(!bz_q.empty()) {
+      TTds::Edge e = bz_q.front().first;
+      size_t last_update = bz_q.front().second;
+      bz_q.pop();
       if(!tw_->isBZEdge(e) && !tw_->isZeroEdge(e)) { continue; }
-      if(zb_total++ % 100==0) { std::cout  << "[INFO] all edge tried collapsed " << zb_total << std::endl; print_sp_size_= true; }
-      if(tryCollapseBZEdge(e, bz_map, true)) {
-        if(++zb_c_step%50==0) { std::cout << "[INFO] all edge collapsed " << zb_c_step << std::endl; }
+      if(e.first->vertex(e.second)->info().last_update_ > last_update ||
+         e.first->vertex(e.third)->info().last_update_ > last_update) { continue; }
+      if(++zb_step % 100==0) { std::cout  << "[INFO] all edge tried collapsed " << zb_step << std::endl; print_sp_size_= true; }
+      if(tryCollapseBZEdge(e, bz_q, zb_step_suc, true)) {
+        if(++zb_step_suc %50==0) { std::cout << "[INFO] all edge collapsed " << zb_step_suc << std::endl; }
       }
     }
-    NZSWLOG("zsw_log") << "zb tried collapse:" << zb_total << std::endl;
-    NZSWLOG("zsw_log") << "zb collapsed total:" << zb_c_step << std::endl;
-    NZSWLOG("zsw_log") << "zb collapsed suc:" << zb_c_step*1.0/zb_total << std::endl;
+    NZSWLOG("zsw_log") << "zb tried collapse:" << zb_step << std::endl;
+    NZSWLOG("zsw_log") << "zb collapsed total:" << zb_step_suc << std::endl;
+    NZSWLOG("zsw_log") << "zb collapsed suc:" << zb_step_suc*1.0/zb_step << std::endl;
   }
 
-  void Approximation::bzEdgeBack(Vhd vhd, std::unordered_map<std::string, TTds::Edge> &edge_map) const
+  void Approximation::bzEdgeBack(Vhd vhd, std::queue<std::pair<TTds::Edge, size_t>> &zb_q, size_t cur_update) const
   {
     const TTds &tds=tw_->getTds();
     std::vector<TTds::Edge> edges;
     tds.incident_edges(vhd, std::back_inserter(edges));
     for(const TTds::Edge &e : edges) {
-      if(!tw_->isBZEdge(e) && !tw_->isZeroEdge(e)) { continue; }
-      std::string key_str=edge2key(e);
-      edge_map.insert(std::make_pair(key_str, e));
+      if(tw_->isBZEdge(e) || tw_->isZeroEdge(e)) {        zb_q.push(std::make_pair(e, cur_update));      }
     }
   }
 
