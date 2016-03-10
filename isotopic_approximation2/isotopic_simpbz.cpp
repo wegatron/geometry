@@ -24,10 +24,11 @@ namespace zsw{
     }
     size_t zb_c_step=0;
     size_t zb_total=0;
+    print_sp_size_= true;
     while(!bz_map.empty()) {
       TTds::Edge e=bz_map.begin()->second; bz_map.erase(bz_map.begin());
       if(!tw_->isBZEdge(e) && !tw_->isZeroEdge(e)) { continue; }
-      if(zb_total++ % 100==0) { std::cout  << "[INFO] all edge tried collapsed " << zb_total << std::endl; }
+      if(zb_total++ % 100==0) { std::cout  << "[INFO] all edge tried collapsed " << zb_total << std::endl; print_sp_size_= true; }
       if(tryCollapseBZEdge(e, bz_map, true)) {
         if(++zb_c_step%50==0) { std::cout << "[INFO] all edge collapsed " << zb_c_step << std::endl; }
       }

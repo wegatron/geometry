@@ -33,6 +33,8 @@ namespace zsw {
       normal_cond_scale_=0.3;
       g_scale_ = 1.0;
       sample_tet_by_ref_ = false;
+
+      print_sp_size_ = false;
       tmp_outdir_="/home/wegatron/tmp/";
       bz_judge_pt_cnt_=0;
       bz_krj_need_judge_cnt_=0;
@@ -136,6 +138,8 @@ namespace zsw {
     std::string tmp_outdir_;
     zsw::common::ClockC11 clock_;
     bool sample_tet_by_ref_;
+
+    bool print_sp_size_;
     size_t bz_judge_pt_cnt_;
     size_t bz_krj_need_judge_cnt_;
     size_t bz_normal_cond_judge_cnt_;

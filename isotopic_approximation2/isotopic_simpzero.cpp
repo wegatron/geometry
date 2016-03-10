@@ -25,13 +25,14 @@ namespace zsw{
     }
     size_t z_c_step=0;
     size_t try_z_c_step=0;
+    print_sp_size_= true;
     while(!z_map.empty()) {
       TTds::Edge e=z_map.begin()->second; z_map.erase(z_map.begin());
       if(!tw_->isZeroEdge(e)) { continue; }
       if(tryCollapseBZEdge(e, z_map)) {
         if(++z_c_step%50==0) { std::cout << "[INFO] zero edge collapsed " << z_c_step << std::endl; }
       }
-      if(++try_z_c_step%100==0) { std::cout << "[INFO] try zero edge collapsed " << try_z_c_step << std::endl; }
+      if(++try_z_c_step%100==0) { std::cout << "[INFO] try zero edge collapsed " << try_z_c_step << std::endl; print_sp_size_ = true; }
     }
     NZSWLOG("zsw_info") << "zero edge try collapse:" << try_z_c_step << std::endl;
     NZSWLOG("zsw_info") << "zero edge collapsed total:" << z_c_step << std::endl;
@@ -50,7 +51,10 @@ namespace zsw{
     calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox, true);
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> sample_points;
     sampleAdjCells(e, sample_points);
-
+    if(print_sp_size_) {
+      print_sp_size_ = false;
+      NZSWLOG("zsw_info") << "sample adj cells points size:" << sample_points.size() << std::endl;
+    }
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
     const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt=nullptr;

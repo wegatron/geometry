@@ -14,7 +14,7 @@ zsw::common::TimeAnalysis::TimeAnalysis(const std::string &name) : name_(name) {
 
 zsw::common::TimeAnalysis::~TimeAnalysis()
 {
-  tcm_.setTime(name_, tcm_.getTime(name) + clock_.totalTimeCount());
+  tcm_.setTime(name_, tcm_.getTime(name_) + clock_.totalTimeCount());
 }
 
 const zsw::common::TimeCostMap &zsw::common::TimeAnalysis::getTCM()
