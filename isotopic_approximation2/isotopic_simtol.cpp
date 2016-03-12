@@ -98,17 +98,20 @@ namespace zsw{
     tw_->calcAdjZeroSupportPlanes(e, adj_zero_support_planes);
     std::vector<bool> is_candicate(jpts_in_bbox.size(), false);
     std::vector<std::pair<const JudgePoint*, zsw::Scalar>> tmp_points(jpts_in_bbox.size(), std::make_pair(nullptr,0.0));
+    {
+      BLOCK_TIME_ANALYSIS("krj_tol");
 #pragma omp parallel for
-    for(size_t i=0; i<jpts_in_bbox.size(); ++i) {
-      tmp_points[i].first=jpts_in_bbox[i];
-      tmp_points[i].second=0.0;
-      if(!judge_func(jpts_in_bbox[i]->val_exp_)) { continue; }
-      if(krj.judge(jpts_in_bbox[i]->pt_cur_)) {
-        is_candicate[i]=true;
-        for(const Plane &plane : adj_zero_support_planes) {
-          if(plane.normal_.dot(jpts_in_bbox[i]->pt_cur_ - plane.v0_) <0) { is_candicate[i]=false; break; }
-          zsw::Scalar tmp=plane.normal_.dot(jpts_in_bbox[i]->pt_cur_ - plane.v0_);
-          tmp_points[i].second+=tmp*tmp;
+      for(size_t i=0; i<jpts_in_bbox.size(); ++i) {
+        tmp_points[i].first=jpts_in_bbox[i];
+        tmp_points[i].second=0.0;
+        if(!judge_func(jpts_in_bbox[i]->val_exp_)) { continue; }
+        if(krj.judge(jpts_in_bbox[i]->pt_cur_)) {
+          is_candicate[i]=true;
+          for(const Plane &plane : adj_zero_support_planes) {
+            //if(plane.normal_.dot(jpts_in_bbox[i]->pt_cur_ - plane.v0_) <0) { is_candicate[i]=false; break; }
+            zsw::Scalar tmp=plane.normal_.dot(jpts_in_bbox[i]->pt_cur_ - plane.v0_);
+            tmp_points[i].second+=tmp*tmp;
+          }
         }
       }
     }

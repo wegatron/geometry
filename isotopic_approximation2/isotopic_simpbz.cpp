@@ -32,7 +32,10 @@ namespace zsw{
          e.first->vertex(e.third)->info().last_update_ > last_update) { continue; }
       if(++zb_step % 100==0) { std::cout  << "[INFO] all edge tried collapsed " << zb_step << std::endl; print_sp_size_= true; }
       if(tryCollapseBZEdge(e, bz_q, zb_step_suc, true)) {
-        if(++zb_step_suc %50==0) { std::cout << "[INFO] all edge collapsed " << zb_step_suc << std::endl; }
+        if(++zb_step_suc %50==0) {
+          std::cout << "[INFO] all edge collapsed " << zb_step_suc << std::endl;
+          writeTetMesh(tmp_outdir_+"simp_bz"+to_string(zb_step_suc)+".vtk", {zsw::ignore_out, zsw::ignore_bbox});
+        }
       }
     }
     NZSWLOG("zsw_log") << "zb tried collapse:" << zb_step << std::endl;

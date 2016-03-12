@@ -34,7 +34,10 @@ namespace zsw{
          e.first->vertex(e.third)->info().last_update_ > last_update) { continue; }
       if(++z_step % 100 == 0) { std::cout << "[INFO] try zero edge collapsed " << z_step << std::endl; print_sp_size_ = true; }
       if(tryCollapseBZEdge(e, z_q, z_step_suc, false)) {
-        if(++z_step_suc %50 == 0) { std::cout << "[INFO] zero edge collapsed " << z_step_suc << std::endl; }
+        if(++z_step_suc %50 == 0) {
+          std::cout << "[INFO] zero edge collapsed " << z_step_suc << std::endl;
+          writeTetMesh(tmp_outdir_+"simp_z"+to_string(z_step_suc)+".vtk", {zsw::ignore_out, zsw::ignore_bbox});
+        }
       }
     }
     NZSWLOG("zsw_info") << "zero edge try collapse:" << z_step << std::endl;
@@ -55,23 +58,35 @@ namespace zsw{
     calcJptsInBbox(&bound_tris[0].first, 3*bound_tris.size(), jpts_in_bbox, true);
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> sample_points;
     sampleAdjCells(e, sample_points);
-    if(print_sp_size_) {
-      print_sp_size_ = false;
-      NZSWLOG("zsw_info") << "sample adj cells points size:" << sample_points.size() << std::endl;
-    }
     KernelRegionJudger krj;
     constructKernelRegionJudger(bound_tris, opposite_vs, krj);
     const Eigen::Matrix<zsw::Scalar,3,1> *merge_pt=nullptr;
     bz_krj_need_judge_cnt_+=sample_points.size();
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : sample_points) {
-      if(krj.judge(pt)) {
-        ++bz_normal_cond_judge_cnt_;
-        if(isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)) {
-          ++bz_error_bound_judge_cnt_;
-          bz_judge_pt_cnt_+=jpts_in_bbox.size();
-          if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, nullptr)) { merge_pt=&pt; break; }
-        }
+    std::vector<bool> in_krj(sample_points.size(), false);
+    {
+      BLOCK_TIME_ANALYSIS("krj_z");
+#pragma omp parallel for
+      for(size_t i=0; i<sample_points.size(); ++i) {
+        in_krj[i] = krj.judge(sample_points[i]);
       }
+    }
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> krj_points;
+    size_t nj_pt = 0;
+    for(size_t i=0; i<sample_points.size(); ++i) {      if(in_krj[i]) { krj_points.push_back(sample_points[i]); ++nj_pt; }    }
+    size_t erj_pt = 0;
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &pt : krj_points) {
+      if(isTetsSatisfyNormalCondition(bound_tris, pt, zsw::ZERO_POINT)) {
+        ++erj_pt;
+        bz_judge_pt_cnt_+=jpts_in_bbox.size();
+        if(isSatisfyErrorBound(bound_tris, jpts_in_bbox, pt, 0, nullptr)) { merge_pt=&pt; break; }
+      }
+    }
+    bz_normal_cond_judge_cnt_ += nj_pt;
+    bz_error_bound_judge_cnt_ += erj_pt;
+    if(print_sp_size_) {
+      print_sp_size_ = false;
+      NZSWLOG("zsw_info") << "all pt=" << sample_points.size() << " nj_pt=" << nj_pt << " erj_pt=" << erj_pt << std::endl;
+      PRINT_COST("krj_z");
     }
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=(e.first->vertex(e.second)->info().pt_type_==zsw::ZERO_POINT) ? e.first->vertex(e.second) : e.first->vertex(e.third);

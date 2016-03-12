@@ -10,6 +10,16 @@ void zsw::common::TimeCostMap::print() const
   }
 }
 
+void zsw::common::TimeCostMap::print(const std::string &name) const
+{
+  auto it = time_cost_map_.find(name);
+  if(it != time_cost_map_.end()) {
+    NZSWLOG("time_cost") << name << ":" << it->second << std::endl;
+  } else {
+    NZSWLOG("time_cost") << name << ":" << 0 << std::endl;
+  }
+}
+
 zsw::common::TimeAnalysis::TimeAnalysis(const std::string &name) : name_(name) {}
 
 zsw::common::TimeAnalysis::~TimeAnalysis()

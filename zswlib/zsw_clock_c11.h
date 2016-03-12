@@ -56,6 +56,9 @@ namespace zsw {
       }
 
       void print() const;
+
+      void print(const std::string &name) const;
+
     private:
       TimeCostMap(const TimeCostMap &tcm) = delete;
       std::map<std::string, size_t> time_cost_map_; // cost function - millisecond
@@ -77,6 +80,9 @@ namespace zsw {
     TimeCostMap &getTCM();
   }
 }
+
+#define BLOCK_TIME_ANALYSIS(block_name) zsw::common::TimeAnalysis tm(block_name)
+#define PRINT_COST(name) zsw::common::TimeAnalysis::getTCM().print(name)
 
 #define FUNCTION_TIME_ANALYSIS() zsw::common::TimeAnalysis tm(std::string(__FILE__)+std::string(__FUNCTION__))
 #define PRINT_FUNCTION_COST() zsw::common::TimeAnalysis::getTCM().print();
