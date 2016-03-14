@@ -52,7 +52,10 @@ void appro_nowv(
               deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
   appro.writeTetMesh(output_dir+"refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   appro.simp(output_dir);
+  appro.writeTetMesh(output_dir+"simp_final_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_out});
+  appro.writeTetMesh(output_dir+"simp_final_deformed_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_out}, nullptr, false);
   appro.writeTetMesh(output_dir+"simped_final.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+  appro.writeTetMesh(output_dir+"simped_final_deformed.vtk", {zsw::ignore_bbox, zsw::ignore_out}, nullptr, false);
 }
 
 void appro_oriv(const std::string &ori_file_path,

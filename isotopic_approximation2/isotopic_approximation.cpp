@@ -61,14 +61,19 @@ namespace zsw{
   void  Approximation::simp(const std::string &tmp_output_dir)
   {
     writeTetMesh(tmp_output_dir+"before_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    writeTetMesh(tmp_output_dir+"before_simp_tol_deform.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out},
+                 nullptr, false);
     TTds tmp_tds=tw_->getTds();
     mutuallTessellation();
     writeTetMesh(tmp_output_dir+"after_refine_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+    writeTetMesh(tmp_output_dir+"after_mt_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_out, zsw::ignore_self_in});
     tw_->setTds(tmp_tds);
     clock_.clearCur();
     simpTolerance();
     NZSWLOG("zsw_info") << "simp_tol time cost:" << clock_.time() << std::endl;
     writeTetMesh(tmp_output_dir+"after_simp_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    writeTetMesh(tmp_output_dir+"after_simp_deform_tol.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out},
+                 nullptr, false);
     mutuallTessellation();
     NZSWLOG("zsw_info") << "mutuall tessellation time cost:" << clock_.time() << std::endl;
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});

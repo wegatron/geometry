@@ -49,7 +49,9 @@ namespace zsw{
         VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_cur_);
         std::vector<Chd> chds;
         tw_->addPointInDelaunay(jpt_info.second->pt_cur_, vertex_info, chds);
-        if(++add_pt_for_err%100==0) { NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;  }
+        if(++add_pt_for_err%100==0) {
+          NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;
+        }
         updateJptsInCells(chds, err_queue);
       }
       // find a tet viloate the normal condition
@@ -78,6 +80,8 @@ namespace zsw{
   {
     inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
     outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
+    // inner_deformed_kdtree_.buildTree(deformed_inner_jpts[0].data(), deformed_inner_jpts.size());
+    // outer_deformed_kdtree_.buildTree(deformed_outer_jpts[0].data(), deformed_outer_jpts.size());
 
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
     size_t pt_size=inner_jpts_.size();
@@ -113,7 +117,7 @@ namespace zsw{
         tw_->addPointInDelaunay(jpt_info.second->pt_c_, vertex_info, chds);
         if(++add_pt_for_err%100==0) {
           NZSWLOG("zsw_info") << "add_pt_for_err:" << add_pt_for_err << std::endl;
-          // writeTetMesh(tmp_outdir_+"simp_tol_ori_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, false);
+          writeTetMesh(tmp_outdir_+"refine_tol_ori_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, false);
           // writeTetMesh(tmp_outdir_+"simp_tol_deformed_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, true);
         }
         updateJptsInCellsD(chds, err_queue);
@@ -204,6 +208,7 @@ namespace zsw{
     if(using_cur_pts) {  tw_->addPointInDelaunay(jpts_[jpt_ind].pt_cur_, vertex_info, chds);
     } else {  tw_->addPointInDelaunay(jpts_[jpt_ind].pt_c_, vertex_info, chds);  }
     //writeTetMesh("/home/wegatron/tmp/after_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
+    if(tw_->getTds().number_of_vertices() == nv) { std::cout << "unable to change normal!!!" << std::endl; }
     return tw_->getTds().number_of_vertices() == nv;
   }
 

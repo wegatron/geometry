@@ -5,9 +5,46 @@ clear_ellipsoid_gen:
 
 .PHONY: simp_ellipsoid_gen
 simp_ellipsoid_gen: clear_ellipsoid_gen
-	for i in {0..2}; do echo -e ".PHONY: simp_ellipsoid_v$$i\nsimp_ellipsoid_v$$i:export clear_ellipsoid_v$$i\n	\$${APP_EXEC} $$i \$${ELLIPSOID} \$${ELLIPSOID_DEFORMED} \$${ELLIPSOID_OUTPUT_DIR_V$$i} \$${ELLIPSOID_THICK} \$${ELLIPSOID_SAMPLE_R} \$${ELLIPSOID_SAMPLE_R}\n" >> suite_tmp.in; done
-
-include suite_tmp.in
+	for i in {0..2}; do echo -e ".PHONY: simp_ellipsoid_v$$i\nsimp_ellipsoid_v$$i:export clear_ellipsoid_v$$i\n	\$${APP_EXEC} $$i \$${ELLIPSOID} \$${ELLIPSOID_DEFORMED} \$${ELLIPSOID_OUTPUT_DIR_V$$i} \$${ELLIPSOID_THICK} \$${ELLIPSOID_SAMPLE_R} \$${ELLIPSOID_SAMPLE_TET_R}\n" >> suite_tmp.in; done
 
 .PHONY: simp_ellipsoid_all_v
 simp_ellipsoid_all_v: simp_ellipsoid_v0 simp_ellipsoid_v1 simp_ellipsoid_v2
+
+############################################################################
+.PHONY: clear_cylinder_gen
+clear_cylinder_gen:
+	echo "" > suite_tmp.in
+	for i in {0..2}; do echo -e ".PHONY: clear_cylinder_v$$i\nclear_cylinder_v$$i:\n	rm -rf \$${CYLINDER_OUTPUT_DIR_V$$i}*\n" >> suite_tmp.in; done
+
+.PHONY: simp_cylinder_gen
+simp_cylinder_gen: clear_cylinder_gen
+	for i in {0..2}; do echo -e ".PHONY: simp_cylinder_v$$i\nsimp_cylinder_v$$i:export clear_cylinder_v$$i\n	\$${APP_EXEC} $$i \$${CYLINDER} \$${CYLINDER_DEFORMED} \$${CYLINDER_OUTPUT_DIR_V$$i} \$${CYLINDER_THICK} \$${CYLINDER_SAMPLE_R} \$${CYLINDER_SAMPLE_TET_R}\n" >> suite_tmp.in; done
+
+.PHONY: simp_cylinder_all_v
+simp_cylinder_all_v: simp_cylinder_v0 simp_cylinder_v1 simp_cylinder_v2
+###########################################################################
+.PHONY: clear_cigar_gen
+clear_cigar_gen:
+	echo "" > suite_tmp.in
+	for i in {0..2}; do echo -e ".PHONY: clear_cigar_v$$i\nclear_cigar_v$$i:\n	rm -rf \$${CIGAR_OUTPUT_DIR_V$$i}*\n" >> suite_tmp.in; done
+
+.PHONY: simp_cigar_gen
+simp_cigar_gen: clear_cigar_gen
+	for i in {0..2}; do echo -e ".PHONY: simp_cigar_v$$i\nsimp_cigar_v$$i:export clear_cigar_v$$i\n	\$${APP_EXEC} $$i \$${CIGAR} \$${CIGAR_DEFORMED} \$${CIGAR_OUTPUT_DIR_V$$i} \$${CIGAR_THICK} \$${CIGAR_SAMPLE_R} \$${CIGAR_SAMPLE_TET_R}\n" >> suite_tmp.in; done
+
+.PHONY: simp_cigar_all_v
+simp_cigar_all_v: simp_cigar_v0 simp_cigar_v1 simp_cigar_v2
+###########################################################################
+.PHONY: clear_banana_gen
+clear_banana_gen:
+	echo "" > suite_tmp.in
+	for i in {0..2}; do echo -e ".PHONY: clear_banana_v$$i\nclear_banana_v$$i:\n	rm -rf \$${BANANA_OUTPUT_DIR_V$$i}*\n" >> suite_tmp.in; done
+
+.PHONY: simp_banana_gen
+simp_banana_gen: clear_banana_gen
+	for i in {0..2}; do echo -e ".PHONY: simp_banana_v$$i\nsimp_banana_v$$i:export clear_banana_v$$i\n	\$${APP_EXEC} $$i \$${BANANA} \$${BANANA_DEFORMED} \$${BANANA_OUTPUT_DIR_V$$i} \$${BANANA_THICK} \$${BANANA_SAMPLE_R} \$${BANANA_SAMPLE_TET_R}\n" >> suite_tmp.in; done
+
+.PHONY: simp_banana_all_v
+simp_banana_all_v: simp_banana_v0 simp_banana_v1 simp_banana_v2
+###########################################################################
+include suite_tmp.in
