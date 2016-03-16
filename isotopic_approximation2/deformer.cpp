@@ -37,6 +37,15 @@ namespace zsw
     for(size_t i=0; i<vs.size(); ++i) { dvt += weight[i] * (dvs[i] - vs[i]); }
   }
 
+  void LocalVectorFieldDeformFunc::calcDeformedPos(
+                                                   const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
+                                                   const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
+                                                   const Eigen::Matrix<zsw::Scalar,3,1> &vt,
+                                                   Eigen::Matrix<zsw::Scalar,3,1> &dvt)
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
   Deformer::Deformer(const zsw::mesh::TriMesh &ori_mesh,
                      const zsw::mesh::TriMesh &deformed_mesh,
                      const zsw::Scalar sample_r)
@@ -62,12 +71,13 @@ namespace zsw
     dvs_kdt_.buildTree(ref_dvs_[0].data(), ref_dvs_.size());
   }
 
-  LocalTranslateDeformer::LocalTranslateDeformer(const zsw::mesh::TriMesh &ori_mesh,
-                                                 const zsw::mesh::TriMesh &deformed_mesh,
-                                                 const zsw::Scalar sample_r)
-    : Deformer(ori_mesh, deformed_mesh, sample_r)  { ref_r_ = 2 * sample_r; }
+  LocalDeformer::LocalDeformer(const zsw::mesh::TriMesh &ori_mesh,
+                               const zsw::mesh::TriMesh &deformed_mesh,
+                               const zsw::Scalar sample_r,
+                               std::shared_ptr<LocalDeformFunc> df)
+    : Deformer(ori_mesh, deformed_mesh, sample_r)  { ref_r_ = 2 * sample_r; df_ = df; }
 
-  void LocalTranslateDeformer::deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs)
+  void LocalDeformer::deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs)
   {
     std::vector<zsw::KdTreeNode> ref_nodes;
     std::vector<zsw::Vector3s> ref_vs_cur, ref_dvs_cur;
@@ -79,11 +89,11 @@ namespace zsw
       for(const zsw::KdTreeNode &node : ref_nodes) {
         ref_vs_cur.push_back(ref_vs_[node.index_]); ref_dvs_cur.push_back(ref_dvs_[node.index_]);
       }
-      df_.calcDeformedPos(ref_vs_cur, ref_dvs_cur, vs[i], dvs[i]);
+      df_->calcDeformedPos(ref_vs_cur, ref_dvs_cur, vs[i], dvs[i]);
     }
   }
 
-  void LocalTranslateDeformer::deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs)
+  void LocalDeformer::deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs)
   {
     std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }

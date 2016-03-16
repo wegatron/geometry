@@ -34,6 +34,49 @@ namespace zsw
     zsw::Scalar c_;
   };
 
+  class LocalDeformFunc
+  {
+  public:
+  LocalDeformFunc() : dis_weight_func_(new GaussDisWeightFunc()) {}
+    /// \brief calc DeformedPos of a vertex according nearby vertices and their deformed positions.
+    ///
+    /// using moving least square
+    ///
+    /// \param vs known vertices
+    /// \param vs's deformed position
+    /// \param vt the vertex we want to calculate
+    /// \return dvt the deformed vertex position
+    ///
+    virtual void calcDeformedPos(
+                                 const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
+                                 const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
+                                 const Eigen::Matrix<zsw::Scalar,3,1> &vt,
+                                 Eigen::Matrix<zsw::Scalar,3,1> &dvt) = 0;
+
+  protected:
+    std::shared_ptr<DisWeightFunc> dis_weight_func_;
+  };
+
+  class LocalTranslateDeformFunc :  public LocalDeformFunc
+  {
+  public:
+    LocalTranslateDeformFunc() {}
+    void calcDeformedPos(
+                         const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
+                         const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
+                         const Eigen::Matrix<zsw::Scalar,3,1> &vt,
+                         Eigen::Matrix<zsw::Scalar,3,1> &dvt);
+  };
+
+  class LocalVectorFieldDeformFunc
+  {
+  public:
+    virtual void calcDeformedPos(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
+                                 const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
+                                 const Eigen::Matrix<zsw::Scalar,3,1> &vt,
+                                 Eigen::Matrix<zsw::Scalar,3,1> &dvt);
+  };
+
   class Deformer
   {
   public:
@@ -48,40 +91,16 @@ namespace zsw
     zsw::KdTreeWarper vs_kdt_;
     zsw::KdTreeWarper dvs_kdt_;
   };
-
-  class LocalTranslateDeformFunc
+  
+  class LocalDeformer : public Deformer
   {
   public:
-  LocalTranslateDeformFunc() : dis_weight_func_(new GaussDisWeightFunc()) {}
-
-    /// \brief calc DeformedPos of a vertex according nearby vertices and their deformed positions.
-    ///
-    /// using moving least square
-    ///
-    /// \param vs known vertices
-    /// \param vs's deformed position
-    /// \param vt the vertex we want to calculate
-    /// \return dvt the deformed vertex position
-    ///
-    void calcDeformedPos(
-                         const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
-                         const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
-                         const Eigen::Matrix<zsw::Scalar,3,1> &vt,
-                         Eigen::Matrix<zsw::Scalar,3,1> &dvt);
-
-  private:
-    std::shared_ptr<zsw::DisWeightFunc> dis_weight_func_;
-  };
-
-  class LocalTranslateDeformer : public Deformer
-  {
-  public:
-    LocalTranslateDeformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh,
-                           const zsw::Scalar sample_r);
+    LocalDeformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh,
+                  const zsw::Scalar sample_r, std::shared_ptr<LocalDeformFunc> df);
     virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs);
     virtual void deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs);
   private:
-    LocalTranslateDeformFunc df_;
+    std::shared_ptr<LocalDeformFunc> df_;
     zsw::Scalar ref_r_;
   };
 }
