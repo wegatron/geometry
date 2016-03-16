@@ -48,7 +48,7 @@ namespace zsw
       zsw::mesh::TriMesh::FaceHandle fh=zsw::mesh::TriMesh::FaceHandle(int(fi));
       size_t vi=0;
       for(zsw::mesh::TriMesh::CFVIter fv_it=ori_mesh.cfv_iter(fh); fv_it.is_valid(); ++fv_it) {
-        ori_tri.block<3,1>(0,vi) = ori_mesh.point(*fv_it);
+        ori_tri.block<3,1>(0,vi++) = ori_mesh.point(*fv_it);
       }
       vi=0;
       for(zsw::mesh::TriMesh::CFVIter fv_it=deformed_mesh.cfv_iter(fh); fv_it.is_valid(); ++fv_it) {
@@ -65,12 +65,13 @@ namespace zsw
   LocalTranslateDeformer::LocalTranslateDeformer(const zsw::mesh::TriMesh &ori_mesh,
                                                  const zsw::mesh::TriMesh &deformed_mesh,
                                                  const zsw::Scalar sample_r)
-    : Deformer(ori_mesh, deformed_mesh, sample_r)  { ref_r_ = sample_r; }
+    : Deformer(ori_mesh, deformed_mesh, sample_r)  { ref_r_ = 2 * sample_r; }
 
   void LocalTranslateDeformer::deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs)
   {
     std::vector<zsw::KdTreeNode> ref_nodes;
     std::vector<zsw::Vector3s> ref_vs_cur, ref_dvs_cur;
+    dvs.resize(vs.size());
     for(size_t i=0; i<vs.size(); ++i) {
       ref_nodes.clear();
       vs_kdt_.findWithinR(vs[i], ref_r_, std::back_inserter(ref_nodes));

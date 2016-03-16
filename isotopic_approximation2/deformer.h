@@ -25,7 +25,7 @@ namespace zsw
   class GaussDisWeightFunc : public DisWeightFunc
   {
   public:
-    GaussDisWeightFunc() { c_ = -0.1; }
+    GaussDisWeightFunc() { c_ = -0.2; }
     virtual void calcWeight(
                             const Eigen::Matrix<zsw::Scalar,3,1> &vt,
                             const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
@@ -38,6 +38,8 @@ namespace zsw
   {
   public:
     Deformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh, const zsw::Scalar sample_r);
+    const std::vector<zsw::Vector3s>& getRefVs() const { return ref_vs_; }
+    const std::vector<zsw::Vector3s>& getRefDvs() const { return ref_dvs_; }
     virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) = 0;
     virtual void deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs) = 0;
   protected:
