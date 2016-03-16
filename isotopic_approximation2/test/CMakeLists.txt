@@ -14,21 +14,31 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp -fPIC")
 
 # add_subdirectory(src)
 
-add_executable(test_tri test_triangulation.cpp)
-add_executable(debug_normal_cond debug_normal_condition.cpp)
+# add_executable(test_tri test_triangulation.cpp)
+# add_executable(debug_normal_cond debug_normal_condition.cpp)
 
-target_link_libraries(test_tri
+# target_link_libraries(test_tri
+#   iso_app
+#   zswlib
+#   ${OPENMESH_LIBRARIES}
+#   ${CGAL_LIBRARY}
+#   ${GMP_LIBRARIES}
+#   )
+
+add_executable(test_mls_basic test_mls_basic.cpp)
+target_link_libraries(test_mls_basic
   iso_app
   zswlib
   ${OPENMESH_LIBRARIES}
   ${CGAL_LIBRARY}
   ${GMP_LIBRARIES}
+  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
   )
 
-target_link_libraries(debug_normal_cond
-  iso_app
-  zswlib
-  ${OPENMESH_LIBRARIES}
-  ${CGAL_LIBRARY}
-  ${GMP_LIBRARIES}
-  )
+# target_link_libraries(debug_normal_cond
+#   iso_app
+#   zswlib
+#   ${OPENMESH_LIBRARIES}
+#   ${CGAL_LIBRARY}
+#   ${GMP_LIBRARIES}
+#   )

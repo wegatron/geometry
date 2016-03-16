@@ -1,11 +1,15 @@
-#ifndef MLS_H
-#define MLS_H
+#ifndef DEFORMER_H
+#define DEFORMER_H
 
 #include <vector>
 #include <Eigen/Dense>
 #include <memory>
 
 #include <zswlib/config.h>
+#include <zswlib/mesh/mesh_type.h>
+#include <zswlib/matrix_type.h>
+#include <zswlib/mesh/vtk.h>
+#include "kdtree_warp.h"
 
 namespace zsw
 {
@@ -30,11 +34,23 @@ namespace zsw
     zsw::Scalar c_;
   };
 
-  class DeformFunc
+  class Deformer
   {
   public:
+    Deformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh, const zsw::Scalar sample_r);
+    virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) = 0;
+    virtual void deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs) = 0;
+  protected:
+    std::vector<zsw::Vector3s> ref_vs_;
+    std::vector<zsw::Vector3s> ref_dvs_;
+    zsw::KdTreeWarper vs_kdt_;
+    zsw::KdTreeWarper dvs_kdt_;
+  };
 
-  DeformFunc() : dis_weight_func_(new GaussDisWeightFunc()) {}
+  class LocalTranslateDeformFunc
+  {
+  public:
+  LocalTranslateDeformFunc() : dis_weight_func_(new GaussDisWeightFunc()) {}
 
     /// \brief calc DeformedPos of a vertex according nearby vertices and their deformed positions.
     ///
@@ -50,16 +66,22 @@ namespace zsw
                          const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
                          const Eigen::Matrix<zsw::Scalar,3,1> &vt,
                          Eigen::Matrix<zsw::Scalar,3,1> &dvt);
-  private:
-    void updateAB(const Eigen::Matrix<zsw::Scalar,3,1> &vt,
-                  const Eigen::Matrix<zsw::Scalar,3,1> &v,
-                  const Eigen::Matrix<zsw::Scalar,3,1> &dv,
-                  const zsw::Scalar weitght);
 
+  private:
     std::shared_ptr<zsw::DisWeightFunc> dis_weight_func_;
-    Eigen::Matrix<zsw::Scalar,12,12> A_;
-    Eigen::Matrix<zsw::Scalar,12,1> B_;
+  };
+
+  class LocalTranslateDeformer : public Deformer
+  {
+  public:
+    LocalTranslateDeformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh,
+                           const zsw::Scalar sample_r);
+    virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs);
+    virtual void deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs);
+  private:
+    LocalTranslateDeformFunc df_;
+    zsw::Scalar ref_r_;
   };
 }
 
-#endif /* MLS_H */
+#endif /* DEFORMER_H */
