@@ -14,28 +14,6 @@
 
 using namespace std;
 
-BOOST_AUTO_TEST_SUITE(test_deform)
-
-BOOST_AUTO_TEST_CASE(plane_scale_deform)
-{
-  std::vector<Eigen::Matrix<zsw::Scalar,3,1>> vs, dvs;
-
-  for(size_t i=0; i<=100; ++i) {
-    for(size_t j=0; j<=100; ++j) {
-      Eigen::Matrix<zsw::Scalar,3,1> v, dv;
-      v << i*0.01, j*0.01, 0;
-      dv << i*0.01, j*0.005, 0;
-      vs.push_back(v); dvs.push_back(dv);
-    }
-  }
-
-  Eigen::Matrix<zsw::Scalar,3,1> vt; vt << 0, 0.5, 1;
-  zsw::LocalTranslateDeformFunc def;
-  Eigen::Matrix<zsw::Scalar,3,1> dvt;
-  def.calcDeformedPos(vs, dvs, vt, dvt);
-  std::cout << "deformed dvt:" << dvt.transpose() << std::endl;
-}
-
 void sampleMesh(const std::string &ori_file, const std::string &deformed_file,
                 std::vector<zsw::Vector3s> &ori_samples, std::vector<zsw::Vector3s> &deformed_samples,
                 std::vector<zsw::Vector3s> &ori_shell_vs, const zsw::Scalar err_epsilon,
@@ -75,51 +53,6 @@ void sampleMesh(const std::string &ori_file, const std::string &deformed_file,
   }
 }
 
-BOOST_AUTO_TEST_CASE(deform_func_ellipsoid_case)
-{
-  std::vector<zsw::Vector3s> ori_samples, deformed_samples, ori_shell_vs, deformed_shell_vs;
-  const zsw::Scalar err_epsilon = 0.05;
-  const zsw::Scalar sample_r = 0.025;
-  sampleMesh("/home/wegatron/workspace/geometry/data/ellipsoid.obj",
-             "/home/wegatron/workspace/geometry/data/ellipsoid_opt.obj",
-             ori_samples, deformed_samples,
-             ori_shell_vs, err_epsilon,
-             sample_r);
-  // writeout sample points
-  zsw::writePoints("/home/wegatron/tmp/deform_test/ori_samples.vtk", ori_samples);
-  zsw::writePoints("/home/wegatron/tmp/deform_test/deformed_samples.vtk", deformed_samples);
-  zsw::writePoints("/home/wegatron/tmp/deform_test/ori_shell_vs.vtk", ori_shell_vs);
-  // build kdTree
-  zsw::KdTreeWarper ori_kdt; ori_kdt.buildTree(ori_samples[0].data(), ori_samples.size());
-  //zsw::KdTreeWarper deformed_kdt; deformed_kdt.buildTree(deformed_samples[0].data(), deformed_samples.size());
-  std::vector<zsw::KdTreeNode> vs_in_r;
-  std::vector<zsw::Vector3s> vs, dvs;
-  std::vector<zsw::Scalar> errs(ori_shell_vs.size(), 0);
-  deformed_shell_vs.resize(ori_shell_vs.size());
-  zsw::LocalTranslateDeformFunc df;
-  // for each vertex query the near r pts
-  for(size_t i=0; i<ori_shell_vs.size(); ++i) {
-    vs_in_r.clear();
-    ori_kdt.findWithinR(ori_shell_vs[i], 0.1, std::back_inserter(vs_in_r));
-    vs.clear(); dvs.clear();
-    for(const zsw::KdTreeNode &node : vs_in_r) {
-      vs.push_back(ori_samples[node.index_]);
-      dvs.push_back(deformed_samples[node.index_]);
-    }
-    df.calcDeformedPos(vs, dvs, ori_shell_vs[i], deformed_shell_vs[i]);
-    zsw::Vector3s expected = ori_shell_vs[i]; expected[0] = expected[0]*0.25;
-    errs[i] = (deformed_shell_vs[i] - expected).norm();
-  }
-  // writeout
-  std::ofstream ofs("/home/wegatron/tmp/deform_test/deformed_shell_vs.vtk");
-  std::vector<size_t> points_ind(ori_shell_vs.size(), 0);
-  for(size_t i=0; i<ori_shell_vs.size(); ++i) { points_ind[i]=i; }
-  point2vtk(ofs, deformed_shell_vs[0].data(), deformed_shell_vs.size(), points_ind.data(), points_ind.size());
-  point_data(ofs, errs.begin(), errs.size(), "err");
-  //zsw::writePoints("/home/wegatron/tmp/deform_test/deformed_shell_vs.vtk", deformed_shell_vs);
-}
-
-
 void sampleOutShell(zsw::mesh::TriMesh &ori_mesh, const zsw::Scalar err_epsilon,
                     std::vector<zsw::Vector3s> &ori_shell_vs, zsw::Scalar sample_r)
 {
@@ -142,51 +75,142 @@ void sampleOutShell(zsw::mesh::TriMesh &ori_mesh, const zsw::Scalar err_epsilon,
   }
 }
 
-void deform(const std::string &ori_mesh_file,
-            const std::string &deformed_mesh_file,
+void deform(
+            const zsw::Deformer &deformer,
+            zsw::mesh::TriMesh &ori_mesh,
             const std::string &prefix,
             const zsw::Scalar err_epsilon,
             const zsw::Scalar sample_r)
 {
-  zsw::mesh::TriMesh ori_mesh;
-  if(!OpenMesh::IO::read_mesh(ori_mesh, ori_mesh_file)) {
-    std::cerr << "[ERROR] can't read ori mesh" << std::endl;
-    abort();
-  }
-  zsw::mesh::TriMesh deformed_mesh;
-  if(!OpenMesh::IO::read_mesh(deformed_mesh, deformed_mesh_file)) {
-    std::cerr << "[ERROR] can't read deform mesh" << std::endl;
-    abort();
-  }
-
   std::vector<zsw::Vector3s> ori_shell_vs, deformed_shell_vs;
   sampleOutShell(ori_mesh, err_epsilon, ori_shell_vs, sample_r);
   zsw::writePoints(prefix+"_shell_vs_ori.vtk", ori_shell_vs);
-  zsw::LocalTranslateDeformer deformer(ori_mesh, deformed_mesh, sample_r);
   std::cout << "ref_vs size = " << deformer.getRefVs().size() << std::endl;
   zsw::writePoints(prefix+"_ref_vs.vtk", deformer.getRefVs());
   zsw::writePoints(prefix+"_ref_dvs.vtk", deformer.getRefDvs());
+  std::cout << __FILE__ << __LINE__ << std::endl;
   deformer.deformTo(ori_shell_vs, deformed_shell_vs);
+  std::cout << __FILE__ << __LINE__ << std::endl;
   // writeout sample points
   zsw::writePoints(prefix+"_res_dvs.vtk", deformed_shell_vs);
 }
 
-BOOST_AUTO_TEST_CASE(deformer_ellipsoid_xscale)
+BOOST_AUTO_TEST_SUITE(lt_deform)
+
+BOOST_AUTO_TEST_CASE(ellipsoid_xscale)
 {
   const zsw::Scalar err_epsilon = 0.05;
   const zsw::Scalar sample_r = 0.025;
-  deform("/home/wegatron/workspace/geometry/data/ellipsoid.obj",
-         "/home/wegatron/workspace/geometry/data/ellipsoid_opt.obj",
-         "/home/wegatron/tmp/deform_test/x_scale", err_epsilon, sample_r);
+  zsw::mesh::TriMesh ori_mesh;
+  if(!OpenMesh::IO::read_mesh(ori_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid.obj")) {
+    std::cerr << "[ERROR] can't read ori mesh" << std::endl;
+    abort();
+  }
+
+  zsw::mesh::TriMesh deformed_mesh;
+  if(!OpenMesh::IO::read_mesh(deformed_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid_opt.obj")) {
+    std::cerr << "[ERROR] can't read deform mesh" << std::endl;
+    abort();
+  }
+
+  std::shared_ptr<zsw::DisWeightFunc> dwf(new zsw::GaussDisWeightFunc());
+  zsw::LocalTranslateDeformer deformer(ori_mesh, deformed_mesh, sample_r, dwf);
+  deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/ltd_x_scale", err_epsilon, sample_r);
 }
 
-BOOST_AUTO_TEST_CASE(deformer_ellipsoid_allscale)
+BOOST_AUTO_TEST_CASE(ellipsoid_allscale)
 {
   const zsw::Scalar err_epsilon = 0.05;
   const zsw::Scalar sample_r = 0.025;
-  deform("/home/wegatron/workspace/geometry/data/ellipsoid.obj",
-         "/home/wegatron/workspace/geometry/data/ellipsoid_scale.obj",
-         "/home/wegatron/tmp/deform_test/all_scale", err_epsilon, sample_r);
+  zsw::mesh::TriMesh ori_mesh;
+  if(!OpenMesh::IO::read_mesh(ori_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid.obj")) {
+    std::cerr << "[ERROR] can't read ori mesh" << std::endl;
+    abort();
+  }
+
+  zsw::mesh::TriMesh deformed_mesh;
+  if(!OpenMesh::IO::read_mesh(deformed_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid_scale.obj")) {
+    std::cerr << "[ERROR] can't read deform mesh" << std::endl;
+    abort();
+  }
+
+  std::shared_ptr<zsw::DisWeightFunc> dwf(new zsw::GaussDisWeightFunc());
+  zsw::LocalTranslateDeformer deformer(ori_mesh, deformed_mesh, sample_r, dwf);
+  deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/ltd_all_scale", err_epsilon, sample_r);
 }
 
-  BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(vf_deform)
+
+BOOST_AUTO_TEST_CASE(vf_jac_basic)
+{
+  const zsw::Scalar err_epsilon = 0.05;
+  const zsw::Scalar sample_r = 0.025;
+  zsw::mesh::TriMesh ori_mesh;
+  if(!OpenMesh::IO::read_mesh(ori_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid.obj")) {
+    std::cerr << "[ERROR] can't read ori mesh" << std::endl;
+    abort();
+  }
+
+  zsw::mesh::TriMesh deformed_mesh;
+  if(!OpenMesh::IO::read_mesh(deformed_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid.obj")) {
+    std::cerr << "[ERROR] can't read deform mesh" << std::endl;
+    abort();
+  }
+
+  std::shared_ptr<zsw::DisWeightFunc> dwf(new zsw::GaussDisWeightFunc());
+  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, dwf);
+  const std::vector<Eigen::Matrix<zsw::Scalar,3,3>> &jac = deformer.getJac();
+  Eigen::Matrix<zsw::Scalar,3,3> exp_jac = Eigen::Matrix<zsw::Scalar,3,3>::Identity();
+  for(size_t i=0; i<jac.size(); ++i) {
+    BOOST_CHECK((jac[i]- exp_jac).norm() < 1e-3);
+    std::cout << "norm = " << (jac[i]- exp_jac).norm() << std::endl;
+    std::cout << "jac=\n" << jac[i] << std::endl;
+  }
+}
+
+BOOST_AUTO_TEST_CASE(ellipsoid_xscale)
+{
+  const zsw::Scalar err_epsilon = 0.05;
+  const zsw::Scalar sample_r = 0.025;
+  zsw::mesh::TriMesh ori_mesh;
+  if(!OpenMesh::IO::read_mesh(ori_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid.obj")) {
+    std::cerr << "[ERROR] can't read ori mesh" << std::endl;
+    abort();
+  }
+
+  zsw::mesh::TriMesh deformed_mesh;
+  if(!OpenMesh::IO::read_mesh(deformed_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid_opt.obj")) {
+    std::cerr << "[ERROR] can't read deform mesh" << std::endl;
+    abort();
+  }
+
+  std::shared_ptr<zsw::DisWeightFunc> dwf(new zsw::GaussDisWeightFunc());
+  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, dwf);
+  deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/lvfd_x_scale", err_epsilon, sample_r);
+}
+
+BOOST_AUTO_TEST_CASE(ellipsoid_allscale)
+{
+  const zsw::Scalar err_epsilon = 0.05;
+  const zsw::Scalar sample_r = 0.025;
+  zsw::mesh::TriMesh ori_mesh;
+  if(!OpenMesh::IO::read_mesh(ori_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid.obj")) {
+    std::cerr << "[ERROR] can't read ori mesh" << std::endl;
+    abort();
+  }
+
+  zsw::mesh::TriMesh deformed_mesh;
+  if(!OpenMesh::IO::read_mesh(deformed_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid_scale.obj")) {
+    std::cerr << "[ERROR] can't read deform mesh" << std::endl;
+    abort();
+  }
+
+  std::shared_ptr<zsw::DisWeightFunc> dwf(new zsw::GaussDisWeightFunc());
+  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, dwf);
+  deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/lvfd_all_scale", err_epsilon, sample_r);
+}
+
+BOOST_AUTO_TEST_SUITE_END()

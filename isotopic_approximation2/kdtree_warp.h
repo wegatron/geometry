@@ -55,7 +55,7 @@ namespace zsw{
         }
       }
     template<typename _OutPutIterator>
-      _OutPutIterator findWithinR(const Eigen::Matrix<zsw::Scalar,3,1> pt, const zsw::Scalar r, _OutPutIterator out)
+      _OutPutIterator findWithinR(const Eigen::Matrix<zsw::Scalar,3,1> pt, const zsw::Scalar r, _OutPutIterator out) const
       {
         KdTreeNode tmp_node(pt(0), pt(1), pt(2), -1);
         return kdtree_.find_within_range(tmp_node, r, out);

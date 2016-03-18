@@ -48,6 +48,11 @@ namespace zsw {
       }
     }
 
+    void queryKnn(const Eigen::Matrix<ScalarType,3,1> q_point, std::vector<size_t> indices)
+    {
+      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    }
+
     void addPoints(ScalarType *data, const size_t points_number) {
       flann::Matrix<ScalarType> n_pts(data, points_number,3);
       index->addPoints(n_pts);

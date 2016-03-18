@@ -34,10 +34,32 @@ namespace zsw
     zsw::Scalar c_;
   };
 
-  class LocalDeformFunc
+  class Deformer
   {
   public:
-  LocalDeformFunc() : dis_weight_func_(new GaussDisWeightFunc()) {}
+    Deformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh,
+             const zsw::Scalar sample_r, std::shared_ptr<zsw::DisWeightFunc> dis_weight_func);
+    const std::vector<zsw::Vector3s>& getRefVs() const { return ref_vs_; }
+    const std::vector<zsw::Vector3s>& getRefDvs() const { return ref_dvs_; }
+    virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) const = 0;
+    virtual void deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs) const = 0;
+  protected:
+    std::shared_ptr<zsw::DisWeightFunc> dis_weight_func_;
+    zsw::Scalar ref_r_;
+    std::vector<zsw::Vector3s> ref_vs_;
+    std::vector<zsw::Vector3s> ref_dvs_;
+    zsw::KdTreeWarper vs_kdt_;
+    zsw::KdTreeWarper dvs_kdt_;
+  };
+  
+  class LocalTranslateDeformer : public Deformer
+  {
+  public:
+    LocalTranslateDeformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh,
+                           const zsw::Scalar sample_r, std::shared_ptr<zsw::DisWeightFunc> dis_weight_func);
+    virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) const;
+    virtual void deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs) const;
+  private:
     /// \brief calc DeformedPos of a vertex according nearby vertices and their deformed positions.
     ///
     /// using moving least square
@@ -51,57 +73,20 @@ namespace zsw
                                  const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
                                  const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
                                  const Eigen::Matrix<zsw::Scalar,3,1> &vt,
-                                 Eigen::Matrix<zsw::Scalar,3,1> &dvt) = 0;
-
-  protected:
-    std::shared_ptr<DisWeightFunc> dis_weight_func_;
+                                 Eigen::Matrix<zsw::Scalar,3,1> &dvt) const;
   };
 
-  class LocalTranslateDeformFunc :  public LocalDeformFunc
+  class LocalVectorFieldDeformer : public Deformer
   {
   public:
-    LocalTranslateDeformFunc() {}
-    void calcDeformedPos(
-                         const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
-                         const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
-                         const Eigen::Matrix<zsw::Scalar,3,1> &vt,
-                         Eigen::Matrix<zsw::Scalar,3,1> &dvt);
-  };
-
-  class LocalVectorFieldDeformFunc
-  {
-  public:
-    virtual void calcDeformedPos(const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
-                                 const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
-                                 const Eigen::Matrix<zsw::Scalar,3,1> &vt,
-                                 Eigen::Matrix<zsw::Scalar,3,1> &dvt);
-  };
-
-  class Deformer
-  {
-  public:
-    Deformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh, const zsw::Scalar sample_r);
-    const std::vector<zsw::Vector3s>& getRefVs() const { return ref_vs_; }
-    const std::vector<zsw::Vector3s>& getRefDvs() const { return ref_dvs_; }
-    virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) = 0;
-    virtual void deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs) = 0;
-  protected:
-    std::vector<zsw::Vector3s> ref_vs_;
-    std::vector<zsw::Vector3s> ref_dvs_;
-    zsw::KdTreeWarper vs_kdt_;
-    zsw::KdTreeWarper dvs_kdt_;
-  };
-  
-  class LocalDeformer : public Deformer
-  {
-  public:
-    LocalDeformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh,
-                  const zsw::Scalar sample_r, std::shared_ptr<LocalDeformFunc> df);
-    virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs);
-    virtual void deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs);
+    LocalVectorFieldDeformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh,
+                             const zsw::Scalar sample_r, std::shared_ptr<zsw::DisWeightFunc> dis_weight_func);
+    virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) const;
+    virtual void deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs) const;
+    const std::vector<Eigen::Matrix<zsw::Scalar,3,3>>& getJac() const { return jac_; }
   private:
-    std::shared_ptr<LocalDeformFunc> df_;
-    zsw::Scalar ref_r_;
+    void calcJac();
+    std::vector<Eigen::Matrix<zsw::Scalar,3,3>> jac_;
   };
 }
 
