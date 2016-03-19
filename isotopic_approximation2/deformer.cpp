@@ -228,6 +228,8 @@ namespace zsw
 
   void LocalVectorFieldDeformer::resolveInvalidJacobian(const std::vector<std::vector<size_t>> &indices)
   {
+    std::vector<std::vector<size_t>> reverse_indices(indices.size());
+    for(size_t i=0; i<indices.size(); ++i) {  for(size_t ind : indices[i]) { reverse_indices[ind].push_back(i); }    }
     std::vector<size_t> valid_ne_cnt(ref_vs_.size(), 0);
     std::priority_queue<std::pair<size_t, size_t>, std::vector<std::pair<size_t, size_t>>, CntMaxComp> max_n_q;
     for(size_t i=0; i<ref_vs_.size(); ++i) {
@@ -259,7 +261,8 @@ namespace zsw
         scale += weight[i] * (jac_[ind] * ref_vs_normal_[ind]).norm();
         total_weight += weight[i];
       }
-      if(true_valid_cnt != n_ind.first) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+      if(true_valid_cnt!=n_ind.first || n_ind.first!=valid_ne_cnt[cur_ind]) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+      if(0 == n_ind.first) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
       scale = scale / total_weight;
       // add cur normal scale pt into A and calc jac
       zsw::Vector3s vn_ori = ref_vs_normal_[cur_ind];
@@ -327,8 +330,9 @@ namespace zsw
       }
       valid_[cur_ind] = true;
       // update the neighbour
-      for(size_t ind : indices[cur_ind]) {
-        if(!valid_[ind]) { max_n_q.push(std::make_pair(++valid_ne_cnt[ind], ind)); }
+      for(size_t ind : reverse_indices[cur_ind]) {
+        if(valid_[ind]) { continue; }
+        max_n_q.push(std::make_pair(++valid_ne_cnt[ind], ind));
       }
       // if(++resolved_cnt % 50 == 0) {
       //   std::cout << "resolved cnt=" << resolved_cnt << std::endl;
