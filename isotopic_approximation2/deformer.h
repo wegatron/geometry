@@ -92,6 +92,7 @@ namespace zsw
     void calcJac();
     void resolveInvalidJacobian(const std::vector<std::vector<size_t>> &indices);
     std::vector<Eigen::Matrix<zsw::Scalar,3,3>> jac_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,3>> jac_inv_;
     std::vector<bool> valid_;
   };
 }

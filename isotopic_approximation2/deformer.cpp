@@ -211,9 +211,13 @@ namespace zsw
       }
 #endif
     }
-    writeValidRefVs();
+    // writeValidRefVs();
     // resolve invalid jacobian
     resolveInvalidJacobian(indices);
+    jac_inv_.resize(jac_.size());
+    for(size_t i=0; i<ref_vs_.size(); ++i) {
+      jac_inv_[i] = jac_[i].inverse();
+    }
   }
 
   class CntMaxComp
@@ -338,7 +342,22 @@ namespace zsw
 
   void LocalVectorFieldDeformer::deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs) const
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    // for each vertex v_i of dvs
+    // find all v_j in ref_r, and calc v_i = w_{ij}(J_j(v'_i - v'_j) + v_j)
+    std::vector<std::vector<size_t>> indices;
+    std::vector<std::vector<zsw::Scalar>> dists;
+    dvs_ann_->queryKnn(dvs, indices, dists, near_count_);
+    std::vector<zsw::Vector3s> ref_dvs_cur(near_count_);
+    vs.resize(vs.size(), zsw::Vector3s::Zero());
+    for(size_t i=0; i<dvs.size(); ++i) {
+      for(size_t j=0; j<near_count_; ++j) { ref_dvs_cur[j] = ref_dvs_[indices[i][j]]; }
+      std::vector<zsw::Scalar> weight(near_count_, 0);
+      dis_weight_func_->calcWeight(dvs[i], ref_dvs_cur, weight);
+      for(size_t j=0; j<near_count_; ++j) {
+        const size_t ref_index = indices[i][j];
+        vs[i] += weight[j] * (jac_inv_[ref_index] * (dvs[i] - ref_dvs_[ref_index]) + ref_vs_[ref_index]);
+      }
+    }
   }
 
   void LocalVectorFieldDeformer::deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) const
