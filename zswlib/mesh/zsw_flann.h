@@ -16,8 +16,8 @@ namespace zsw {
     }
 
     template<int col_n>
-    void queryNearest(const Eigen::Matrix<ScalarType, 3, col_n> &q_points, std::vector<size_t> &indices,
-                      std::vector<ScalarType> &dist) {
+      void queryNearest(const Eigen::Matrix<ScalarType, 3, col_n> &q_points, std::vector<size_t> &indices,
+                        std::vector<ScalarType> &dist) {
       std::vector<std::vector<int> > tmp_indices;
       std::vector<std::vector<ScalarType> > tmp_dist;
       const flann::Matrix<ScalarType> tmp_q_points(const_cast<ScalarType*>(q_points.data()), q_points.cols(), 3);
@@ -48,9 +48,14 @@ namespace zsw {
       }
     }
 
-    void queryKnn(const Eigen::Matrix<ScalarType,3,1> q_point, std::vector<size_t> indices)
+    void queryKnn(const std::vector<Eigen::Matrix<ScalarType,3,1>> &q_points,
+                  std::vector<std::vector<size_t>> &indices,
+                  std::vector<std::vector<zsw::Scalar>> &dists,
+                  size_t count)
     {
-      std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+      const flann::Matrix<ScalarType> tmp_q_points(const_cast<ScalarType*>(q_points[0].data()), q_points.size(), 3);
+      //specifies the maximum leafs to visit, CHECKS UNLIMITED
+      index->knnSearch(tm_q_points, indices, dists, count, flann::SearchParams(128));
     }
 
     void addPoints(ScalarType *data, const size_t points_number) {

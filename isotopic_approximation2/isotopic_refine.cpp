@@ -35,8 +35,9 @@ namespace zsw{
                         ErrorMaxComparison> err_queue;
     for(size_t i=0; i<jpts_.size();++i) {
       zsw::Scalar err=fabs(jpts_[i].val_cur_-jpts_[i].val_exp_);
-      if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i])); }
+      if(err>1) { err_queue.push(std::make_pair(err, &jpts_[i]));  }
     }
+
     TTds &tds=tw_->getTds();
     size_t add_pt_for_err=0;
     size_t add_pt_for_normal=0;
