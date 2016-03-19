@@ -297,7 +297,7 @@ BOOST_AUTO_TEST_CASE(ellipsoid_xscale)
   }
 
   std::shared_ptr<zsw::DisWeightFunc> dwf(new zsw::GaussDisWeightFunc());
-  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, 20, dwf);
+  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, 100, dwf);
   deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/lvfd_x_scale", err_epsilon, sample_r);
 }
 
@@ -318,8 +318,29 @@ BOOST_AUTO_TEST_CASE(ellipsoid_allscale)
   }
 
   std::shared_ptr<zsw::DisWeightFunc> dwf(new zsw::GaussDisWeightFunc());
-  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, 400, dwf);
-  deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/lvfd_all_scale", err_epsilon, sample_r);
+  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, 100, dwf);
+  deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/lvfd_ellipsoid_scale", err_epsilon, sample_r);
+}
+
+BOOST_AUTO_TEST_CASE(ellipsoid_deform)
+{
+  const zsw::Scalar err_epsilon = 0.05;
+  const zsw::Scalar sample_r = 0.025;
+  zsw::mesh::TriMesh ori_mesh;
+  if(!OpenMesh::IO::read_mesh(ori_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid.obj")) {
+    std::cerr << "[ERROR] can't read ori mesh" << std::endl;
+    abort();
+  }
+
+  zsw::mesh::TriMesh deformed_mesh;
+  if(!OpenMesh::IO::read_mesh(deformed_mesh, "/home/wegatron/workspace/geometry/data/ellipsoid_deformed.1.obj")) {
+    std::cerr << "[ERROR] can't read deform mesh" << std::endl;
+    abort();
+  }
+
+  std::shared_ptr<zsw::DisWeightFunc> dwf(new zsw::GaussDisWeightFunc());
+  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, 100, dwf);
+  deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/lvfd_ellipsoid_deform", err_epsilon, sample_r);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

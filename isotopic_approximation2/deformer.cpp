@@ -267,7 +267,6 @@ namespace zsw
       // add cur normal scale pt into A and calc jac
       zsw::Vector3s vn_ori = ref_vs_normal_[cur_ind];
       zsw::Vector3s vn_deformed = ref_dvs_normal_[cur_ind] * scale;
-      //Eigen::Matrix<zsw::Scalar,3,3> A_ori = Eigen::Matrix<zsw::Scalar,3,3>::Zero();
       Eigen::Matrix<zsw::Scalar,3,3> A = 0.5 * vn_ori * vn_ori.transpose();
       zsw::Vector3s B[3];
       B[0] = 0.5 * vn_deformed[0] * vn_ori;
@@ -277,7 +276,6 @@ namespace zsw
         Eigen::Matrix<zsw::Scalar,3,1> e = ref_vs_[cur_ind] - ref_vs_cur[j];
         Eigen::Matrix<zsw::Scalar,3,1> de = ref_dvs_[cur_ind] - ref_dvs_[indices[cur_ind][j]];
         A += weight[j] * e * e.transpose();
-        //A_ori += weight[j] * e * e.transpose();
         B[0] += weight[j] * de[0] * e;
         B[1] += weight[j] * de[1] * e;
         B[2] += weight[j] * de[2] * e;
@@ -288,7 +286,7 @@ namespace zsw
       jac_[cur_ind].block<1,3>(0,0) = ldlt.solve(B[0]).transpose();
       jac_[cur_ind].block<1,3>(1,0) = ldlt.solve(B[1]).transpose();
       jac_[cur_ind].block<1,3>(2,0) = ldlt.solve(B[2]).transpose();
-
+#if 1
       if(!jac_[cur_ind].allFinite()) {
         std::cout << "valid_cnt:" << n_ind.first << std::endl;
         std::cout << "true_valid_cnt:" << true_valid_cnt << std::endl;
@@ -328,16 +326,13 @@ namespace zsw
           // if((jac_exp-jac_[i]).norm() > 1e-3) {          std::cout << "jac:\n" << jac_[i] << std::endl;       abort();  }
         }
       }
+#endif
       valid_[cur_ind] = true;
       // update the neighbour
       for(size_t ind : reverse_indices[cur_ind]) {
         if(valid_[ind]) { continue; }
         max_n_q.push(std::make_pair(++valid_ne_cnt[ind], ind));
       }
-      // if(++resolved_cnt % 50 == 0) {
-      //   std::cout << "resolved cnt=" << resolved_cnt << std::endl;
-      //   std::cout << "jac:\n" << jac_[cur_ind] << std::endl;
-      // }
     }
   }
 
