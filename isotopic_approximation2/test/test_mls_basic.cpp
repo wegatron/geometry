@@ -253,7 +253,6 @@ BOOST_AUTO_TEST_CASE(vf_cube_scale)
     BOOST_REQUIRE(jac[i].allFinite());
   }
   deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/lvfd_cube_scale", err_epsilon, sample_r);
-  deformer.writeValidRefVs();
 }
 
 BOOST_AUTO_TEST_CASE(vf_banana_scale)
