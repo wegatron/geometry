@@ -45,14 +45,16 @@ namespace zsw
 
     const std::vector<zsw::Vector3s>& getRefDvs() const { return ref_dvs_; }
 
-    virtual void deformTo(std::shared_ptr<std::vector<zsw::Vector3s>> sample_out,
-                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_in,
-                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_out_d,
-                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_in_d) = 0;
+    void deformTo(std::shared_ptr<std::vector<zsw::Vector3s>> sample_out,
+                  std::shared_ptr<std::vector<zsw::Vector3s>> sample_in,
+                  std::shared_ptr<std::vector<zsw::Vector3s>> sample_out_d,
+                  std::shared_ptr<std::vector<zsw::Vector3s>> sample_in_d);
 
-    virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs)= 0;
+    void deformBack(const std::vector<zsw::Vector3s> &ptsd, const std::vector<std::vector<size_t>> &adjs,
+                    std::vector<zsw::Vector3s> &pts_bk) const;
 
-    virtual void deformBack(const std::vector<zsw::Vector3s> &ptsd, const std::vector<std::vector<size_t>> &adjs) const = 0;
+    virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) = 0;
+
   protected:
     size_t near_count_;
     std::shared_ptr<zsw::DisWeightFunc> dis_weight_func_;
@@ -66,6 +68,8 @@ namespace zsw
     std::shared_ptr<std::vector<zsw::Vector3s>> sample_out_d_;
     std::shared_ptr<std::vector<zsw::Vector3s>> sample_in_d_;
     std::shared_ptr<zsw::Flann<zsw::Scalar>> vs_ann_;
+    std::shared_ptr<zsw::Flann<zsw::Scalar>> out_d_ann_;
+    std::shared_ptr<zsw::Flann<zsw::Scalar>> in_d_ann_;
   };
 
   class LocalVectorFieldDeformer : public Deformer
@@ -78,9 +82,14 @@ namespace zsw
     void deformTo(std::shared_ptr<std::vector<zsw::Vector3s>> sample_out,
                   std::shared_ptr<std::vector<zsw::Vector3s>> sample_in,
                   std::shared_ptr<std::vector<zsw::Vector3s>> sample_out_d,
-                  std::shared_ptr<std::vector<zsw::Vector3s>> sample_in_d);
+                  std::shared_ptr<std::vector<zsw::Vector3s>> sample_in_d)
+    {
+      Deformer::deformTo(sample_out, sample_in, sample_out_d,
+                         sample_in_d);
+    }
 
-    void deformBack(const std::vector<zsw::Vector3s> &ptsd, const std::vector<std::vector<size_t>> &adjs) const;
+    /* void deformBack(const std::vector<zsw::Vector3s> &ptsd, const std::vector<std::vector<size_t>> &adjs, */
+    /*                 std::vector<zsw::Vector3s> &pts_bk) const; */
 
     void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs);
 

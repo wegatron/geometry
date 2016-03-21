@@ -63,6 +63,28 @@ namespace zsw
     vs_ann_.reset(new Flann<zsw::Scalar>(ref_vs_[0].data(), ref_vs_.size()));
   }
 
+  void Deformer::deformTo(std::shared_ptr<std::vector<zsw::Vector3s>> sample_out,
+                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_in,
+                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_out_d,
+                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_in_d)
+  {
+    deformTo(*sample_out, *sample_out_d);
+    deformTo(*sample_in, *sample_in_d);
+    sample_in_ = sample_in;
+    sample_in_d_ = sample_in_d;
+    sample_out_ = sample_out;
+    sample_out_d_ = sample_out_d;
+    in_d_ann_.reset(new Flann<zsw::Scalar>((*sample_in_d_)[0].data(), sample_in_d_->size()));
+    out_d_ann_.reset(new Flann<zsw::Scalar>((*sample_out_d_)[0].data(), sample_out_d_->size()));
+  }
+
+  void Deformer::deformBack(const std::vector<zsw::Vector3s> &ptsd,
+                                            const std::vector<std::vector<size_t>> &adjs,
+                                            std::vector<zsw::Vector3s> &pts_bk) const
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
   LocalVectorFieldDeformer::LocalVectorFieldDeformer(const zsw::mesh::TriMesh &ori_mesh,
                                                      const zsw::mesh::TriMesh &deformed_mesh,
                                                      const zsw::Scalar sample_r,
@@ -294,25 +316,6 @@ namespace zsw
         max_n_q.push(std::make_pair(++valid_ne_cnt[ind], ind));
       }
     }
-  }
-
-  void LocalVectorFieldDeformer::deformTo(std::shared_ptr<std::vector<zsw::Vector3s>> sample_out,
-                                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_in,
-                                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_out_d,
-                                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_in_d)
-  {
-    deformTo(*sample_out, *sample_out_d);
-    deformTo(*sample_in, *sample_in_d);
-    sample_in_ = sample_in;
-    sample_in_d_ = sample_in_d;
-    sample_out_ = sample_out;
-    sample_out_d_ = sample_out_d;
-  }
-
-  void LocalVectorFieldDeformer::deformBack(const std::vector<zsw::Vector3s> &ptsd,
-                                            const std::vector<std::vector<size_t>> &adjs) const
-  {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   }
 
   void LocalVectorFieldDeformer::deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs)
