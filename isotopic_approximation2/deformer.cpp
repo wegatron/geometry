@@ -214,10 +214,6 @@ namespace zsw
     // writeValidRefVs();
     // resolve invalid jacobian
     resolveInvalidJacobian(indices);
-    jac_inv_.resize(jac_.size());
-    for(size_t i=0; i<ref_vs_.size(); ++i) {
-      jac_inv_[i] = jac_[i].inverse();
-    }
   }
 
   class CntMaxComp
@@ -290,7 +286,7 @@ namespace zsw
       jac_[cur_ind].block<1,3>(0,0) = ldlt.solve(B[0]).transpose();
       jac_[cur_ind].block<1,3>(1,0) = ldlt.solve(B[1]).transpose();
       jac_[cur_ind].block<1,3>(2,0) = ldlt.solve(B[2]).transpose();
-#if 1
+#if 0
       if(!jac_[cur_ind].allFinite()) {
         std::cout << "valid_cnt:" << n_ind.first << std::endl;
         std::cout << "true_valid_cnt:" << true_valid_cnt << std::endl;
@@ -348,7 +344,7 @@ namespace zsw
     std::vector<std::vector<zsw::Scalar>> dists;
     dvs_ann_->queryKnn(dvs, indices, dists, near_count_);
     std::vector<zsw::Vector3s> ref_dvs_cur(near_count_);
-    vs.resize(vs.size(), zsw::Vector3s::Zero());
+    vs.resize(dvs.size(), zsw::Vector3s::Zero());
     for(size_t i=0; i<dvs.size(); ++i) {
       for(size_t j=0; j<near_count_; ++j) { ref_dvs_cur[j] = ref_dvs_[indices[i][j]]; }
       std::vector<zsw::Scalar> weight(near_count_, 0);
@@ -376,7 +372,6 @@ namespace zsw
       for(size_t j=0; j<near_count_; ++j) {
         const size_t ref_index = indices[i][j];
         dvs[i] += weight[j] * (jac_[ref_index] * (vs[i] - ref_vs_[ref_index]) + ref_dvs_[ref_index]);
-        //dvs[i] += 1.0/near_count_ * (jac_[ref_index] * (vs[i] - ref_vs_[ref_index]) + ref_dvs_[ref_index]);
       }
     }
   }
