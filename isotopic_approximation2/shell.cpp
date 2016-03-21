@@ -67,6 +67,32 @@ namespace zsw{
     boundSphere("bound_sphere.obj", scale, transform, bs_jpts);
   }
 
+  void genAndSampleShell(zsw::mesh::TriMesh &input_mesh,
+                         const zsw::Scalar err_epsilon,
+                         const zsw::Scalar tri_sample_r,
+                         std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &inner_jpts,
+                         std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &outer_jpts)
+  {
+    if(!input_mesh.has_vertex_normals()) {
+      input_mesh.request_face_normals();
+      input_mesh.request_vertex_normals();
+      input_mesh.update_normals();
+    }
+    for(auto fit=input_mesh.faces_begin(); fit!=input_mesh.faces_end(); ++fit) {
+      Eigen::Matrix<zsw::Scalar,3,3> in_tri, out_tri;
+      size_t i=0;
+      for(zsw::mesh::TriMesh::FaceVertexIter fvit=input_mesh.fv_iter(*fit); fvit.is_valid(); ++fvit) {
+        Eigen::Matrix<zsw::Scalar,3,1> offset=input_mesh.normal(*fvit)*err_epsilon;
+        in_tri.block<3,1>(0,i)=input_mesh.point(*fvit)-offset;
+        out_tri.block<3,1>(0,i)=input_mesh.point(*fvit)+offset;
+        ++i;
+      }
+      assert(i==3);
+      sampleTriangle(in_tri, tri_sample_r, inner_jpts);
+      sampleTriangle(out_tri, tri_sample_r, outer_jpts);
+    }
+  }
+
   void genAndSampleShellD(zsw::mesh::TriMesh &ori_mesh,
                           zsw::mesh::TriMesh &deformed_mesh,
                           const zsw::Scalar err_epsilon,

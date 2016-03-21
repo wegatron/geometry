@@ -76,7 +76,7 @@ void sampleOutShell(zsw::mesh::TriMesh &ori_mesh, const zsw::Scalar err_epsilon,
 }
 
 void deform(
-            const zsw::Deformer &deformer,
+            zsw::Deformer &deformer,
             zsw::mesh::TriMesh &ori_mesh,
             const std::string &prefix,
             const zsw::Scalar err_epsilon,
@@ -91,24 +91,6 @@ void deform(
   deformer.deformTo(ori_shell_vs, deformed_shell_vs);
   // // writeout sample points
   zsw::writePoints(prefix+"_res_dvs.vtk", deformed_shell_vs);
-}
-
-void deformBack(
-                const zsw::Deformer &deformer,
-                zsw::mesh::TriMesh &ori_mesh,
-                const std::string &prefix,
-                const zsw::Scalar err_epsilon,
-                const zsw::Scalar sample_r)
-{
-  // std::vector<zsw::Vector3s> ori_shell_vs, deformed_shell_vs, deformed_back_vs;
-  // sampleOutShell(ori_mesh, err_epsilon, ori_shell_vs, sample_r);
-  // zsw::writePoints(prefix+"_shell_vs_ori.vtk", ori_shell_vs);
-  // std::cout << "ref_vs size = " << deformer.getRefVs().size() << std::endl;
-  // zsw::writePoints(prefix+"_ref_vs.vtk", deformer.getRefVs());
-  // zsw::writePoints(prefix+"_ref_dvs.vtk", deformer.getRefDvs());
-  // deformer.deformTo(ori_shell_vs, deformed_shell_vs);
-  // // // writeout sample points
-  // zsw::writePoints(prefix+"_res_dvs.vtk", deformed_shell_vs);
 }
 
 // BOOST_AUTO_TEST_SUITE(lt_deform)
@@ -380,11 +362,8 @@ BOOST_AUTO_TEST_CASE(ellipsoid_deform)
   }
 
   std::shared_ptr<zsw::DisWeightFunc> dwf(new zsw::GaussDisWeightFunc());
-  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, 100, dwf);
+  zsw::LocalVectorFieldDeformer deformer(ori_mesh, deformed_mesh, sample_r, 100, nullptr);
   deform(deformer, ori_mesh, "/home/wegatron/tmp/deform_test/lvfd_ellipsoid_deform", err_epsilon, sample_r);
-
-  zsw::LocalVectorFieldDeformer deformer2(deformed_mesh, ori_mesh, sample_r, 100, dwf);
-  deform(deformer2, deformed_mesh, "/home/wegatron/tmp/deform_test/lvfd_ellipsoid_deform_back", err_epsilon, sample_r);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -149,6 +149,7 @@ namespace zsw{
   bool Approximation::checkUpNormalCondition(Chd chd, std::vector<Chd> &chds, bool using_cur_pts)
   {
     if(!tw_->isTolCell(chd)) { return true; }
+    chd->info().satisfy_normal_cond_=true;
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
     if(using_cur_pts) {
       tri_pts<<
@@ -172,7 +173,6 @@ namespace zsw{
     const static Eigen::Matrix<zsw::Scalar,1,4> tmp_v=Eigen::Matrix<zsw::Scalar,1,4>::Ones()*(1-normal_cond_scale_);
     Eigen::Matrix<zsw::Scalar,3,4> scaled_tri_pts=normal_cond_scale_*tri_pts+bc*tmp_v;
     if(normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_)) {
-      chd->info().satisfy_normal_cond_=true;
       return true;
     }
 #if 0
@@ -209,7 +209,7 @@ namespace zsw{
     if(using_cur_pts) {  tw_->addPointInDelaunay(jpts_[jpt_ind].pt_cur_, vertex_info, chds);
     } else {  tw_->addPointInDelaunay(jpts_[jpt_ind].pt_c_, vertex_info, chds);  }
     //writeTetMesh("/home/wegatron/tmp/after_add_pt.vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
-    if(tw_->getTds().number_of_vertices() == nv) { std::cout << "unable to change normal!!!" << std::endl; }
+    // if(tw_->getTds().number_of_vertices() == nv) { std::cout << "unable to change normal!!!" << std::endl; }
     return tw_->getTds().number_of_vertices() == nv;
   }
 

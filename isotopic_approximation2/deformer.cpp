@@ -26,25 +26,13 @@ namespace zsw
     for(size_t i=0; i<vs.size(); ++i) {      weight[i] /= total;    }
   }
 
-  // void LocalTranslateDeformer::calcDeformedPos(
-  //                                              const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
-  //                                              const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &dvs,
-  //                                              const Eigen::Matrix<zsw::Scalar,3,1> &vt,
-  //                                              Eigen::Matrix<zsw::Scalar,3,1> &dvt) const
-  // {
-  //   assert(dvs.size() == vs.size());
-  //   std::vector<zsw::Scalar> weight(vs.size(), 0);
-  //   dis_weight_func_->calcWeight(vt, vs, weight);
-  //   dvt = vt;
-  //   for(size_t i=0; i<vs.size(); ++i) { dvt += weight[i] * (dvs[i] - vs[i]); }
-  // }
-
   Deformer::Deformer(const zsw::mesh::TriMesh &ori_mesh,
                      const zsw::mesh::TriMesh &deformed_mesh,
                      const zsw::Scalar sample_r,
                      const size_t near_count,
                      std::shared_ptr<zsw::DisWeightFunc> dis_weight_func) : dis_weight_func_(dis_weight_func)
   {
+    if(dis_weight_func == nullptr) { dis_weight_func_.reset(new GaussDisWeightFunc()); }
     near_count_ = near_count;
     // sample two mesh
     Eigen::Matrix<zsw::Scalar,3,3> ori_tri, deformed_tri;
@@ -73,35 +61,7 @@ namespace zsw
 
     // build two ann
     vs_ann_.reset(new Flann<zsw::Scalar>(ref_vs_[0].data(), ref_vs_.size()));
-    dvs_ann_.reset(new Flann<zsw::Scalar>(ref_dvs_[0].data(), ref_dvs_.size()));
   }
-
-  // LocalTranslateDeformer::LocalTranslateDeformer(const zsw::mesh::TriMesh &ori_mesh,
-  //                                                const zsw::mesh::TriMesh &deformed_mesh,
-  //                                                const zsw::Scalar sample_r,
-  //                                                std::shared_ptr<DisWeightFunc> dis_weight_func)
-  //   : Deformer(ori_mesh, deformed_mesh, sample_r, dis_weight_func)  { ref_r_ = 5 * sample_r; }
-
-  // void LocalTranslateDeformer::deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) const
-  // {
-  //   std::vector<zsw::KdTreeNode> ref_nodes;
-  //   std::vector<zsw::Vector3s> ref_vs_cur, ref_dvs_cur;
-  //   dvs.resize(vs.size());
-  //   for(size_t i=0; i<vs.size(); ++i) {
-  //     ref_nodes.clear();
-  //     vs_kdt_.findWithinR(vs[i], ref_r_*ref_r_, std::back_inserter(ref_nodes));
-  //     ref_vs_cur.clear(); ref_dvs_cur.clear();
-  //     for(const zsw::KdTreeNode &node : ref_nodes) {
-  //       ref_vs_cur.push_back(ref_vs_[node.index_]); ref_dvs_cur.push_back(ref_dvs_[node.index_]);
-  //     }
-  //     calcDeformedPos(ref_vs_cur, ref_dvs_cur, vs[i], dvs[i]);
-  //   }
-  // }
-
-  // void LocalTranslateDeformer::deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs) const
-  // {
-  //   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  // }
 
   LocalVectorFieldDeformer::LocalVectorFieldDeformer(const zsw::mesh::TriMesh &ori_mesh,
                                                      const zsw::mesh::TriMesh &deformed_mesh,
@@ -336,27 +296,26 @@ namespace zsw
     }
   }
 
-  void LocalVectorFieldDeformer::deformBack(const std::vector<zsw::Vector3s> &dvs, std::vector<zsw::Vector3s> &vs) const
+  void LocalVectorFieldDeformer::deformTo(std::shared_ptr<std::vector<zsw::Vector3s>> sample_out,
+                                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_in,
+                                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_out_d,
+                                          std::shared_ptr<std::vector<zsw::Vector3s>> sample_in_d)
   {
-    // for each vertex v_i of dvs
-    // find all v_j in ref_r, and calc v_i = w_{ij}(J_j(v'_i - v'_j) + v_j)
-    std::vector<std::vector<size_t>> indices;
-    std::vector<std::vector<zsw::Scalar>> dists;
-    dvs_ann_->queryKnn(dvs, indices, dists, near_count_);
-    std::vector<zsw::Vector3s> ref_dvs_cur(near_count_);
-    vs.resize(dvs.size(), zsw::Vector3s::Zero());
-    for(size_t i=0; i<dvs.size(); ++i) {
-      for(size_t j=0; j<near_count_; ++j) { ref_dvs_cur[j] = ref_dvs_[indices[i][j]]; }
-      std::vector<zsw::Scalar> weight(near_count_, 0);
-      dis_weight_func_->calcWeight(dvs[i], ref_dvs_cur, weight);
-      for(size_t j=0; j<near_count_; ++j) {
-        const size_t ref_index = indices[i][j];
-        vs[i] += weight[j] * (jac_inv_[ref_index] * (dvs[i] - ref_dvs_[ref_index]) + ref_vs_[ref_index]);
-      }
-    }
+    deformTo(*sample_out, *sample_out_d);
+    deformTo(*sample_in, *sample_in_d);
+    sample_in_ = sample_in;
+    sample_in_d_ = sample_in_d;
+    sample_out_ = sample_out;
+    sample_out_d_ = sample_out_d;
   }
 
-  void LocalVectorFieldDeformer::deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) const
+  void LocalVectorFieldDeformer::deformBack(const std::vector<zsw::Vector3s> &ptsd,
+                                            const std::vector<std::vector<size_t>> &adjs) const
+  {
+    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+  }
+
+  void LocalVectorFieldDeformer::deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs)
   {
     // for each vertex v_i of vs
     // find all v_j in ref_r, and calc v'_i = w_{ij}(J_j(v_i - v_j) + v'_j')
@@ -369,6 +328,7 @@ namespace zsw
       for(size_t j=0; j<near_count_; ++j) { ref_vs_cur[j] = ref_vs_[indices[i][j]]; }
       std::vector<zsw::Scalar> weight(near_count_, 0);
       dis_weight_func_->calcWeight(vs[i], ref_vs_cur, weight);
+      dvs[i].setZero();
       for(size_t j=0; j<near_count_; ++j) {
         const size_t ref_index = indices[i][j];
         dvs[i] += weight[j] * (jac_[ref_index] * (vs[i] - ref_vs_[ref_index]) + ref_dvs_[ref_index]);
