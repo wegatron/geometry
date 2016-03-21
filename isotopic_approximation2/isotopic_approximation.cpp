@@ -416,4 +416,37 @@ namespace zsw{
     std::cerr << "num of cell:" << tds.number_of_cells() << std::endl;
     testTdsValid();
   }
+
+  void Approximation::getZeroInfo(std::vector<zsw::Vector3s> &pts, std::vector<std::vector<size_t>> &adjs) const
+  {
+    TTds &tds = tw_->getTds();
+    zsw::Vector3s tmp_pt;
+    size_t ind = 0;
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      if(vit->info().pt_type_ != zsw::ZERO_POINT) { continue; }
+      tmp_pt << vit->point()[0], vit->point()[1], vit->point()[2];
+      pts.push_back(tmp_pt);
+
+      std::vector<Vhd> adj_vhds;
+      tds.adjacent_vertices(vit, std::back_inserter(adj_vhds));
+      adjs.resize(++ind);
+      std::vector<size_t> &cur_adj = adjs.back();
+      for(Vhd vhd : adj_vhds) {
+        if(vhd->info().pt_type_ == zsw::OUTER_POINT || vhd->info().pt_type_ == zsw::INNER_POINT) {
+          cur_adj.push_back(vhd->info().index_);
+        }
+      }
+    }
+  }
+
+  void Approximation::setZeroPts(std::vector<zsw::Vector3s> &pts)
+  {
+    TTds &tds = tw_->getTds();
+    size_t ind = 0;
+    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+      if(vit->info().pt_type_ != zsw::ZERO_POINT) { continue; }
+      vit->set_point(Point(pts[ind][0], pts[ind][1], pts[ind][2]));
+      ++ind;
+    }
+  }
 }

@@ -5,6 +5,7 @@
 #include <queue>
 #include <zswlib/config.h>
 #include <zswlib/zsw_clock_c11.h>
+#include <zswlib/matrix_type.h>
 #include "basic_data_structure.h"
 #include "constraint.h"
 
@@ -41,6 +42,9 @@ namespace zsw {
       bz_normal_cond_judge_cnt_=0;
       bz_error_bound_judge_cnt_=0;
     }
+
+    void getZeroInfo(std::vector<zsw::Vector3s> &pts, std::vector<std::vector<size_t>> &adjs) const;
+    void setZeroPts(std::vector<zsw::Vector3s> &pts);
     void setTetByRef(bool sample_tet_by_ref) { sample_tet_by_ref_ = sample_tet_by_ref; }
     void setTmpOutDir(const std::string &tmp_outdir) { tmp_outdir_=tmp_outdir; }
     void init(const zsw::Scalar err_epsilon,
