@@ -50,8 +50,7 @@ namespace zsw
                   std::shared_ptr<std::vector<zsw::Vector3s>> sample_out_d,
                   std::shared_ptr<std::vector<zsw::Vector3s>> sample_in_d);
 
-    void deformBack(const std::vector<zsw::Vector3s> &ptsd, const std::vector<std::vector<size_t>> &adjs,
-                    std::vector<zsw::Vector3s> &pts_bk) const;
+    void deformBack(const std::vector<zsw::Vector3s> &ptsd, std::vector<zsw::Vector3s> &pts_bk) const;
 
     virtual void deformTo(const std::vector<zsw::Vector3s> &vs, std::vector<zsw::Vector3s> &dvs) = 0;
 

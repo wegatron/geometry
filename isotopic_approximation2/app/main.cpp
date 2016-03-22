@@ -147,7 +147,7 @@ void appro_latest(const std::string &ori_file_path,
   std::vector<zsw::Vector3s> pts, pts_bk;
   std::vector<std::vector<size_t>> adjs;
   appro.getZeroInfo(pts, adjs);
-  deformer.deformBack(pts, adjs, pts_bk);
+  deformer.deformBack(pts, pts_bk);
   appro.setZeroPts(pts_bk);
   appro.writeTetMesh(output_dir+"simped_final.vtk", {zsw::ignore_bbox, zsw::ignore_out});
 #endif

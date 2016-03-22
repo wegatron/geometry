@@ -78,11 +78,29 @@ namespace zsw
     out_d_ann_.reset(new Flann<zsw::Scalar>((*sample_out_d_)[0].data(), sample_out_d_->size()));
   }
 
-  void Deformer::deformBack(const std::vector<zsw::Vector3s> &ptsd,
-                                            const std::vector<std::vector<size_t>> &adjs,
-                                            std::vector<zsw::Vector3s> &pts_bk) const
+  void Deformer::deformBack(const std::vector<zsw::Vector3s> &ptsd, std::vector<zsw::Vector3s> &pts_bk) const
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
+    std::vector<size_t>  out_ind;
+    std::vector<std::vector<size_t>> in_inds;
+    std::vector<zsw::Scalar> dist;
+    std::vector<std::vector<zsw::Scalar>> dists;
+    out_d_ann_->queryNearest(ptsd, out_ind, dist);
+    in_d_ann_->queryKnn(ptsd, in_inds, dists, 3);
+    Eigen::Matrix<zsw::Scalar, 4, 4> A;
+    Eigen::Matrix<zsw::Scalar,4,1> B;
+    A.block<1,4>(3,0) = Eigen::Matrix<zsw::Scalar,1,4>::Zero();
+    Eigen::Matrix<zsw::Scalar,4,1> val;
+    pts_bk.resize(ptsd.size());
+    for(size_t i=0; i<ptsd.size(); ++i) {
+      B.block<3,1>(0,0) = ptsd[i]; B[3] = 1;
+      A.block<3,1>(0,0) = (*sample_in_d_)[in_inds[i][0]];
+      A.block<3,1>(0,1) = (*sample_in_d_)[in_inds[i][1]];
+      A.block<3,1>(0,2) = (*sample_in_d_)[in_inds[i][2]];
+      A.block<3,1>(0,3) = (*sample_out_d_)[out_ind[i]];
+      val = A.ldlt().solve(B);
+      pts_bk[i] = val[0] * (*sample_in_)[in_inds[i][0]] + val[1] * (*sample_in_)[in_inds[i][1]]
+        + val[2] * (*sample_in_)[in_inds[i][2]] + val[3] * (*sample_out_)[out_ind[i]];
+    }
   }
 
   LocalVectorFieldDeformer::LocalVectorFieldDeformer(const zsw::mesh::TriMesh &ori_mesh,
