@@ -143,7 +143,7 @@ void appro_latest(const std::string &ori_file_path,
   appro.simp(output_dir);
   appro.writeTetMesh(output_dir+"simped_final_d.vtk", {zsw::ignore_bbox, zsw::ignore_out});
   // ----------------------------------------------------------------------------------------------------------------------------------
-#if 1
+#if 0
   std::vector<zsw::Vector3s> pts, pts_bk;
   std::vector<std::vector<size_t>> adjs;
   appro.getZeroInfo(pts, adjs);

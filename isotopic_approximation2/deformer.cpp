@@ -3,6 +3,7 @@
 #include <iostream>
 #include <queue>
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 #include "sampling.h"
 #include "isotopic_approximation.h"
@@ -33,6 +34,7 @@ namespace zsw
                      std::shared_ptr<zsw::DisWeightFunc> dis_weight_func) : dis_weight_func_(dis_weight_func)
   {
     if(dis_weight_func == nullptr) { dis_weight_func_.reset(new GaussDisWeightFunc()); }
+    sample_r_ = sample_r;
     near_count_ = near_count;
     // sample two mesh
     Eigen::Matrix<zsw::Scalar,3,3> ori_tri, deformed_tri;
@@ -78,14 +80,43 @@ namespace zsw
     out_d_ann_.reset(new Flann<zsw::Scalar>((*sample_out_d_)[0].data(), sample_out_d_->size()));
   }
 
-  void Deformer::deformBack(const std::vector<zsw::Vector3s> &ptsd, std::vector<zsw::Vector3s> &pts_bk) const
+#if 0
+  void Deformer::deformBack(const std::vector<zsw::Vector3s> &ptsd,
+                            std::vector<zsw::Vector3s> &pts_bk) const
   {
-    std::vector<size_t>  out_ind;
-    std::vector<std::vector<size_t>> in_inds;
+    std::vector<size_t>  in_ind;
+    std::vector<std::vector<size_t>> out_inds;
     std::vector<zsw::Scalar> dist;
     std::vector<std::vector<zsw::Scalar>> dists;
-    out_d_ann_->queryNearest(ptsd, out_ind, dist);
-    in_d_ann_->queryKnn(ptsd, in_inds, dists, 3);
+    in_d_ann_->queryNearest(ptsd, in_ind, dist);
+    out_d_ann_->queryKnn(ptsd, out_inds, dists, 200);
+    for(size_t i=0; i<ptsd.size(); ++i) {
+      size_t valid_ind = 0;
+      for(size_t j=1; j<200; ++j) {
+        if(((*sample_out_d_)[out_inds[i][j]] - (*sample_out_d_)[out_inds[i][valid_ind]]).norm() > 4e-2) {
+          if(valid_ind==1)  {
+            zsw::Vector3s tmp_v0 = (*sample_in_d_)[out_inds[i][j]] - (*sample_out_d_)[out_inds[i][1]];
+            zsw::Vector3s tmp_v1 = (*sample_in_d_)[out_inds[i][j]] - (*sample_out_d_)[out_inds[i][0]];
+            tmp_v0.normalize(); tmp_v1.normalize();
+            if(fabs(tmp_v0.dot(tmp_v1)) > 0.98) { continue; }
+          }
+          out_inds[i][++valid_ind]=out_inds[i][j];
+        }
+        if(valid_ind == 2) { break; }
+      }
+      if(valid_ind <2) {
+        std::cout << "valid:" << std::endl;
+        for(size_t j=0; j<=valid_ind; ++j) {
+          std::cout << (*sample_out_d_)[out_inds[i][j]].transpose() << std::endl;
+        }
+        std::cout << "ind:" << i << std::endl;
+        for(size_t j=0; j<200; ++j) {
+          std::cout << (*sample_out_d_)[out_inds[i][j]].transpose() << std::endl;
+        }
+        std::cout << __FILE__ << __LINE__ << std::endl; abort();
+      }
+    }
+
     Eigen::Matrix<zsw::Scalar, 4, 4> A;
     Eigen::Matrix<zsw::Scalar,4,1> B;
     A.block<1,4>(3,0) = Eigen::Matrix<zsw::Scalar,1,4>::Zero();
@@ -93,15 +124,106 @@ namespace zsw
     pts_bk.resize(ptsd.size());
     for(size_t i=0; i<ptsd.size(); ++i) {
       B.block<3,1>(0,0) = ptsd[i]; B[3] = 1;
-      A.block<3,1>(0,0) = (*sample_in_d_)[in_inds[i][0]];
-      A.block<3,1>(0,1) = (*sample_in_d_)[in_inds[i][1]];
-      A.block<3,1>(0,2) = (*sample_in_d_)[in_inds[i][2]];
-      A.block<3,1>(0,3) = (*sample_out_d_)[out_ind[i]];
-      val = A.ldlt().solve(B);
-      pts_bk[i] = val[0] * (*sample_in_)[in_inds[i][0]] + val[1] * (*sample_in_)[in_inds[i][1]]
-        + val[2] * (*sample_in_)[in_inds[i][2]] + val[3] * (*sample_out_)[out_ind[i]];
+      A.block<3,1>(0,0) = (*sample_out_d_)[out_inds[i][0]];
+      A.block<3,1>(0,1) = (*sample_out_d_)[out_inds[i][1]];
+      A.block<3,1>(0,2) = (*sample_out_d_)[out_inds[i][2]];
+      A.block<3,1>(0,3) = (*sample_in_d_)[in_ind[i]];
+      Eigen::FullPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu;
+      pplu.compute(A);
+      val = pplu.solve(B);
+      pts_bk[i] = val[0] * (*sample_out_)[out_inds[i][0]] + val[1] * (*sample_out_)[out_inds[i][1]]
+        + val[2] * (*sample_out_)[out_inds[i][2]] + val[3] * (*sample_in_)[in_ind[i]];
+      if(i == 224) {
+        std::cout << "out_inds:" << out_inds[i][0] << " " << out_inds[i][1] << " " << out_inds[i][2] << std::endl;
+        std::cout << "in_ind:" << in_ind[i] << std::endl;
+        std::cout << "deform adj pt:" << std::endl;
+        std::cout << (*sample_out_d_)[out_inds[i][0]].transpose() << std::endl;
+        std::cout << (*sample_out_d_)[out_inds[i][1]].transpose() << std::endl;
+        std::cout << (*sample_out_d_)[out_inds[i][2]].transpose() << std::endl;
+        std::cout << (*sample_in_d_)[in_ind[i]].transpose() << std::endl;
+        std::cout << "ori adj pt:" << std::endl;
+        std::cout << (*sample_out_)[out_inds[i][0]].transpose() << std::endl;
+        std::cout << (*sample_out_)[out_inds[i][1]].transpose() << std::endl;
+        std::cout << (*sample_out_)[out_inds[i][2]].transpose() << std::endl;
+        std::cout << (*sample_in_)[in_ind[i]].transpose() << std::endl;
+        std::cout << "val:" << val.transpose() << std::endl;
+        std::cout << "pts_bk:" << pts_bk[i].transpose() << std::endl;
+        std::cout << "pt_ori:" << ptsd[i] << std::endl;
+        std::cout << "pt:" << (A * val).transpose() << std::endl;
+      }
     }
   }
+#else
+  void Deformer::deformBack(const std::vector<zsw::Vector3s> &ptsd,
+                            const std::vector<zsw::Vector3s> &pt_vns,
+                            std::vector<zsw::Vector3s> &pts_bk) const
+  {
+    const size_t pts_size = ptsd.size();
+    std::vector<size_t>  in_ind, out_ind;
+    std::vector<zsw::Scalar> dist;
+    in_d_ann_->queryNearest(ptsd, in_ind, dist);
+
+    Eigen::Matrix<zsw::Scalar, 4, 4> A;
+    Eigen::Matrix<zsw::Scalar,4,1> B;
+    A.block<1,4>(3,0) = Eigen::Matrix<zsw::Scalar,1,4>::Zero();
+    Eigen::Matrix<zsw::Scalar,4,1> val;
+    pts_bk.resize(ptsd.size());
+    for(size_t i=0; i<pts_size; ++i) {
+      size_t min_ind =0;
+      if(fabs(pt_vns[i][1]) < fabs(pt_vns[i][0])) { min_ind=1; }
+      if(fabs(pt_vns[i][2]) < fabs(pt_vns[i][min_ind])) { min_ind=2; }
+      zsw::Vector3s v0 = pt_vns[i];
+      v0[min_ind] = 0;
+      zsw::Scalar tmp_val = v0[(min_ind+1)%3];
+      v0[(min_ind+1)%3] = -v0[(min_ind+2)%3];
+      v0[(min_ind+2)%3] = tmp_val;
+      Eigen::AngleAxis<zsw::Scalar> angle_axis(2*zsw::const_val::pi/3.0, pt_vns[i]);
+      Eigen::Matrix<zsw::Scalar,3,3> rmat = angle_axis.toRotationMatrix();
+      zsw::Vector3s v1 = rmat * v0;
+      zsw::Vector3s v2 = rmat * v1;
+      v0 = sample_r_ * 10 / v0.norm() * v0;
+      v1 = sample_r_ * 10 / v1.norm() * v1;
+      v2 = sample_r_ * 10 / v2.norm() * v2;
+#if 1
+      if(fabs(v0.dot(pt_vns[i])) > 1e-6) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+      if(fabs(v1.dot(pt_vns[i])) > 1e-6) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+      if(fabs(v2.dot(pt_vns[i])) > 1e-6) { std::cout << __FILE__ << __LINE__ << std::endl; abort(); }
+      zsw::Vector3s tmp_v0 = v0;
+      zsw::Vector3s tmp_v1 = v1;
+      zsw::Vector3s tmp_v2 = v2;
+      tmp_v0.normalize(); tmp_v1.normalize(); tmp_v2.normalize();
+      if(fabs(tmp_v0.dot(tmp_v1) + 0.5) > 1e-3) {
+        std::cout << __FILE__ << __LINE__ << std::endl;
+        std::cout << tmp_v0.dot(tmp_v1) << std::endl;
+        abort();
+      }
+      if(fabs(tmp_v1.dot(tmp_v2) + 0.5) > 1e-3) {
+        std::cout << __FILE__ << __LINE__ << std::endl;
+        std::cout << tmp_v1.dot(tmp_v2) << std::endl;
+        abort();
+      }
+      if(fabs(tmp_v0.dot(tmp_v2) + 0.5) > 1e-3) {
+        std::cout << __FILE__ << __LINE__ << std::endl;
+        std::cout << tmp_v0.dot(tmp_v2) << std::endl;
+        abort();
+      }
+#endif
+      std::vector<zsw::Vector3s> ref_pts(3);
+      ref_pts[0] = ptsd[i] + v0; ref_pts[1] = ptsd[i] + v1; ref_pts[2] = ptsd[i] + v2;
+      out_d_ann_->queryNearest(ref_pts, out_ind, dist);
+      B.block<3,1>(0,0) = ptsd[i]; B[3] = 1;
+      A.block<3,1>(0,0) = (*sample_out_d_)[out_ind[0]];
+      A.block<3,1>(0,1) = (*sample_out_d_)[out_ind[1]];
+      A.block<3,1>(0,2) = (*sample_out_d_)[out_ind[2]];
+      A.block<3,1>(0,3) = (*sample_in_d_)[in_ind[i]];
+      Eigen::FullPivLU<Eigen::Matrix<zsw::Scalar,4,4>> pplu;
+      pplu.compute(A);
+      val = pplu.solve(B);
+      pts_bk[i] = val[0] * (*sample_out_)[out_ind[0]] + val[1] * (*sample_out_)[out_ind[1]]
+        + val[2] * (*sample_out_)[out_ind[2]] + val[3] * (*sample_in_)[in_ind[i]];
+    }
+  }
+#endif
 
   LocalVectorFieldDeformer::LocalVectorFieldDeformer(const zsw::mesh::TriMesh &ori_mesh,
                                                      const zsw::mesh::TriMesh &deformed_mesh,
@@ -216,15 +338,15 @@ namespace zsw
     resolveInvalidJacobian(indices);
   }
 
-  class CntMaxComp
-  {
-  public:
-    // lv is after rv ?
-    bool operator()(const std::pair<size_t, size_t> &lv,
-                    const std::pair<size_t,size_t> &rv){
-      return lv.first < rv.first;
-    }
-  };
+    class CntMaxComp
+    {
+    public:
+      // lv is after rv ?
+      bool operator()(const std::pair<size_t, size_t> &lv,
+                      const std::pair<size_t,size_t> &rv){
+        return lv.first < rv.first;
+      }
+    };
 
   void LocalVectorFieldDeformer::resolveInvalidJacobian(const std::vector<std::vector<size_t>> &indices)
   {

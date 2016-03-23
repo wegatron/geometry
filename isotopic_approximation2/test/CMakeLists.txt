@@ -25,8 +25,18 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp -fPIC")
 #   ${GMP_LIBRARIES}
 #   )
 
-add_executable(test_mls_basic test_mls_basic.cpp)
-target_link_libraries(test_mls_basic
+add_executable(test_deform_basic test_deform_basic.cpp)
+target_link_libraries(test_deform_basic
+  iso_app
+  zswlib
+  ${OPENMESH_LIBRARIES}
+  ${CGAL_LIBRARY}
+  ${GMP_LIBRARIES}
+  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+  )
+
+add_executable(test_deform test_deform.cpp)
+target_link_libraries(test_deform
   iso_app
   zswlib
   ${OPENMESH_LIBRARIES}
