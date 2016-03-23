@@ -58,7 +58,7 @@ namespace zsw
 
   protected:
     size_t near_count_;
-    zsw::Scalar sample_r_;
+    zsw::Scalar sample_r_d_;
     std::shared_ptr<zsw::DisWeightFunc> dis_weight_func_;
     std::vector<zsw::Vector3s> ref_vs_normal_;
     std::vector<zsw::Vector3s> ref_dvs_normal_;

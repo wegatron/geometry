@@ -29,55 +29,78 @@ namespace zsw{
 
   void Approximation::writeZeroSurface(const std::string &filepath) const
   {
-    std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
-  }
-
-  void Approximation::writeTetMesh(const std::string &filepath,
-                                   std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs,
-                                   const TTds *tds_ptr, bool cur_pts) const
-  {
+    const TTds &tds = tw_->getTds();
     std::ofstream ofs;
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
-    const TTds &tds=(tds_ptr==nullptr) ? tw_->getTds() : *tds_ptr;
-    ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
-        << tds.number_of_vertices()-1 << " float" << std::endl;
-
     CGAL::Unique_hash_map<TTds::Vertex_handle,size_t> v_map;
     size_t v_index=0;
     for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-      if(vit->info().pt_type_==zsw::INVALID_POINT) { continue; }
-      if(cur_pts) { ofs << *vit << std::endl; }
-      else { ofs << vit->info().pos_c_.transpose() << std::endl; }
+      if(vit->info().pt_type_ != zsw::ZERO_POINT) { continue; }
+      ofs << "v " << *vit << std::endl;
       v_map[vit] = v_index++;
     }
 
-    stringstream ss;
     size_t valid_cells_number=0;
+    Vhd zero_vit[4];
     for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
-      bool ignore=false;
-      for(auto igf : ignore_tet_funcs) {        if(igf(cit)) { ignore=true; break; }      }
-      if(ignore || ignore_invalid(cit)) { continue; }
-      ss << "4 " << v_map[cit->vertex(0)] << " " <<
-        v_map[cit->vertex(1)] << " " <<
-        v_map[cit->vertex(2)] << " " <<
-        v_map[cit->vertex(3)] << std::endl;
-      ++valid_cells_number;
+      size_t zero_cnt = 0;
+      size_t inner_cnt = 0;
+      for(size_t i=0; i<4; ++i) {
+        if(cit->vertex(i)->info().pt_type_ == zsw::ZERO_POINT) { zero_vit[zero_cnt++] = cit->vertex(i); }
+        else { inner_cnt += (cit->vertex(i)->info().pt_type_ == zsw::INNER_POINT); }
+      }
+      if(zero_cnt != 3 || inner_cnt !=1) { continue; }
+      ofs << "f " << v_map[zero_vit[0]] << " " << v_map[zero_vit[1]] << " " << v_map[zero_vit[2]] << std::endl;
     }
-    ofs << "CELLS "<< valid_cells_number << " " << valid_cells_number*5 <<std::endl;
-    ofs << ss.str();
-    ofs << "CELL_TYPES " << valid_cells_number << std::endl;
-    for(size_t i=0; i<valid_cells_number; ++i) {      ofs << "10" << std::endl;    }
-#if 0
-    ofs << "# Append index info:" << std::endl;
-    v_index=0;
-    for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
-      if(vit->info().pt_type_==zsw::INVALID_POINT) { continue; }
-      ofs << "#" << v_index << ":" << vit->info().index_  << " type=" << vit->info().pt_type_ << std::endl;
-      ++v_index;
-    }
-#endif
     ofs.close();
   }
+
+    void Approximation::writeTetMesh(const std::string &filepath,
+                                     std::vector<std::function<bool(const TTds::Cell_handle)>> ignore_tet_funcs,
+                                     const TTds *tds_ptr, bool cur_pts) const
+    {
+      std::ofstream ofs;
+      OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
+      const TTds &tds=(tds_ptr==nullptr) ? tw_->getTds() : *tds_ptr;
+      ofs << "# vtk DataFile Version 2.0\n TET\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS "
+          << tds.number_of_vertices()-1 << " float" << std::endl;
+
+      CGAL::Unique_hash_map<TTds::Vertex_handle,size_t> v_map;
+      size_t v_index=0;
+      for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+        if(vit->info().pt_type_==zsw::INVALID_POINT) { continue; }
+        if(cur_pts) { ofs << *vit << std::endl; }
+        else { ofs << vit->info().pos_c_.transpose() << std::endl; }
+        v_map[vit] = v_index++;
+      }
+
+      stringstream ss;
+      size_t valid_cells_number=0;
+      for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
+        bool ignore=false;
+        for(auto igf : ignore_tet_funcs) {        if(igf(cit)) { ignore=true; break; }      }
+        if(ignore || ignore_invalid(cit)) { continue; }
+        ss << "4 " << v_map[cit->vertex(0)] << " " <<
+          v_map[cit->vertex(1)] << " " <<
+          v_map[cit->vertex(2)] << " " <<
+          v_map[cit->vertex(3)] << std::endl;
+        ++valid_cells_number;
+      }
+      ofs << "CELLS "<< valid_cells_number << " " << valid_cells_number*5 <<std::endl;
+      ofs << ss.str();
+      ofs << "CELL_TYPES " << valid_cells_number << std::endl;
+      for(size_t i=0; i<valid_cells_number; ++i) {      ofs << "10" << std::endl;    }
+#if 0
+      ofs << "# Append index info:" << std::endl;
+      v_index=0;
+      for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
+        if(vit->info().pt_type_==zsw::INVALID_POINT) { continue; }
+        ofs << "#" << v_index << ":" << vit->info().index_  << " type=" << vit->info().pt_type_ << std::endl;
+        ++v_index;
+      }
+#endif
+      ofs.close();
+    }
 
     void Approximation::writeAdjcentCells(const std::string &filepath, const TTds::Edge &e) const
     {

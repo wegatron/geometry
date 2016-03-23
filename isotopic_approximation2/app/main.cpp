@@ -141,16 +141,28 @@ void appro_latest(const std::string &ori_file_path,
   appro.init(err_epsilon, gscale*tri_sample_r, gscale * tet_sample_r, *samples_ind, *samples_outd, bs_jpts);
   appro.writeTetMesh(output_dir+"refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   appro.simp(output_dir);
-  appro.writeTetMesh(output_dir+"simped_final_d.vtk", {zsw::ignore_bbox, zsw::ignore_out});
+  appro.writeTetMesh(output_dir+"simped_final_d.vtk", {zsw::ignore_bbox, zsw::ignore_self_out});
+  appro.writeZeroSurface(output_dir+"simped_final_d.obj");
   // ----------------------------------------------------------------------------------------------------------------------------------
-#if 0
-  std::vector<zsw::Vector3s> pts, pts_bk;
-  std::vector<std::vector<size_t>> adjs;
-  appro.getZeroInfo(pts, adjs);
-  deformer.deformBack(pts, pts_bk);
-  appro.setZeroPts(pts_bk);
-  appro.writeTetMesh(output_dir+"simped_final.vtk", {zsw::ignore_bbox, zsw::ignore_out});
-#endif
+  zsw::mesh::TriMesh mesh_fd;
+  if(!OpenMesh::IO::read_mesh(mesh_fd, output_dir+"simped_final_d.obj")) {
+    std::cout << __FILE__ << __LINE__ << std::endl; abort();
+  }
+  if(!mesh_fd.has_vertex_normals()) {
+    mesh_fd.request_face_normals();
+    mesh_fd.request_vertex_normals();
+    mesh_fd.update_normals();
+  }
+  std::vector<zsw::Vector3s> pts, pts_bk, pt_vns;
+  for(auto vit=mesh_fd.vertices_begin(); vit!=mesh_fd.vertices_end(); ++vit) {
+    pts.push_back(mesh_fd.point(vit));
+    pt_vns.push_back(mesh_fd.normal(vit));
+  }
+  pts_bk.resize(pts.size());
+  deformer.deformBack(pts, pt_vns, pts_bk);
+  size_t i=0;
+  for(auto vit=mesh_fd.vertices_begin(); vit!=mesh_fd.vertices_end(); ++vit) { mesh_fd.set_point(vit, pts_bk[i++]); }
+  OpenMesh::IO::write_mesh(mesh_fd, output_dir+"simped_final_o.obj");
 }
 
 int main(int argc, char *argv[])
