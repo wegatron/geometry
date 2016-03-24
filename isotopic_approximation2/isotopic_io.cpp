@@ -33,24 +33,42 @@ namespace zsw{
     std::ofstream ofs;
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);
     CGAL::Unique_hash_map<TTds::Vertex_handle,size_t> v_map;
-    size_t v_index=0;
+    size_t v_index=1;
     for(auto vit=tds.vertices_begin(); vit!=tds.vertices_end(); ++vit) {
       if(vit->info().pt_type_ != zsw::ZERO_POINT) { continue; }
       ofs << "v " << *vit << std::endl;
       v_map[vit] = v_index++;
     }
 
-    size_t valid_cells_number=0;
-    Vhd zero_vit[4];
+    TTds::Vertex_handle zero_vit[4];
     for(auto cit=tds.cells_begin(); cit!=tds.cells_end(); ++cit) {
       size_t zero_cnt = 0;
       size_t inner_cnt = 0;
+      Eigen::Matrix<zsw::Scalar,3,1> tmp_vs[4];
+      Eigen::Matrix<zsw::Scalar,3,3> mat;
       for(size_t i=0; i<4; ++i) {
-        if(cit->vertex(i)->info().pt_type_ == zsw::ZERO_POINT) { zero_vit[zero_cnt++] = cit->vertex(i); }
-        else { inner_cnt += (cit->vertex(i)->info().pt_type_ == zsw::INNER_POINT); }
+        if(cit->vertex(i)->info().pt_type_ == zsw::ZERO_POINT) { zero_vit[zero_cnt] = cit->vertex(i);
+          tmp_vs[zero_cnt][0] = zero_vit[zero_cnt]->point()[0];
+          tmp_vs[zero_cnt][1] = zero_vit[zero_cnt]->point()[1];
+          tmp_vs[zero_cnt][2] = zero_vit[zero_cnt]->point()[2];
+          ++zero_cnt;
+        }
+        else if(cit->vertex(i)->info().pt_type_ == zsw::INNER_POINT) {
+          tmp_vs[3][0] = cit->vertex(i)->point()[0];
+          tmp_vs[3][1] = cit->vertex(i)->point()[1];
+          tmp_vs[3][2] = cit->vertex(i)->point()[2];
+          inner_cnt++;
+        }
       }
       if(zero_cnt != 3 || inner_cnt !=1) { continue; }
-      ofs << "f " << v_map[zero_vit[0]] << " " << v_map[zero_vit[1]] << " " << v_map[zero_vit[2]] << std::endl;
+      mat.block<3,1>(0,0) = tmp_vs[1] - tmp_vs[0];
+      mat.block<3,1>(0,1) = tmp_vs[2] - tmp_vs[0];
+      mat.block<3,1>(0,2) = tmp_vs[3] - tmp_vs[0];
+      if(mat.determinant() < 0) {
+        ofs << "f " << v_map[zero_vit[0]] << " " << v_map[zero_vit[1]] << " " << v_map[zero_vit[2]] << std::endl;
+      } else {
+        ofs << "f " << v_map[zero_vit[1]] << " " << v_map[zero_vit[0]] << " " << v_map[zero_vit[2]] << std::endl;
+      }
     }
     ofs.close();
   }

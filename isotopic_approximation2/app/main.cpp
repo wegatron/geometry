@@ -141,7 +141,7 @@ void appro_latest(const std::string &ori_file_path,
   appro.init(err_epsilon, gscale*tri_sample_r, gscale * tet_sample_r, *samples_ind, *samples_outd, bs_jpts);
   appro.writeTetMesh(output_dir+"refine_res.vtk", {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out});
   appro.simp(output_dir);
-  appro.writeTetMesh(output_dir+"simped_final_d.vtk", {zsw::ignore_bbox, zsw::ignore_self_out});
+  appro.writeTetMesh(output_dir+"simped_final_d.vtk", {zsw::ignore_bbox, zsw::ignore_out});
   appro.writeZeroSurface(output_dir+"simped_final_d.obj");
   // ----------------------------------------------------------------------------------------------------------------------------------
   zsw::mesh::TriMesh mesh_fd;
