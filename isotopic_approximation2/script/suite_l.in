@@ -1,0 +1,22 @@
+CUR_OUT_DIR = ${APP_OUTPUT_DIR}/${model}_${ver}_${${model}_THICK}_${${model}_SAMPLE_R}_${${model}_SAMPLE_TET_R}_${${model}_NEAR_COUNT}/
+
+.PHONY: prepare
+prepare:
+	mkdir -p ${CUR_OUT_DIR}
+	rm -r ${CUR_OUT_DIR}*.vtk
+
+.PHONY: simp
+simp: export
+ifneq (${ver}, ${foo})
+	echo "ver="${ver}
+ifneq (${model}, ${foo})
+	echo "model is"${model}
+	echo "do simp---"
+	${APP_EXEC} ${ver} ${${model}} ${${model}_DEFORMED} ${CUR_OUT_DIR} ${${model}_THICK} ${${model}_SAMPLE_R} ${${model}_SAMPLE_TET_R} ${${model}_NEAR_COUNT}
+else
+	echo "model not set!!!"
+endif
+else
+	echo "ver not set!!!!"
+endif
+
