@@ -81,8 +81,9 @@ namespace zsw{
   {
     inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
     outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
-    // inner_deformed_kdtree_.buildTree(deformed_inner_jpts[0].data(), deformed_inner_jpts.size());
-    // outer_deformed_kdtree_.buildTree(deformed_outer_jpts[0].data(), deformed_outer_jpts.size());
+
+    inner_d_kdtree_.buildTree(deformed_inner_jpts[0].data(), deformed_inner_jpts.size());
+    outer_d_kdtree_.buildTree(deformed_outer_jpts[0].data(), deformed_outer_jpts.size());
 
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
     size_t pt_size=inner_jpts_.size();
@@ -151,12 +152,17 @@ namespace zsw{
     if(!tw_->isTolCell(chd)) { return true; }
     chd->info().satisfy_normal_cond_=true;
     Eigen::Matrix<zsw::Scalar,3,4> tri_pts;
+    Eigen::Matrix<zsw::Scalar,3,4> d_tri_pts;
     if(using_cur_pts) {
       tri_pts<<
         chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
         chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
         chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
     } else {
+      d_tri_pts<<
+        chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+        chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+        chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2];
       tri_pts.block<3,1>(0,0) = chd->vertex(0)->info().pos_c_;
       tri_pts.block<3,1>(0,1) = chd->vertex(1)->info().pos_c_;
       tri_pts.block<3,1>(0,2) = chd->vertex(2)->info().pos_c_;
@@ -176,27 +182,39 @@ namespace zsw{
       return true;
     }
 #if 0
-    static size_t ind=0;
-    std::string filepath=tmp_outdir_+"normal_cond_debug/nc_"+std::to_string(ind)+".vtk";
-    if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_,
-                        true, &filepath)) {
-      std::cerr << "Refine result normal condition failed on " << ind << std::endl;
+    {
+      static size_t ind=0;
+      std::string filepath=tmp_outdir_+"normal_cond_debug/nc_"+std::to_string(ind)+".vtk";
+      if(!normalCondition(val, scaled_tri_pts, tri_pts, inner_jpts_, outer_jpts_, inner_kdtree_, outer_kdtree_,
+                          true, &filepath)) {
+        std::cerr << "Refine result normal condition failed on " << ind << std::endl;
+      }
+      writeTetMesh(tmp_outdir_+"before_add_"+std::to_string(ind)+".vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out}, nullptr, false);
+      abort();
+      ind++;
     }
-    writeTetMesh(tmp_outdir_+"before_add_"+std::to_string(ind)+".vtk",  {zsw::ignore_bbox, zsw::ignore_self_in, zsw::ignore_self_out}, nullptr, false);
-    abort();
-    ind++;
 #endif
     // insert point into delaunay triangulation
     Eigen::Matrix<zsw::Scalar,3,1> center;
-    calcCircumcenter(tri_pts, center);
+    if(using_cur_pts) {
+      calcCircumcenter(tri_pts, center);
+    } else { calcCircumcenter(d_tri_pts, center); }
     // std::cerr << "center " << ind-1 << ":" << center.transpose() << std::endl;
     // find the minest
     std::vector<size_t> in_indices;
     std::vector<zsw::Scalar> in_dist;
-    inner_kdtree_.queryNearest(center, in_indices, in_dist);
+    if(using_cur_pts) {
+      inner_kdtree_.queryNearest(center, in_indices, in_dist);
+    } else {
+      inner_d_kdtree_.queryNearest(center, in_indices, in_dist);
+    }
     std::vector<size_t> out_indices;
     std::vector<zsw::Scalar> out_dist;
-    outer_kdtree_.queryNearest(center, out_indices, out_dist);
+    if(using_cur_pts) {
+      outer_kdtree_.queryNearest(center, out_indices, out_dist);
+    } else {
+      outer_d_kdtree_.queryNearest(center, out_indices, out_dist);
+    }
     size_t jpt_ind = (in_dist[0]<out_dist[0]) ? in_indices[0] : out_indices[0]+inner_jpts_.size();
 
     // std::cerr << "nearest pt:" << jpts_[jpt_ind].pt_ << std::endl;

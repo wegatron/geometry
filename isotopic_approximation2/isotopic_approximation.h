@@ -133,8 +133,12 @@ namespace zsw {
     std::vector<JudgePoint> jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> inner_jpts_;
     std::vector<Eigen::Matrix<zsw::Scalar,3,1>> outer_jpts_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> inner_d_jpts_;
+    std::vector<Eigen::Matrix<zsw::Scalar,3,1>> outer_d_jpts_;
     KdTreeWarper inner_kdtree_;
     KdTreeWarper outer_kdtree_;
+    KdTreeWarper inner_d_kdtree_;
+    KdTreeWarper outer_d_kdtree_;
     std::shared_ptr<TriangulationWapper> tw_;
     zsw::Scalar err_epsilon_;
     zsw::Scalar tri_sample_r_;

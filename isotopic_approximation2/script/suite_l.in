@@ -3,10 +3,9 @@ CUR_OUT_DIR = ${APP_OUTPUT_DIR}/${model}_${ver}_${${model}_THICK}_${${model}_SAM
 .PHONY: prepare
 prepare:
 	mkdir -p ${CUR_OUT_DIR}
-	rm -r ${CUR_OUT_DIR}*.vtk
 
 .PHONY: simp
-simp: export
+simp: export prepare
 ifneq (${ver}, ${foo})
 	echo "ver="${ver}
 ifneq (${model}, ${foo})

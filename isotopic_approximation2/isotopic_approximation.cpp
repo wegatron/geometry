@@ -48,6 +48,8 @@ namespace zsw{
     tri_sample_r_=tri_sample_r;
     tet_sample_r_=tet_sample_r;
     inner_jpts_ = ori_inner_jpts; outer_jpts_ = ori_outer_jpts;
+    inner_d_jpts_ = deformed_inner_jpts;
+    outer_d_jpts_ = deformed_outer_jpts;
     NZSWLOG("zsw_info") << "inner judge point size:" << inner_jpts_.size() << std::endl;
     NZSWLOG("zsw_info") << "outer judge point size:" << outer_jpts_.size() << std::endl;
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
@@ -286,14 +288,16 @@ namespace zsw{
       v1<< it->second->vertex(1)->point()[0],it->second->vertex(1)->point()[1],it->second->vertex(1)->point()[2];
       v2<< it->second->vertex(2)->point()[0],it->second->vertex(2)->point()[1],it->second->vertex(2)->point()[2];
       v3<< it->second->vertex(3)->point()[0],it->second->vertex(3)->point()[1],it->second->vertex(3)->point()[2];
-      if(sample_tet_by_ref_) {
-        Eigen::Matrix<zsw::Scalar,3,1> rv0 = it->second->vertex(0)->info().pos_c_;
-        Eigen::Matrix<zsw::Scalar,3,1> rv1 = it->second->vertex(1)->info().pos_c_;
-        Eigen::Matrix<zsw::Scalar,3,1> rv2 = it->second->vertex(2)->info().pos_c_;
-        Eigen::Matrix<zsw::Scalar,3,1> rv3 = it->second->vertex(3)->info().pos_c_;
-        zsw::Scalar ref_tet_sample_r = tet_sample_r_ * g_scale_;
-        sampleTetRefTet(v0, v1, v2, v3, rv0, rv1, rv2, rv3, ref_tet_sample_r, sample_points);
-      } else { sampleTet(v0,v1,v2,v3,tet_sample_r_, sample_points); }
+      // if(sample_tet_by_ref_) {
+      //   Eigen::Matrix<zsw::Scalar,3,1> rv0 = it->second->vertex(0)->info().pos_c_;
+      //   Eigen::Matrix<zsw::Scalar,3,1> rv1 = it->second->vertex(1)->info().pos_c_;
+      //   Eigen::Matrix<zsw::Scalar,3,1> rv2 = it->second->vertex(2)->info().pos_c_;
+      //   Eigen::Matrix<zsw::Scalar,3,1> rv3 = it->second->vertex(3)->info().pos_c_;
+      //   zsw::Scalar ref_tet_sample_r = tet_sample_r_ * g_scale_;
+      //   sampleTetRefTet(v0, v1, v2, v3, rv0, rv1, rv2, rv3, ref_tet_sample_r, sample_points);
+      // } else {
+      sampleTet(v0,v1,v2,v3,tet_sample_r_, sample_points);
+      // }
     }
 #if 0
     // cout adj cells
