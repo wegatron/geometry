@@ -21,7 +21,7 @@ namespace zsw {
   public:
     bool operator()(const std::pair<zsw::Scalar,JudgePoint*> &lv,
                     const std::pair<zsw::Scalar,JudgePoint*> &rv){
-      return lv.first>rv.first;
+      return lv.first < rv.first;
     }
   };
 
