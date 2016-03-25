@@ -1,8 +1,15 @@
-CUR_OUT_DIR = ${APP_OUTPUT_DIR}/${model}_${ver}_${${model}_THICK}_${${model}_SAMPLE_R}_${${model}_SAMPLE_TET_R}_${${model}_NEAR_COUNT}/
+include ellipsoid_dat.in
+include cigar_dat.in
+include banana_dat.in
+include cylinder_dat.in
+
+CUR_OUT_DIR = ${APP_OUTPUT_DIR}/${model}/${model}_${ver}_${${model}_THICK}_${${model}_SAMPLE_R}_${${model}_SAMPLE_TET_R}_${${model}_NEAR_COUNT}/
 
 .PHONY: prepare
 prepare:
+	mkdir -p ${APP_OUTPUT_DIR}/${model}/
 	mkdir -p ${CUR_OUT_DIR}
+	rm -r ${CUR_OUT_DIR}/*.vtk
 
 .PHONY: simp
 simp: export prepare
