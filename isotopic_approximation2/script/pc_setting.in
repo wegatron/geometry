@@ -2,3 +2,9 @@ DATA_DIR =  /home/wegatron/workspace/geometry/data
 APP_OUTPUT_DIR = /home/wegatron/tmp/approximate
 APP_EXEC = /home/wegatron/workspace/geometry/isotopic_approximation2/build-release/bin/appro
 EXPORT_LIB_DIR = /home/wegatron/workspace/geometry/isotopic_approximation2/build-release/bin
+
+include banana_dat.in
+include cigar_dat.in
+include cylinder_dat.in
+include ellipsoid_dat.in
+include suite.in
