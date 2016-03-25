@@ -19,8 +19,8 @@ namespace zsw{
 #if 0
     testKdtree();
 #endif
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, in_jpt, -1, 1}); }
-    for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, out_jpt, 1, 1}); }
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &in_jpt : inner_jpts_) { jpts_.push_back({in_jpt, in_jpt, -1, 1, 1}); }
+    for(const Eigen::Matrix<zsw::Scalar,3,1> &out_jpt : outer_jpts_) { jpts_.push_back({out_jpt, out_jpt, 1, 1, 1}); }
     inner_kdtree_.buildTree(inner_jpts_[0].data(), inner_jpts_.size());
     outer_kdtree_.buildTree(outer_jpts_[0].data(), outer_jpts_.size());
     std::vector<std::pair<Point, VertexInfo>> init_vertices;
@@ -87,9 +87,9 @@ namespace zsw{
 
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
     size_t pt_size=inner_jpts_.size();
-    for(size_t i=0; i<pt_size; ++i) { jpts_.push_back({deformed_inner_jpts[i], inner_jpts_[i], -1, 1}); }
+    for(size_t i=0; i<pt_size; ++i) { jpts_.push_back({deformed_inner_jpts[i], inner_jpts_[i], -1, 1, 1}); }
     pt_size=outer_jpts_.size();
-    for(size_t i=0; i<pt_size; ++i) { jpts_.push_back({deformed_outer_jpts[i], outer_jpts_[i], 1, 1}); }
+    for(size_t i=0; i<pt_size; ++i) { jpts_.push_back({deformed_outer_jpts[i], outer_jpts_[i], 1, 1, 1}); }
 
     std::vector<std::pair<Point, VertexInfo>> init_vertices;
     init_vertices.reserve(ori_bs_jpts.size());

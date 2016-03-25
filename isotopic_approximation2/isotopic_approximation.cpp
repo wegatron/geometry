@@ -152,10 +152,34 @@ namespace zsw{
       JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
       tmp_jpt->val_cur_=val.dot(x);
       if(updated_jpts!=nullptr) {      updated_jpts->push_back(tmp_jpt); }
-      // if(err_queue!=nullptr) {
-      //   zsw::Scalar err=fabs(tmp_jpt->val_cur_-tmp_jpt->val_exp_);
-      //   if(err>1) { err_queue->push(std::make_pair(err, tmp_jpt)); }
-      // }
+    }
+
+    if(using_cur_pts) { return; }
+
+    A <<
+      chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
+      chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
+      chd->vertex(0)->point()[2], chd->vertex(1)->point()[2], chd->vertex(2)->point()[2], chd->vertex(3)->point()[2],
+      1,1,1,1;
+    pplu.compute(A);
+    jpts_in_bbox.clear();
+    calcJptsInBbox(vhds,4,jpts_in_bbox, true);
+    for(const JudgePoint * jpt : jpts_in_bbox) {
+      Eigen::Matrix<zsw::Scalar,4,1> x, b;
+      b.block<3,1>(0,0) = jpt->pt_c_; b[3] = 1.0;
+      x=pplu.solve(b);
+      if(x[0]<-zsw::const_val::eps || x[1]<-zsw::const_val::eps || x[2]<-zsw::const_val::eps
+         || x[3]<-zsw::const_val::eps) { continue; } // jpt not in this cell
+      assert((A*x-b).norm()<zsw::const_val::eps);
+      Eigen::Matrix<zsw::Scalar,4,1> val;
+      for(size_t vi=0; vi<4; ++vi) {
+        if(chd->vertex(vi)->info().pt_type_==zsw::INNER_POINT) { val[vi]=-1; }
+        else if(chd->vertex(vi)->info().pt_type_==zsw::ZERO_POINT){ val[vi]=0; }
+        else { val[vi]=1; }
+      }
+      JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
+      tmp_jpt->val_c_=val.dot(x);
+      if(updated_jpts!=nullptr) {      updated_jpts->push_back(tmp_jpt); }
     }
   }
 
@@ -202,7 +226,8 @@ namespace zsw{
     }
     for(JudgePoint * jpt : up_jpt_set) {
       zsw::Scalar tmp_err=fabs(jpt->val_cur_-jpt->val_exp_);
-      if(tmp_err > 1.0 - alpha_) { err_queue.push(std::make_pair(tmp_err, jpt)); }
+      zsw::Scalar ref_err = fabs(jpt->val_c_ - jpt->val_exp_);
+      if(tmp_err > 1.0 - alpha_) { err_queue.push(std::make_pair(ref_err, jpt)); }
     }
   }
 

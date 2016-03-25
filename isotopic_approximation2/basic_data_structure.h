@@ -63,6 +63,7 @@ namespace zsw{
     Eigen::Matrix<zsw::Scalar,3,1> pt_cur_; // curent
     const zsw::Scalar val_exp_;
     zsw::Scalar val_cur_;
+    zsw::Scalar val_c_; // val in corrospoinding deformed space
   };
 
   typedef CGAL::Exact_predicates_inexact_constructions_kernel         K;
