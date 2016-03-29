@@ -4,4 +4,4 @@ SHELL = /bin/bash
 export:
 	export LD_LIBRARY_PATH=${EXPORT_LIB_DIR}
 
-include pc_setting.in
+include suite.in
