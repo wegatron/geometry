@@ -81,6 +81,7 @@ namespace zsw{
     writeTetMesh(tmp_output_dir+"after_simp_tol_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpZeroSurface();
 
+    NZSWLOG("adj_cell_cnt") << adj_cell_cnt_ << std::endl;
     NZSWLOG("bz_info") << "bz_krj_need_judge_cnt:" << bz_krj_need_judge_cnt_ << std::endl;
     NZSWLOG("bz_info") << "bz_normal_cond_judge_cnt:" << bz_normal_cond_judge_cnt_ << std::endl;
     NZSWLOG("bz_info") << "bz_error_bound_judge_cnt:" << bz_error_bound_judge_cnt_ << std::endl;
@@ -90,6 +91,7 @@ namespace zsw{
     writeTetMesh(tmp_output_dir+"simped_zero_surf.vtk", {zsw::ignore_bbox, zsw::ignore_out});
     simpBZEdges();
 
+    NZSWLOG("adj_cell_cnt") << adj_cell_cnt_ << std::endl;
     NZSWLOG("bz_info") << "bz_krj_need_judge_cnt:" << bz_krj_need_judge_cnt_ << std::endl;
     NZSWLOG("bz_info") << "bz_normal_cond_judge_cnt:" << bz_normal_cond_judge_cnt_ << std::endl;
     NZSWLOG("bz_info") << "bz_error_bound_judge_cnt:" << bz_error_bound_judge_cnt_ << std::endl;
@@ -117,6 +119,7 @@ namespace zsw{
     if(!(chd->vertex(0)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(1)->info().pt_type_!=zsw::INVALID_POINT
          && chd->vertex(2)->info().pt_type_!=zsw::INVALID_POINT && chd->vertex(3)->info().pt_type_!=zsw::INVALID_POINT))
       { return; }
+    /// in original space
     // calc jpts in bbox
     std::vector<const JudgePoint*> jpts_in_bbox;
     Vhd vhds[4] = {chd->vertex(0), chd->vertex(1), chd->vertex(2), chd->vertex(3)};
@@ -151,11 +154,12 @@ namespace zsw{
       }
       JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
       tmp_jpt->val_cur_=val.dot(x);
-      if(updated_jpts!=nullptr) {      updated_jpts->push_back(tmp_jpt); }
+      zsw::Scalar tmp_err = fabs(tmp_jpt->val_cur_ - tmp_jpt->val_exp_);
+      if(updated_jpts!=nullptr && tmp_err>(1.0 - alpha_)) { updated_jpts->push_back(tmp_jpt); }
     }
 
     if(using_cur_pts) { return; }
-
+    /// in deformed space
     A <<
       chd->vertex(0)->point()[0], chd->vertex(1)->point()[0], chd->vertex(2)->point()[0], chd->vertex(3)->point()[0],
       chd->vertex(0)->point()[1], chd->vertex(1)->point()[1], chd->vertex(2)->point()[1], chd->vertex(3)->point()[1],
@@ -163,7 +167,7 @@ namespace zsw{
       1,1,1,1;
     pplu.compute(A);
     jpts_in_bbox.clear();
-    calcJptsInBbox(vhds,4,jpts_in_bbox, true);
+    calcJptsInBboxD(vhds,4,jpts_in_bbox);
     for(const JudgePoint * jpt : jpts_in_bbox) {
       Eigen::Matrix<zsw::Scalar,4,1> x, b;
       b.block<3,1>(0,0) = jpt->pt_c_; b[3] = 1.0;
@@ -179,7 +183,8 @@ namespace zsw{
       }
       JudgePoint *tmp_jpt = const_cast<JudgePoint*>(jpt);
       tmp_jpt->val_c_=val.dot(x);
-      if(updated_jpts!=nullptr) {      updated_jpts->push_back(tmp_jpt); }
+      zsw::Scalar tmp_err = fabs(tmp_jpt->val_cur_ - tmp_jpt->val_exp_);
+      if(updated_jpts!=nullptr && tmp_err>(1.0 - alpha_)) { updated_jpts->push_back(tmp_jpt); }
     }
   }
 
@@ -201,8 +206,7 @@ namespace zsw{
       for(JudgePoint * jpt : up_jpt) {            up_jpt_set.insert(jpt);          }
     }
     for(JudgePoint * jpt : up_jpt_set) {
-      zsw::Scalar tmp_err=fabs(jpt->val_cur_-jpt->val_exp_);
-      if(tmp_err > 1.0 - alpha_) { err_queue.push(std::make_pair(tmp_err, jpt)); }
+      err_queue.push(std::make_pair(fabs(jpt->val_cur_-jpt->val_exp_), jpt));
     }
   }
 
@@ -225,9 +229,7 @@ namespace zsw{
       for(JudgePoint * jpt : up_jpt) {            up_jpt_set.insert(jpt);          }
     }
     for(JudgePoint * jpt : up_jpt_set) {
-      zsw::Scalar tmp_err=fabs(jpt->val_cur_-jpt->val_exp_);
-      zsw::Scalar ref_err = fabs(jpt->val_c_ - jpt->val_exp_);
-      if(tmp_err > 1.0 - alpha_) { err_queue.push(std::make_pair(ref_err, jpt)); }
+      err_queue.push(std::make_pair(fabs(jpt->val_c_ - jpt->val_exp_), jpt));
     }
   }
 
@@ -292,7 +294,6 @@ namespace zsw{
   void Approximation::sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const
   {
     FUNCTION_TIME_ANALYSIS();
-    Vhd vhds[2]={e.first->vertex(e.second), e.first->vertex(e.third)};
     std::vector<Chd> cells;
     const TTds &tds=tw_->getTds();
     tds.incident_cells(e.first->vertex(e.second), std::back_inserter(cells));
@@ -307,6 +308,7 @@ namespace zsw{
       std::string key_str = cell2key(chd);
       cell_map[key_str]=chd;
     }
+    adj_cell_cnt_ += cell_map.size();
     for(auto it=cell_map.begin(); it!=cell_map.end(); ++it) {
       Eigen::Matrix<zsw::Scalar,3,1> v0,v1,v2,v3;
       v0<< it->second->vertex(0)->point()[0],it->second->vertex(0)->point()[1],it->second->vertex(0)->point()[2];
@@ -324,11 +326,14 @@ namespace zsw{
       sampleTet(v0,v1,v2,v3,tet_sample_r_, sample_points);
       // }
     }
-#if 0
-    // cout adj cells
-    writeAdjcentCells(tmp_outdir_+"adj_cells.vtk", e);
-    writePoints(tmp_outdir_+"sp.vtk", sample_points);
-    abort();
+#if 1
+    static size_t i=0;
+    if(i++<100) {
+      // cout adj cells
+      writeAdjcentCells(tmp_outdir_+"adj_cells_"+std::to_string(i)+".vtk", e);
+      writePoints(tmp_outdir_+"sp_"+std::to_string(i)+".vtk", sample_points);
+    }
+    //abort();
 #endif
   }
 
@@ -336,6 +341,17 @@ namespace zsw{
   // {
   //   std::cerr << "Function " << __FUNCTION__ << "in " << __FILE__ << __LINE__  << " haven't implement!!!" << std::endl;
   // }
+
+  void Approximation::calcJptsInBboxD(Vhd *vhd_ptr, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const
+  {
+    Eigen::Matrix<zsw::Scalar,3,2> bbox;
+    calcVerticesBbox(vhd_ptr, n, bbox);
+    for(const JudgePoint &jpt : jpts_) {
+      if(jpt.pt_c_[0]<bbox(0,0) || jpt.pt_c_[1]<bbox(1,0) || jpt.pt_c_[2]<bbox(2,0) ||
+         jpt.pt_c_[0]>bbox(0,1) || jpt.pt_c_[1]>bbox(1,1) || jpt.pt_c_[2]>bbox(2,1)) { continue; }
+      jpts_in_bbox.push_back(&jpt);
+    }
+  }
 
   void Approximation::calcJptsInBbox(Vhd *vhd_ptr, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox,
                                      bool using_cur_pts) const

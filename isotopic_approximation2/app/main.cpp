@@ -164,11 +164,12 @@ void appro_v3(const std::string &ori_file_path,
   deformer.deformBack(pts, pt_vns, pts_bk);
   size_t i=0;
   for(auto vit=mesh_fd.vertices_begin(); vit!=mesh_fd.vertices_end(); ++vit) { mesh_fd.set_point(vit, pts_bk[i++]); }
-  OpenMesh::IO::write_mesh(mesh_fd, output_dir+"simped_final_o.obj");
+  OpenMesh::IO::write_mesh(mesh_fd, output_dir+"simped_final.obj");
 }
 
 int main(int argc, char *argv[])
 {
+  std::cout << __FILE__ << __LINE__ << std::endl;
   size_t v = atoi(argv[1]);
   if(v == 0) {    appro_v0(std::string(argv[2]), std::string(argv[4]), atof(argv[5]), atof(argv[6]), atof(argv[7]));  }
   else if(v == 1) { appro_v1(v, std::string(argv[2]), std::string(argv[3]), std::string(argv[4]), atof(argv[5]), atof(argv[6]), atof(argv[7])); }

@@ -29,6 +29,7 @@ namespace zsw{
 
   void Approximation::writeZeroSurface(const std::string &filepath) const
   {
+    NZSWLOG("zsw_info") << "write zero surface to file:" << filepath << std::endl;
     const TTds &tds = tw_->getTds();
     std::ofstream ofs;
     OPEN_STREAM(filepath, ofs, std::ofstream::out, return);

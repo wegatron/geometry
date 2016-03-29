@@ -41,6 +41,7 @@ namespace zsw {
       bz_krj_need_judge_cnt_=0;
       bz_normal_cond_judge_cnt_=0;
       bz_error_bound_judge_cnt_=0;
+      adj_cell_cnt_=0;
     }
 
     void getZeroInfo(std::vector<zsw::Vector3s> &pts, std::vector<std::vector<size_t>> &adjs) const;
@@ -121,6 +122,7 @@ namespace zsw {
     void zeroEdgeBack(Vhd vhd, std::queue<std::pair<TTds::Edge, size_t>> &z_q, size_t cur_update) const;
     void bzEdgeBack(Vhd vhd, std::queue<std::pair<TTds::Edge, size_t>> &zb_q, size_t cur_update) const;
     void calcJptsInBbox(Vhd *vhd, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox, bool using_cur_pts) const;
+    void calcJptsInBboxD(Vhd *vhd_ptr, const size_t n, std::vector<const JudgePoint*> &jpts_in_bbox) const;
     void sampleAdjCells(const TTds::Edge &e, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
     //void sampleKrj(const zsw::KernelRegionJudger &krj, std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &sample_points) const;
     size_t countZeroPoints() const;
@@ -155,6 +157,7 @@ namespace zsw {
     size_t bz_krj_need_judge_cnt_;
     size_t bz_normal_cond_judge_cnt_;
     size_t bz_error_bound_judge_cnt_;
+    mutable size_t adj_cell_cnt_;
   };
 
   zsw::Scalar calcZeroTetHeight(Chd chd);
