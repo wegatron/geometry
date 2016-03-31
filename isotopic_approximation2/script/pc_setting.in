@@ -1,4 +1,4 @@
 DATA_DIR =  /home/wegatron/workspace/geometry/data
 APP_OUTPUT_DIR = /home/wegatron/tmp/approximate
 APP_ROOT_DIR = /home/wegatron/workspace/geometry
-SCRIPT_DIR = ${APP_ROOT_DIR}/isotopic_approximation2/script
+EXPORT_LIB_DIR = ${APP_ROOT_DIR}/isotopic_approximation2/build-release/bin:${APP_ROOT_DIR}/isotopic_approximation2/build-release/lib

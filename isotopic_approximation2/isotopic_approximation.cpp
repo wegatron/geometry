@@ -326,7 +326,7 @@ namespace zsw{
       sampleTet(v0,v1,v2,v3,tet_sample_r_, sample_points);
       // }
     }
-#if 1
+#if 0
     static size_t i=0;
     if(i++<100) {
       // cout adj cells

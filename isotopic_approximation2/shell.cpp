@@ -64,6 +64,7 @@ namespace zsw{
     }
     zsw::Scalar scale=0.5*(bbox.block<3,1>(0,1)-bbox.block<3,1>(0,0)).norm();
     Eigen::Matrix<zsw::Scalar,3,1> transform =0.5*(bbox.block<3,1>(0,0)+bbox.block<3,1>(0,1));
+    NZSWLOG("zsw_info") << "radius:" << (bbox.block<3,1>(0,1) - bbox.block<3,1>(0,0)).norm() << std::endl;
     boundSphere("bound_sphere.obj", scale, transform, bs_jpts);
   }
 

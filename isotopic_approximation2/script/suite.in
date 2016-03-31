@@ -1,8 +1,3 @@
-include pc_setting.in
-
-APP_EXEC = ${APP_ROOT_DIR}/isotopic_approximation2/build-release/bin/appro
-EXPORT_LIB_DIR = ${APP_ROOT_DIR}/isotopic_approximation2/build-release/bin
-METRO = ${APP_ROOT_DIR}/3rd_tool/metro
 
 include ${SCRIPT_DIR}/banana_dat.in
 include ${SCRIPT_DIR}/cigar_dat.in
@@ -10,7 +5,7 @@ include ${SCRIPT_DIR}/cylinder_dat.in
 include ${SCRIPT_DIR}/ellipsoid_dat.in
 include ${SCRIPT_DIR}/creature_dat.in
 include ${SCRIPT_DIR}/rabbit_dat.in
-
+include ${SCRIPT_DIR}/fertility_dat.in
 
 CUR_OUT_DIR = ${APP_OUTPUT_DIR}/${model}/${model}_${ver}_${${model}_THICK}_${${model}_SAMPLE_R}_${${model}_SAMPLE_TET_R}_${${model}_NEAR_COUNT}
 

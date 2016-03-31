@@ -26,5 +26,6 @@ int main(int argc, char *argv[])
   std::cout << "bbox\n min:" << min_pos.transpose() << "\nmax:" << max_pos.transpose() << std::endl;
   zsw::Scalar edge_length[3]={max_pos[0]-min_pos[0], max_pos[1]-min_pos[1], max_pos[2]-min_pos[2]};
   std::cout << "edge length:\n" << edge_length[0] << "\n" << edge_length[1] << "\n" << edge_length[2] << std::endl;
+  std::cout << "bs diameter:" << (min_pos-max_pos).norm() << std::endl;
   return 0;
 }

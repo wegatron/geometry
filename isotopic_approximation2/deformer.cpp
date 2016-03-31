@@ -20,7 +20,8 @@ namespace zsw
     zsw::Scalar total = 0;
 #pragma omp parallel for
     for(size_t i=0; i<vs.size(); ++i) {
-      weight[i] = pow(e, c_*(vt-vs[i]).squaredNorm());
+      zsw::Scalar max_val = std::max((vt-vs[i]).squaredNorm(), 1e-16);
+      weight[i] = 1.0 / max_val;
 #pragma omp atomic
       total += weight[i];
     }
@@ -71,6 +72,15 @@ namespace zsw
     vs_ann_.reset(new Flann<zsw::Scalar>(ref_vs_[0].data(), ref_vs_.size()));
   }
 
+  void LocalVectorFieldDeformer::genShell(const zsw::Scalar epsilion, std::vector<zsw::Vector3s> &shell_vs)
+  {
+    const size_t n = ref_vs_.size();
+    for(size_t i=0; i<n; ++i) {
+      zsw::Scalar scale = (jac_[i] * ref_vs_normal_[i]).dot(ref_dvs_normal_[i]);
+      shell_vs.push_back(ref_dvs_[i] + scale * epsilion * ref_dvs_normal_[i]);
+    }
+  }
+
   void Deformer::deformTo(std::shared_ptr<std::vector<zsw::Vector3s>> sample_out,
                           std::shared_ptr<std::vector<zsw::Vector3s>> sample_in,
                           std::shared_ptr<std::vector<zsw::Vector3s>> sample_out_d,
@@ -78,6 +88,7 @@ namespace zsw
   {
     deformTo(*sample_out, *sample_out_d);
     deformTo(*sample_in, *sample_in_d);
+    //deformTo(ref_vs_, *sample_in_d);
     sample_in_ = sample_in;
     sample_in_d_ = sample_in_d;
     sample_out_ = sample_out;

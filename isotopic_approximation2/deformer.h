@@ -25,7 +25,7 @@ namespace zsw
   class GaussDisWeightFunc : public DisWeightFunc
   {
   public:
-    GaussDisWeightFunc() { c_ = -0.2; }
+    GaussDisWeightFunc() { c_ = 0.2; }
     virtual void calcWeight(
                             const Eigen::Matrix<zsw::Scalar,3,1> &vt,
                             const std::vector<Eigen::Matrix<zsw::Scalar,3,1>> &vs,
@@ -80,6 +80,8 @@ namespace zsw
     LocalVectorFieldDeformer(const zsw::mesh::TriMesh &ori_mesh, const zsw::mesh::TriMesh &deformed_mesh,
                              const zsw::Scalar sample_r, const size_t near_count,
                              std::shared_ptr<zsw::DisWeightFunc> dis_weight_func);
+
+    void genShell(const zsw::Scalar epsilion, std::vector<zsw::Vector3s> &vs);
 
     void deformTo(std::shared_ptr<std::vector<zsw::Vector3s>> sample_out,
                   std::shared_ptr<std::vector<zsw::Vector3s>> sample_in,

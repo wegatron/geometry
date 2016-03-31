@@ -22,9 +22,10 @@ namespace zsw{
       if(tw_->isZeroEdge(*eit)) { z_q.push(std::make_pair(*eit, 0)); }
     }
     tw_->resetVertexLastUpdate();
+    size_t zero_cnt = countZeroPoints();
     size_t z_step = 0;
     size_t z_step_suc = 0;
-    print_sp_size_= true;
+    //print_sp_size_= true;
     while(!z_q.empty()) {
       TTds::Edge e = z_q.front().first;
       size_t last_update = z_q.front().second;
@@ -32,10 +33,12 @@ namespace zsw{
       if(!tw_->isZeroEdge(e)) { continue; }
       if(e.first->vertex(e.second)->info().last_update_ > last_update ||
          e.first->vertex(e.third)->info().last_update_ > last_update) { continue; }
-      if(++z_step % 100 == 0) { std::cout << "[INFO] try zero edge collapsed " << z_step << std::endl; print_sp_size_ = true; }
+      if(++z_step % 100 == 0) { std::cout << "[INFO] try zero edge collapsed " << z_step << std::endl; /* print_sp_size_ = true; */}
       if(tryCollapseBZEdge(e, z_q, z_step_suc, false)) {
+        --zero_cnt;
         if(++z_step_suc %50 == 0) {
-          std::cout << "[INFO] zero edge collapsed " << z_step_suc << std::endl;
+          std::cout << "zero edge collapsed " << z_step_suc << std::endl;
+          NZSWLOG("zsw_info") << "Zero count " << zero_cnt << std::endl;
           writeTetMesh(tmp_outdir_+"simp_z"+to_string(z_step_suc)+".vtk", {zsw::ignore_out, zsw::ignore_bbox});
         }
       }
@@ -83,11 +86,11 @@ namespace zsw{
     }
     bz_normal_cond_judge_cnt_ += nj_pt;
     bz_error_bound_judge_cnt_ += erj_pt;
-    if(print_sp_size_) {
-      print_sp_size_ = false;
-      NZSWLOG("zsw_info") << "all pt=" << sample_points.size() << " nj_pt=" << nj_pt << " erj_pt=" << erj_pt << std::endl;
-      PRINT_COST("krj_z");
-    }
+    // if(print_sp_size_) {
+    //   print_sp_size_ = false;
+    //   NZSWLOG("zsw_info") << "all pt=" << sample_points.size() << " nj_pt=" << nj_pt << " erj_pt=" << erj_pt << std::endl;
+    //   PRINT_COST("krj_z");
+    // }
     if(merge_pt==nullptr) { return false; }
     Vhd vhd=(e.first->vertex(e.second)->info().pt_type_==zsw::ZERO_POINT) ? e.first->vertex(e.second) : e.first->vertex(e.third);
     tw_->collapseEdge(e, vhd, *merge_pt);

@@ -91,12 +91,12 @@ void appro_v1(
 }
 
 void appro_v3(const std::string &ori_file_path,
-                  const std::string &deformed_file_path,
-                  const std::string &output_dir,
-                  const zsw::Scalar err_epsilon,
-                  const zsw::Scalar tri_sample_r,
-                  const zsw::Scalar tet_sample_r,
-                  const size_t near_count)
+              const std::string &deformed_file_path,
+              const std::string &output_dir,
+              const zsw::Scalar err_epsilon,
+              const zsw::Scalar tri_sample_r,
+              const zsw::Scalar tet_sample_r,
+              const size_t near_count)
 {
   RESETLOG_FILE(output_dir+"log");
   zsw::mesh::TriMesh mesh_ori;
