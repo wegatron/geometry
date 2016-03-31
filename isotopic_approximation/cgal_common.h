@@ -6,7 +6,6 @@
 #include <CGAL/Triangulation_3.h>
 #include <CGAL/Triangulation_vertex_base_with_info_3.h>
 
-
 namespace zsw
 {
   typedef CGAL::Exact_predicates_inexact_constructions_kernel         K;

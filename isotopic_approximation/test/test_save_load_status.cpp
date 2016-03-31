@@ -19,7 +19,7 @@ void test(const std::string &file_path, const string &output_prefix, const zsw::
   zsw::genPoints(thick_dis, input_mesh, bo_points, bi_points);
 
   zsw::Triangulation tr0(0.3, output_prefix+"_tmp/");
-  CALL_FUNC(tr0.construct(0.1, sample_r, bo_points, bi_points), abort());
+  CALL_FUNC(tr0.construct(0.1, sample_r, 0.3, bo_points, bi_points), abort());
 
   tr0.saveStatus(output_prefix+"_tmp/tmp_status", zsw::BC_STAGE);
 

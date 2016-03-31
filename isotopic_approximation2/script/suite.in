@@ -1,0 +1,43 @@
+
+include ${SCRIPT_DIR}/banana_dat.in
+include ${SCRIPT_DIR}/cigar_dat.in
+include ${SCRIPT_DIR}/cylinder_dat.in
+include ${SCRIPT_DIR}/ellipsoid_dat.in
+include ${SCRIPT_DIR}/creature_dat.in
+include ${SCRIPT_DIR}/rabbit_dat.in
+include ${SCRIPT_DIR}/fertility_dat.in
+
+CUR_OUT_DIR = ${APP_OUTPUT_DIR}/${model}/${model}_${ver}_${${model}_THICK}_${${model}_SAMPLE_R}_${${model}_SAMPLE_TET_R}_${${model}_NEAR_COUNT}
+
+SAMPLE_UNITE = $(shell echo 1.0/${${model}_SAMPLE_R} | bc)
+
+.PHONY: prepare
+prepare:
+	mkdir -p ${APP_OUTPUT_DIR}/${model}/
+	mkdir -p ${CUR_OUT_DIR}
+	rm -rf ${CUR_OUT_DIR}/*.vtk	
+
+.PHONY: simp
+simp: export prepare
+ifneq (${ver}, ${foo})
+	echo "ver="${ver}
+ifneq (${model}, ${foo})
+	echo "model is"${model}
+	echo "do simp---"
+	${APP_EXEC} ${ver} ${${model}} ${${model}_DEFORMED} ${CUR_OUT_DIR}/ ${${model}_THICK} ${${model}_SAMPLE_R} ${${model}_SAMPLE_TET_R} ${${model}_NEAR_COUNT};
+	echo "calc hausdorff distance---";
+	cp ${${model}} ${CUR_OUT_DIR}/$(shell echo $(model) | tr A-Z a-z).obj
+	${METRO} ${CUR_OUT_DIR}/$(shell echo $(model) | tr A-Z a-z).obj ${CUR_OUT_DIR}/simped_final.obj -s1 -n2000000  -c -h -O >> ${CUR_OUT_DIR}/log
+else
+	echo "model not set!!!"
+endif
+else
+	echo "ver not set!!!!"
+endif
+	echo "end!!!"
+
+
+.PHONY: calc_hausdorff
+calc_hausdorff:
+	cp ${${model}} ${CUR_OUT_DIR}/$(shell echo $(model) | tr A-Z a-z).obj
+	${METRO} ${CUR_OUT_DIR}/$(shell echo $(model) | tr A-Z a-z).obj ${CUR_OUT_DIR}/simped_final.obj -s1 -n2000000 -c -h -O

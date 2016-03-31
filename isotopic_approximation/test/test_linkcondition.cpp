@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(real_triangulation)
   zsw::genPoints(0.5, input_mesh, bo_points, bi_points);
   // init triangulation
   zsw::Triangulation tr(0.3,"/home/wegatron/tmp/");
-  CALL_FUNC(tr.construct(0.25, 0.1, bo_points, bi_points), abort());
+  CALL_FUNC(tr.construct(0.25, 0.1, 0.3, bo_points, bi_points), abort());
   const std::vector<zsw::Edge> &edges=tr.getEdges();
   const std::vector<zsw::Vertex> &vertices=tr.getVertices();
   const std::vector<zsw::Tet> &tets=tr.getTets();
