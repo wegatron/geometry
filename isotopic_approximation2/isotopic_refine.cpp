@@ -114,6 +114,7 @@ namespace zsw{
         zsw::Scalar ref_err=fabs(jpt_info.second->val_c_-jpt_info.second->val_exp_);
         zsw::Scalar real_err = fabs(jpt_info.second->val_cur_-jpt_info.second->val_exp_);
         if( (real_err < (1.0-alpha_)) || fabs(ref_err-jpt_info.first) > zsw::const_val::eps) { continue; } // have already updated
+        //if(real_err < (1.0-alpha_)) { continue; } // have already updated
         PointType pt_type= (jpt_info.second->val_exp_<0) ? zsw::INNER_POINT : zsw::OUTER_POINT;
         VertexInfo vertex_info(-1, pt_type, jpt_info.second->pt_cur_);
         std::vector<Chd> chds;
@@ -121,8 +122,9 @@ namespace zsw{
         if(++add_pt_for_err%100==0) {
           std::cout << "[zsw_info] add pt for err:" << add_pt_for_err << std::endl;
           std::cout << "[zsw_info] ref_err=" << ref_err << " real_err=" << real_err << std::endl;
-          writeTetMesh(tmp_outdir_+"refine_tol_ori_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, false);
-          writeTetMesh(tmp_outdir_+"refine_tol_deformed_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox}, nullptr, true);
+          writeTetMesh(tmp_outdir_+"refine_tol_ori_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox, zsw::ignore_self_out, zsw::ignore_self_in},
+                       nullptr, false);
+          writeTetMesh(tmp_outdir_+"refine_tol_deformed_"+ std::to_string(add_pt_for_err) +".vtk", {zsw::ignore_bbox, zsw::ignore_self_out, zsw::ignore_self_in}, nullptr, true);
         }
         updateJptsInCellsD(chds, err_queue);
       }

@@ -158,6 +158,7 @@ namespace zsw{
       if(updated_jpts!=nullptr && tmp_err>(1.0 - alpha_)) { updated_jpts->push_back(tmp_jpt); }
     }
 
+# if 1
     if(using_cur_pts) { return; }
     /// in deformed space
     A <<
@@ -186,6 +187,7 @@ namespace zsw{
       zsw::Scalar tmp_err = fabs(tmp_jpt->val_cur_ - tmp_jpt->val_exp_);
       if(updated_jpts!=nullptr && tmp_err>(1.0 - alpha_)) { updated_jpts->push_back(tmp_jpt); }
     }
+#endif
   }
 
   void Approximation::updateJptsInCells(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
@@ -210,7 +212,7 @@ namespace zsw{
     }
   }
 
-  void Approximation::updateJptsInCellsD(const std::vector<Chd> &chds,     std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
+  void Approximation::updateJptsInCellsD(const std::vector<Chd> &chds, std::priority_queue<std::pair<zsw::Scalar,JudgePoint*>,
                                          std::vector<std::pair<zsw::Scalar,JudgePoint*>>,
                                          ErrorMaxComparison> &err_queue)
   {
