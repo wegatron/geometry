@@ -27,6 +27,7 @@ namespace zsw{
     NZSWLOG("zsw_info") << "inner judge point size:" << inner_jpts_.size() << std::endl;
     NZSWLOG("zsw_info") << "outer judge point size:" << outer_jpts_.size() << std::endl;
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
+    tclock_.clearCur();
     clock_.clearCur();
     refine(bs_jpts);
     NZSWLOG("zsw_info") << "refine time cost" << clock_.time() << std::endl;
@@ -54,6 +55,7 @@ namespace zsw{
     NZSWLOG("zsw_info") << "outer judge point size:" << outer_jpts_.size() << std::endl;
     jpts_.reserve(inner_jpts_.size()+outer_jpts_.size());
     refineD(ori_bs_jpts, deformed_inner_jpts, deformed_outer_jpts, deformed_bs_jpts);
+    tclock_.clearCur();
     NZSWLOG("zsw_info") << "refine time cost" << clock_.time() << std::endl;
     NZSWLOG("zsw_info") << "refine complete, init finished!" << std::endl;
     NZSWLOG("zsw_info") << "vertex size:" << tw_->getTds().number_of_vertices() << std::endl;

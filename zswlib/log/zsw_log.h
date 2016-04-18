@@ -95,7 +95,8 @@ namespace zsw{
     template<typename T>
       CompositOstream& operator << (const T& t)
       {
-        os << "# [" << clog_type_ << "] "<< getTime() << t;
+        //os << "# [" << clog_type_ << "] "<< getTime() << t;
+        os << "# [" << clog_type_ << "] " << t;
         return os;
       }
     CompositOstream& operator<<(std::ostream& (*__pf)(std::ostream&)) {

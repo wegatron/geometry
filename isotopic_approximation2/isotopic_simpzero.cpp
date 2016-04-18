@@ -39,6 +39,7 @@ namespace zsw{
         if(++z_step_suc %50 == 0) {
           std::cout << "zero edge collapsed " << z_step_suc << std::endl;
           NZSWLOG("zsw_info") << "Zero count " << zero_cnt << std::endl;
+          NZSWLOG("time&pt_count") << tclock_.time() << "  " << zero_cnt << std::endl;
           writeTetMesh(tmp_outdir_+"simp_z"+to_string(z_step_suc)+".vtk", {zsw::ignore_out, zsw::ignore_bbox});
         }
       }

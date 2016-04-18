@@ -150,6 +150,7 @@ namespace zsw {
     zsw::Scalar g_scale_;
     std::string tmp_outdir_;
     zsw::common::ClockC11 clock_;
+    zsw::common::ClockC11 tclock_;
     bool sample_tet_by_ref_;
 
     bool print_sp_size_;
