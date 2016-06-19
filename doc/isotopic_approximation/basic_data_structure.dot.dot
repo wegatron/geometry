@@ -1,0 +1,44 @@
+digraph G {
+	graph [bb="0,0,312,188",
+		fontname="Bitstream Vera Sans",
+		fontsize=12
+	];
+	node [fontname="Bitstream Vera Sans",
+		fontsize=12,
+		label="\N",
+		shape=record
+	];
+	edge [fontname="Bitstream Vera Sans",
+		fontsize=20,
+		headlabel=in,
+		taillabel=""
+	];
+	ZSW_Vertex	 [height=1.1389,
+		label="{Vertex|+valid_ : bool\l+pt_ : Vector3d\l+tet_ids_ : list\<size_t\>\l+edge_ids_:list\<size_t\>\l}",
+		pos="235,147",
+		rects="157.5,166.5,312.5,187.5 157.5,106.5,312.5,166.5",
+		width=2.1458];
+	ZSW_Tet	 [height=0.95833,
+		label="{Tet |+valid_ : bool\l+vid_[4]:size_t\l+jpts_ : list\<JudgePoint\>\l}",
+		pos="80,35",
+		rects="-0.5,48,160.5,69 -0.5,1,160.5,48",
+		width=2.2292];
+	ZSW_Vertex -> ZSW_Tet	 [head_lp="110.69,80.134",
+		headlabel=adj,
+		pos="e,126.69,69.134 179.04,106.29 164.69,96.102 149.27,85.156 134.96,75.006"];
+	ZSW_Edge	 [height=0.77778,
+		label="{Edge|+valid_: bool\l+vid_[2]:size_t\l}",
+		pos="235,35",
+		rects="184,41.5,286,62.5 184,7.5,286,41.5",
+		width=1.4028];
+	ZSW_Vertex -> ZSW_Edge	 [head_lp="219,73.593",
+		headlabel=adj,
+		pos="e,235,62.593 235,106.29 235,95.395 235,83.634 235,72.906"];
+	ZSW_JudgePoint	 [height=0.95833,
+		label="{JudgePoint|+pt_ : Vector3d\l +val_cur_ : double\l +val_exp_:double\l}",
+		pos="75,147",
+		rects="11,160,139,181 11,113,139,160",
+		width=1.7778];
+	ZSW_JudgePoint -> ZSW_Tet	 [head_lp="68.984,80.361",
+		pos="e,78.484,69.361 76.5,113 76.98,102.43 77.519,90.576 78.028,79.389"];
+}
